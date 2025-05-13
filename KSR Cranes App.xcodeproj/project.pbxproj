@@ -1,0 +1,774 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		1B71EFA72DD3145700731223 /* WorkerDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B71EFA42DD3132000731223 /* WorkerDashboardView.swift */; };
+		1B71EFAC2DD315C900731223 /* Color+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B71EFAB2DD315C200731223 /* Color+Extensions.swift */; };
+		1B71EFAF2DD3160C00731223 /* SwiftUI View.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B71EFAE2DD3160000731223 /* SwiftUI View.swift */; };
+		1B71EFB32DD3182200731223 /* WorkHoursViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B71EFB22DD3180700731223 /* WorkHoursViewModel.swift */; };
+		1B71EFB52DD319DF00731223 /* WorkHourEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B71EFB42DD319D300731223 /* WorkHourEntry.swift */; };
+		1B71EFBB2DD31C1D00731223 /* WorkerDashboardViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B71EFBA2DD31BFB00731223 /* WorkerDashboardViewModel.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		1B71EF5C2DD3102300731223 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1B71EF462DD3102000731223 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 1B71EF4D2DD3102000731223;
+			remoteInfo = "KSR Cranes App";
+		};
+		1B71EF662DD3102300731223 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1B71EF462DD3102000731223 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 1B71EF4D2DD3102000731223;
+			remoteInfo = "KSR Cranes App";
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		1B71EF4E2DD3102000731223 /* KSR Cranes App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "KSR Cranes App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		1B71EF5B2DD3102300731223 /* KSR Cranes AppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "KSR Cranes AppTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		1B71EF652DD3102300731223 /* KSR Cranes AppUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "KSR Cranes AppUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		1B71EFA42DD3132000731223 /* WorkerDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkerDashboardView.swift; sourceTree = "<group>"; };
+		1B71EFAB2DD315C200731223 /* Color+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Extensions.swift"; sourceTree = "<group>"; };
+		1B71EFAE2DD3160000731223 /* SwiftUI View.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SwiftUI View.swift"; sourceTree = "<group>"; };
+		1B71EFB22DD3180700731223 /* WorkHoursViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkHoursViewModel.swift; sourceTree = "<group>"; };
+		1B71EFB42DD319D300731223 /* WorkHourEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkHourEntry.swift; sourceTree = "<group>"; };
+		1B71EFBA2DD31BFB00731223 /* WorkerDashboardViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkerDashboardViewModel.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		1B71EF502DD3102000731223 /* KSR Cranes App */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "KSR Cranes App";
+			sourceTree = "<group>";
+		};
+		1B71EF5E2DD3102300731223 /* KSR Cranes AppTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "KSR Cranes AppTests";
+			sourceTree = "<group>";
+		};
+		1B71EF682DD3102300731223 /* KSR Cranes AppUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "KSR Cranes AppUITests";
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		1B71EF4B2DD3102000731223 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		1B71EF582DD3102300731223 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		1B71EF622DD3102300731223 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		1B71EF452DD3102000731223 = {
+			isa = PBXGroup;
+			children = (
+				1B71EFB02DD3170F00731223 /* ViewModels */,
+				1B71EFAA2DD315B000731223 /* Extensions */,
+				1B71EF8E2DD3121800731223 /* Resources */,
+				1B71EF892DD311FA00731223 /* UI */,
+				1B71EF792DD3112300731223 /* Core */,
+				1B71EF502DD3102000731223 /* KSR Cranes App */,
+				1B71EF5E2DD3102300731223 /* KSR Cranes AppTests */,
+				1B71EF682DD3102300731223 /* KSR Cranes AppUITests */,
+				1B71EF4F2DD3102000731223 /* Products */,
+				1B71EF7E2DD3115400731223 /* Features */,
+			);
+			sourceTree = "<group>";
+		};
+		1B71EF4F2DD3102000731223 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				1B71EF4E2DD3102000731223 /* KSR Cranes App.app */,
+				1B71EF5B2DD3102300731223 /* KSR Cranes AppTests.xctest */,
+				1B71EF652DD3102300731223 /* KSR Cranes AppUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		1B71EF792DD3112300731223 /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				1B71EF912DD3125500731223 /* Models */,
+				1B71EF932DD3126A00731223 /* Extensions */,
+				1B71EF922DD3126700731223 /* Utilities */,
+				1B71EF942DD3126E00731223 /* Services */,
+			);
+			path = Core;
+			sourceTree = "<group>";
+		};
+		1B71EF7E2DD3115400731223 /* Features */ = {
+			isa = PBXGroup;
+			children = (
+				1B71EF9A2DD3127F00731223 /* Customer */,
+				1B71EF9C2DD3128300731223 /* Chef */,
+				1B71EFA02DD3128600731223 /* Worker */,
+				1B71EFA12DD3128C00731223 /* Auth */,
+			);
+			path = Features;
+			sourceTree = "<group>";
+		};
+		1B71EF892DD311FA00731223 /* UI */ = {
+			isa = PBXGroup;
+			children = (
+				1B71EF972DD3127400731223 /* Views */,
+				1B71EF962DD3127200731223 /* Themes */,
+				1B71EF952DD3127000731223 /* Components */,
+			);
+			path = UI;
+			sourceTree = "<group>";
+		};
+		1B71EF8E2DD3121800731223 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				1B71EF982DD3127600731223 /* Assets */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		1B71EF912DD3125500731223 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				1B71EFB42DD319D300731223 /* WorkHourEntry.swift */,
+				1B71EFA42DD3132000731223 /* WorkerDashboardView.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		1B71EF922DD3126700731223 /* Utilities */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Utilities;
+			sourceTree = "<group>";
+		};
+		1B71EF932DD3126A00731223 /* Extensions */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Extensions;
+			sourceTree = "<group>";
+		};
+		1B71EF942DD3126E00731223 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		1B71EF952DD3127000731223 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Components;
+			sourceTree = "<group>";
+		};
+		1B71EF962DD3127200731223 /* Themes */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Themes;
+			sourceTree = "<group>";
+		};
+		1B71EF972DD3127400731223 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				1B71EFAE2DD3160000731223 /* SwiftUI View.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		1B71EF982DD3127600731223 /* Assets */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Assets;
+			sourceTree = "<group>";
+		};
+		1B71EF992DD3127F00731223 /* Dashboard */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Dashboard;
+			sourceTree = "<group>";
+		};
+		1B71EF9A2DD3127F00731223 /* Customer */ = {
+			isa = PBXGroup;
+			children = (
+				1B71EF992DD3127F00731223 /* Dashboard */,
+			);
+			path = Customer;
+			sourceTree = "<group>";
+		};
+		1B71EF9B2DD3128300731223 /* Dashboard */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Dashboard;
+			sourceTree = "<group>";
+		};
+		1B71EF9C2DD3128300731223 /* Chef */ = {
+			isa = PBXGroup;
+			children = (
+				1B71EF9B2DD3128300731223 /* Dashboard */,
+			);
+			path = Chef;
+			sourceTree = "<group>";
+		};
+		1B71EF9D2DD3128600731223 /* Dashboard */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Dashboard;
+			sourceTree = "<group>";
+		};
+		1B71EF9E2DD3128600731223 /* Notifications */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Notifications;
+			sourceTree = "<group>";
+		};
+		1B71EF9F2DD3128600731223 /* WorkHours */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = WorkHours;
+			sourceTree = "<group>";
+		};
+		1B71EFA02DD3128600731223 /* Worker */ = {
+			isa = PBXGroup;
+			children = (
+				1B71EF9D2DD3128600731223 /* Dashboard */,
+				1B71EF9E2DD3128600731223 /* Notifications */,
+				1B71EF9F2DD3128600731223 /* WorkHours */,
+			);
+			path = Worker;
+			sourceTree = "<group>";
+		};
+		1B71EFA12DD3128C00731223 /* Auth */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Auth;
+			sourceTree = "<group>";
+		};
+		1B71EFAA2DD315B000731223 /* Extensions */ = {
+			isa = PBXGroup;
+			children = (
+				1B71EFAB2DD315C200731223 /* Color+Extensions.swift */,
+			);
+			path = Extensions;
+			sourceTree = "<group>";
+		};
+		1B71EFB02DD3170F00731223 /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				1B71EFBA2DD31BFB00731223 /* WorkerDashboardViewModel.swift */,
+				1B71EFB22DD3180700731223 /* WorkHoursViewModel.swift */,
+			);
+			path = ViewModels;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		1B71EF4D2DD3102000731223 /* KSR Cranes App */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1B71EF6F2DD3102300731223 /* Build configuration list for PBXNativeTarget "KSR Cranes App" */;
+			buildPhases = (
+				1B71EF4A2DD3102000731223 /* Sources */,
+				1B71EF4B2DD3102000731223 /* Frameworks */,
+				1B71EF4C2DD3102000731223 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				1B71EF502DD3102000731223 /* KSR Cranes App */,
+			);
+			name = "KSR Cranes App";
+			packageProductDependencies = (
+			);
+			productName = "KSR Cranes App";
+			productReference = 1B71EF4E2DD3102000731223 /* KSR Cranes App.app */;
+			productType = "com.apple.product-type.application";
+		};
+		1B71EF5A2DD3102300731223 /* KSR Cranes AppTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1B71EF722DD3102300731223 /* Build configuration list for PBXNativeTarget "KSR Cranes AppTests" */;
+			buildPhases = (
+				1B71EF572DD3102300731223 /* Sources */,
+				1B71EF582DD3102300731223 /* Frameworks */,
+				1B71EF592DD3102300731223 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				1B71EF5D2DD3102300731223 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				1B71EF5E2DD3102300731223 /* KSR Cranes AppTests */,
+			);
+			name = "KSR Cranes AppTests";
+			packageProductDependencies = (
+			);
+			productName = "KSR Cranes AppTests";
+			productReference = 1B71EF5B2DD3102300731223 /* KSR Cranes AppTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		1B71EF642DD3102300731223 /* KSR Cranes AppUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1B71EF752DD3102300731223 /* Build configuration list for PBXNativeTarget "KSR Cranes AppUITests" */;
+			buildPhases = (
+				1B71EF612DD3102300731223 /* Sources */,
+				1B71EF622DD3102300731223 /* Frameworks */,
+				1B71EF632DD3102300731223 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				1B71EF672DD3102300731223 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				1B71EF682DD3102300731223 /* KSR Cranes AppUITests */,
+			);
+			name = "KSR Cranes AppUITests";
+			packageProductDependencies = (
+			);
+			productName = "KSR Cranes AppUITests";
+			productReference = 1B71EF652DD3102300731223 /* KSR Cranes AppUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		1B71EF462DD3102000731223 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1630;
+				LastUpgradeCheck = 1630;
+				TargetAttributes = {
+					1B71EF4D2DD3102000731223 = {
+						CreatedOnToolsVersion = 16.3;
+					};
+					1B71EF5A2DD3102300731223 = {
+						CreatedOnToolsVersion = 16.3;
+						TestTargetID = 1B71EF4D2DD3102000731223;
+					};
+					1B71EF642DD3102300731223 = {
+						CreatedOnToolsVersion = 16.3;
+						TestTargetID = 1B71EF4D2DD3102000731223;
+					};
+				};
+			};
+			buildConfigurationList = 1B71EF492DD3102000731223 /* Build configuration list for PBXProject "KSR Cranes App" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 1B71EF452DD3102000731223;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 1B71EF4F2DD3102000731223 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				1B71EF4D2DD3102000731223 /* KSR Cranes App */,
+				1B71EF5A2DD3102300731223 /* KSR Cranes AppTests */,
+				1B71EF642DD3102300731223 /* KSR Cranes AppUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		1B71EF4C2DD3102000731223 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		1B71EF592DD3102300731223 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		1B71EF632DD3102300731223 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		1B71EF4A2DD3102000731223 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1B71EFB32DD3182200731223 /* WorkHoursViewModel.swift in Sources */,
+				1B71EFB52DD319DF00731223 /* WorkHourEntry.swift in Sources */,
+				1B71EFAF2DD3160C00731223 /* SwiftUI View.swift in Sources */,
+				1B71EFAC2DD315C900731223 /* Color+Extensions.swift in Sources */,
+				1B71EFA72DD3145700731223 /* WorkerDashboardView.swift in Sources */,
+				1B71EFBB2DD31C1D00731223 /* WorkerDashboardViewModel.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		1B71EF572DD3102300731223 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		1B71EF612DD3102300731223 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		1B71EF5D2DD3102300731223 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 1B71EF4D2DD3102000731223 /* KSR Cranes App */;
+			targetProxy = 1B71EF5C2DD3102300731223 /* PBXContainerItemProxy */;
+		};
+		1B71EF672DD3102300731223 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 1B71EF4D2DD3102000731223 /* KSR Cranes App */;
+			targetProxy = 1B71EF662DD3102300731223 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		1B71EF6D2DD3102300731223 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = G53M447379;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.4;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		1B71EF6E2DD3102300731223 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = G53M447379;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.4;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		1B71EF702DD3102300731223 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = G53M447379;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "dk.KSR-Cranes-App";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		1B71EF712DD3102300731223 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = G53M447379;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "dk.KSR-Cranes-App";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		1B71EF732DD3102300731223 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = G53M447379;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.4;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "dk.KSR-Cranes-AppTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/KSR Cranes App.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/KSR Cranes App";
+			};
+			name = Debug;
+		};
+		1B71EF742DD3102300731223 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = G53M447379;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.4;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "dk.KSR-Cranes-AppTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/KSR Cranes App.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/KSR Cranes App";
+			};
+			name = Release;
+		};
+		1B71EF762DD3102300731223 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = G53M447379;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "dk.KSR-Cranes-AppUITests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = "KSR Cranes App";
+			};
+			name = Debug;
+		};
+		1B71EF772DD3102300731223 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = G53M447379;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "dk.KSR-Cranes-AppUITests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = "KSR Cranes App";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		1B71EF492DD3102000731223 /* Build configuration list for PBXProject "KSR Cranes App" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1B71EF6D2DD3102300731223 /* Debug */,
+				1B71EF6E2DD3102300731223 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		1B71EF6F2DD3102300731223 /* Build configuration list for PBXNativeTarget "KSR Cranes App" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1B71EF702DD3102300731223 /* Debug */,
+				1B71EF712DD3102300731223 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		1B71EF722DD3102300731223 /* Build configuration list for PBXNativeTarget "KSR Cranes AppTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1B71EF732DD3102300731223 /* Debug */,
+				1B71EF742DD3102300731223 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		1B71EF752DD3102300731223 /* Build configuration list for PBXNativeTarget "KSR Cranes AppUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1B71EF762DD3102300731223 /* Debug */,
+				1B71EF772DD3102300731223 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 1B71EF462DD3102000731223 /* Project object */;
+}
