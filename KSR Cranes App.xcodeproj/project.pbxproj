@@ -21,6 +21,10 @@
 		1B71EFCF2DD3355400731223 /* AuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B71EFCE2DD3355200731223 /* AuthService.swift */; };
 		1B71EFD12DD33C9E00731223 /* Configuration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B71EFD02DD33C9B00731223 /* Configuration.swift */; };
 		1B71EFE52DD35B8800731223 /* WorkHoursView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B71EFE42DD35B8600731223 /* WorkHoursView.swift */; };
+		1B71EFE82DD3617200731223 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B71EFE72DD3615F00731223 /* LoginView.swift */; };
+		1B71EFEB2DD3624500731223 /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B71EFEA2DD3624400731223 /* ProfileView.swift */; };
+		1B71EFED2DD3636000731223 /* LoginViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B71EFEC2DD3635F00731223 /* LoginViewModel.swift */; };
+		1B71EFEF2DD363F700731223 /* RoleBasedRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B71EFEE2DD363F600731223 /* RoleBasedRootView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -58,6 +62,10 @@
 		1B71EFCE2DD3355200731223 /* AuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthService.swift; sourceTree = "<group>"; };
 		1B71EFD02DD33C9B00731223 /* Configuration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Configuration.swift; sourceTree = "<group>"; };
 		1B71EFE42DD35B8600731223 /* WorkHoursView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkHoursView.swift; sourceTree = "<group>"; };
+		1B71EFE72DD3615F00731223 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
+		1B71EFEA2DD3624400731223 /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
+		1B71EFEC2DD3635F00731223 /* LoginViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginViewModel.swift; sourceTree = "<group>"; };
+		1B71EFEE2DD363F600731223 /* RoleBasedRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoleBasedRootView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -221,6 +229,8 @@
 		1B71EF972DD3127400731223 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				1B71EFE92DD3623D00731223 /* Profile */,
+				1B71EFE62DD3615100731223 /* Auth */,
 				1B71EFC52DD330DE00731223 /* WorkHours */,
 				1B71EFC02DD32A0000731223 /* Splash */,
 				1B71EFBF2DD3286C00731223 /* Navigation */,
@@ -331,6 +341,7 @@
 		1B71EFBF2DD3286C00731223 /* Navigation */ = {
 			isa = PBXGroup;
 			children = (
+				1B71EFEE2DD363F600731223 /* RoleBasedRootView.swift */,
 				1B71EFBD2DD325A700731223 /* MainTabView.swift */,
 			);
 			path = Navigation;
@@ -359,6 +370,23 @@
 			children = (
 			);
 			path = "New Group";
+			sourceTree = "<group>";
+		};
+		1B71EFE62DD3615100731223 /* Auth */ = {
+			isa = PBXGroup;
+			children = (
+				1B71EFEC2DD3635F00731223 /* LoginViewModel.swift */,
+				1B71EFE72DD3615F00731223 /* LoginView.swift */,
+			);
+			path = Auth;
+			sourceTree = "<group>";
+		};
+		1B71EFE92DD3623D00731223 /* Profile */ = {
+			isa = PBXGroup;
+			children = (
+				1B71EFEA2DD3624400731223 /* ProfileView.swift */,
+			);
+			path = Profile;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -513,11 +541,15 @@
 				1B71EFB52DD319DF00731223 /* WorkHourEntry.swift in Sources */,
 				1B71EFCD2DD3351E00731223 /* APIService.swift in Sources */,
 				1B71EFAC2DD315C900731223 /* Color+Extensions.swift in Sources */,
+				1B71EFEF2DD363F700731223 /* RoleBasedRootView.swift in Sources */,
+				1B71EFEB2DD3624500731223 /* ProfileView.swift in Sources */,
+				1B71EFE82DD3617200731223 /* LoginView.swift in Sources */,
 				1B71EFC22DD32A6500731223 /* SplashScreenView.swift in Sources */,
 				1B71EFA72DD3145700731223 /* WorkerDashboardView.swift in Sources */,
 				1B71EFCF2DD3355400731223 /* AuthService.swift in Sources */,
 				1B71EFE52DD35B8800731223 /* WorkHoursView.swift in Sources */,
 				1B71EFBB2DD31C1D00731223 /* WorkerDashboardViewModel.swift in Sources */,
+				1B71EFED2DD3636000731223 /* LoginViewModel.swift in Sources */,
 				1B71EFC42DD3307700731223 /* WeeklWorkEntryViewModel.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

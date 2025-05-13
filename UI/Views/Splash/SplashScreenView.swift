@@ -16,8 +16,15 @@ struct SplashScreenView: View {
     
     var body: some View {
         if isActive {
-            MainTabView()
-                .transition(.opacity)
+            // Check if user is logged in and direct to appropriate view
+            if AuthService.shared.isLoggedIn {
+                // Use the role-based router
+                RoleBasedRootView(userRole: AuthService.shared.getEmployeeRole() ?? "")
+                    .transition(.opacity)
+            } else {
+                LoginView()
+                    .transition(.opacity)
+            }
         } else {
             ZStack {
                 Color.ksrDarkGray

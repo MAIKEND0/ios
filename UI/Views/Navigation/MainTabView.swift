@@ -25,7 +25,7 @@ struct MainTabView: View {
                     Label("Projects", systemImage: "folder.fill")
                 }
 
-            Text("Profile View Coming Soon")
+            ProfileView()
                 .tabItem {
                     Label("Profile", systemImage: "person.fill")
                 }
