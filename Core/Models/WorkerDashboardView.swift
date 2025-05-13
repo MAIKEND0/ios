@@ -53,7 +53,7 @@ struct WorkerDashboardView: View {
                     
                     // Stats summary
                     HStack(spacing: 15) {
-                        statCard(title: "Hours This Week", value: "\(viewModel.workHoursViewModel.totalWeeklyHours, specifier: "%.1f")", icon: "clock.fill", color: Color.ksrYellow)
+                        statCard(title: "Hours This Week", value: String(format: "%.1f", viewModel.hoursViewModel.totalWeeklyHours), icon: "clock.fill", color: Color.ksrYellow)
                         statCard(title: "Active Projects", value: "2", icon: "folder.fill", color: Color.ksrDarkGray)
                     }
                     .padding(.horizontal)
@@ -75,17 +75,17 @@ struct WorkerDashboardView: View {
                         }
                         .padding(.horizontal)
                         
-                        if viewModel.workHoursViewModel.isLoading {
+                        if viewModel.hoursViewModel.isLoading {
                             ProgressView()
                                 .frame(maxWidth: .infinity, alignment: .center)
                                 .padding()
-                        } else if viewModel.workHoursViewModel.workHourEntries.isEmpty {
+                        } else if viewModel.hoursViewModel.workHourEntries.isEmpty {
                             Text("No entries found")
                                 .foregroundColor(Color.ksrMediumGray)
                                 .frame(maxWidth: .infinity, alignment: .center)
                                 .padding()
                         } else {
-                            ForEach(viewModel.workHoursViewModel.workHourEntries) { entry in
+                            ForEach(viewModel.hoursViewModel.workHourEntries) { entry in
                                 workHourCard(entry: entry)
                             }
                         }
@@ -358,15 +358,6 @@ struct WorkerDashboardView: View {
         case .rejected:
             return Color.red
         }
-    }
-}
-
-// Rozszerzenie ViewModel o metodę do pobierania ID zadania
-extension WorkerDashboardViewModel {
-    func getSelectedTaskId() -> String {
-        // Tutaj możesz zaimplementować logikę wybierania aktywnego projektu/zadania
-        // Na razie zwracamy domyślną wartość
-        return "task-123"
     }
 }
 

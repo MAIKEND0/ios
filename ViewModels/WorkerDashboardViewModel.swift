@@ -10,7 +10,7 @@ import Combine
 import SwiftUI
 
 class WorkerDashboardViewModel: ObservableObject {
-    @Published var workHoursViewModel = WorkHoursViewModel()
+    @Published var hoursViewModel = WorkHoursViewModel()
     @Published var announcements: [Announcement] = []
     @Published var isLoadingAnnouncements: Bool = false
     
@@ -23,7 +23,7 @@ class WorkerDashboardViewModel: ObservableObject {
     
     func loadData() {
         // Load work hours
-        workHoursViewModel.loadWorkHours()
+        hoursViewModel.loadWorkHours()
         
         // Load announcements
         loadAnnouncements()
@@ -101,7 +101,7 @@ class WorkerDashboardViewModel: ObservableObject {
     
     // Metoda do pobierania całkowitej liczby godzin w bieżącym tygodniu
     var weeklyHours: Double {
-        return workHoursViewModel.workHourEntries.reduce(0) { sum, entry in
+        return hoursViewModel.workHourEntries.reduce(0) { sum, entry in
             return sum + entry.totalHours
         }
     }

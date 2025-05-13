@@ -9,7 +9,6 @@
 /* Begin PBXBuildFile section */
 		1B71EFA72DD3145700731223 /* WorkerDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B71EFA42DD3132000731223 /* WorkerDashboardView.swift */; };
 		1B71EFAC2DD315C900731223 /* Color+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B71EFAB2DD315C200731223 /* Color+Extensions.swift */; };
-		1B71EFAF2DD3160C00731223 /* SwiftUI View.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B71EFAE2DD3160000731223 /* SwiftUI View.swift */; };
 		1B71EFB32DD3182200731223 /* WorkHoursViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B71EFB22DD3180700731223 /* WorkHoursViewModel.swift */; };
 		1B71EFB52DD319DF00731223 /* WorkHourEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B71EFB42DD319D300731223 /* WorkHourEntry.swift */; };
 		1B71EFBB2DD31C1D00731223 /* WorkerDashboardViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B71EFBA2DD31BFB00731223 /* WorkerDashboardViewModel.swift */; };
@@ -21,6 +20,7 @@
 		1B71EFCD2DD3351E00731223 /* APIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B71EFCC2DD3351B00731223 /* APIService.swift */; };
 		1B71EFCF2DD3355400731223 /* AuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B71EFCE2DD3355200731223 /* AuthService.swift */; };
 		1B71EFD12DD33C9E00731223 /* Configuration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B71EFD02DD33C9B00731223 /* Configuration.swift */; };
+		1B71EFE52DD35B8800731223 /* WorkHoursView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B71EFE42DD35B8600731223 /* WorkHoursView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -46,7 +46,6 @@
 		1B71EF652DD3102300731223 /* KSR Cranes AppUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "KSR Cranes AppUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		1B71EFA42DD3132000731223 /* WorkerDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkerDashboardView.swift; sourceTree = "<group>"; };
 		1B71EFAB2DD315C200731223 /* Color+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Extensions.swift"; sourceTree = "<group>"; };
-		1B71EFAE2DD3160000731223 /* SwiftUI View.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SwiftUI View.swift"; sourceTree = "<group>"; };
 		1B71EFB22DD3180700731223 /* WorkHoursViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkHoursViewModel.swift; sourceTree = "<group>"; };
 		1B71EFB42DD319D300731223 /* WorkHourEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkHourEntry.swift; sourceTree = "<group>"; };
 		1B71EFBA2DD31BFB00731223 /* WorkerDashboardViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkerDashboardViewModel.swift; sourceTree = "<group>"; };
@@ -58,6 +57,7 @@
 		1B71EFCC2DD3351B00731223 /* APIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIService.swift; sourceTree = "<group>"; };
 		1B71EFCE2DD3355200731223 /* AuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthService.swift; sourceTree = "<group>"; };
 		1B71EFD02DD33C9B00731223 /* Configuration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Configuration.swift; sourceTree = "<group>"; };
+		1B71EFE42DD35B8600731223 /* WorkHoursView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkHoursView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -224,7 +224,6 @@
 				1B71EFC52DD330DE00731223 /* WorkHours */,
 				1B71EFC02DD32A0000731223 /* Splash */,
 				1B71EFBF2DD3286C00731223 /* Navigation */,
-				1B71EFAE2DD3160000731223 /* SwiftUI View.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -348,9 +347,18 @@
 		1B71EFC52DD330DE00731223 /* WorkHours */ = {
 			isa = PBXGroup;
 			children = (
+				1B71EFE42DD35B8600731223 /* WorkHoursView.swift */,
+				1B71EFE12DD35AB500731223 /* New Group */,
 				1B71EFC62DD330E300731223 /* WeeklyWorkEntryForm.swift */,
 			);
 			path = WorkHours;
+			sourceTree = "<group>";
+		};
+		1B71EFE12DD35AB500731223 /* New Group */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = "New Group";
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -503,12 +511,12 @@
 				1B71EFB32DD3182200731223 /* WorkHoursViewModel.swift in Sources */,
 				1B71EFD12DD33C9E00731223 /* Configuration.swift in Sources */,
 				1B71EFB52DD319DF00731223 /* WorkHourEntry.swift in Sources */,
-				1B71EFAF2DD3160C00731223 /* SwiftUI View.swift in Sources */,
 				1B71EFCD2DD3351E00731223 /* APIService.swift in Sources */,
 				1B71EFAC2DD315C900731223 /* Color+Extensions.swift in Sources */,
 				1B71EFC22DD32A6500731223 /* SplashScreenView.swift in Sources */,
 				1B71EFA72DD3145700731223 /* WorkerDashboardView.swift in Sources */,
 				1B71EFCF2DD3355400731223 /* AuthService.swift in Sources */,
+				1B71EFE52DD35B8800731223 /* WorkHoursView.swift in Sources */,
 				1B71EFBB2DD31C1D00731223 /* WorkerDashboardViewModel.swift in Sources */,
 				1B71EFC42DD3307700731223 /* WeeklWorkEntryViewModel.swift in Sources */,
 			);

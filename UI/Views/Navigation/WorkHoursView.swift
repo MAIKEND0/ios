@@ -8,10 +8,12 @@
 import SwiftUI
 
 struct WorkHoursView: View {
-    @StateObject private var viewModel = WorkHoursViewModel()
-    // Możesz przekazać employeeId i initialDate z poprzedniego widoku,
-    // jeśli ten widok ma być bardziej generyczny.
-    // Na razie pobierzemy je tutaj.
+    @StateObject private var viewModel: WorkHoursViewModel
+    
+    // Dodajemy inicjalizator zgodny z tym w podglądzie
+    init(viewModel: WorkHoursViewModel = WorkHoursViewModel()) {
+        _viewModel = StateObject(wrappedValue: viewModel)
+    }
     
     // Zmienna określająca, czy dane zostały już załadowane po raz pierwszy
     @State private var initialDataLoaded = false
@@ -184,7 +186,6 @@ struct WorkHoursView_Previews: PreviewProvider {
         // Aby podgląd działał poprawnie, WorkHoursViewModel musi mieć dane.
         let mockViewModel = WorkHoursViewModel()
         // Możesz ręcznie załadować przykładowe dane do mockViewModel, jeśli jest taka potrzeba
-        // mockViewModel.loadWorkHours(for: "test-emp-id", weekStarting: Date())
         
         // Jeśli WorkHoursView ma być w NavigationView
         NavigationView {
@@ -192,11 +193,3 @@ struct WorkHoursView_Previews: PreviewProvider {
         }
     }
 }
-
-// Upewnij się, że masz zdefiniowane kolory (np. w Color+Extensions.swift)
-// extension Color {
-//     static let ksrMediumGray = Color(UIColor.systemGray2)
-//     static let ksrDarkGray = Color(UIColor.label)
-//     static let ksrYellow = Color.systemYellow
-//     static let ksrLightGray = Color(UIColor.systemGray6) // Przykład dla tła karty
-// }

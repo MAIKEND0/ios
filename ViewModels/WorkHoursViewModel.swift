@@ -1,10 +1,3 @@
-//
-//  WorkHoursViewModel.swift
-//  KSR Cranes App
-//
-//  Created by Maksymilian Marcinowski on 13/05/2025.
-//
-
 import Foundation
 import Combine
 import SwiftUI
@@ -12,6 +5,7 @@ import SwiftUI
 class WorkHoursViewModel: ObservableObject {
     @Published var workHourEntries: [WorkHourEntry] = []
     @Published var isLoading: Bool = false
+    @Published var errorMessage: String? = nil
     
     // Dodaj zestaw do przechowywania anulowanych subskrypcji
     private var cancellables = Set<AnyCancellable>()
@@ -40,6 +34,35 @@ class WorkHoursViewModel: ObservableObject {
         
         workHourEntries = [entry1, entry2]
         isLoading = false
+    }
+    
+    // Dodana nowa metoda do ładowania godzin pracy z API
+    func loadWorkHours(for employeeId: String, weekStarting: Date) {
+        isLoading = true
+        
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+        let mondayString = dateFormatter.string(from: weekStarting)
+        
+        // Najpierw próbujemy pobrać już zatwierdzone wpisy
+        APIService.shared.fetchWorkEntries(employeeId: employeeId, weekStartDate: mondayString)
+            .receive(on: DispatchQueue.main)
+            .sink { completion in
+                switch completion {
+                case .finished:
+                    break
+                case .failure(let error):
+                    print("Error fetching work entries: \(error)")
+                    // Wciąż ustawiamy isLoading na false w przypadku błędu
+                    self.isLoading = false
+                    self.errorMessage = "Błąd pobierania danych: \(error.localizedDescription)"
+                }
+            } receiveValue: { [weak self] entries in
+                guard let self = self else { return }
+                self.workHourEntries = entries
+                self.isLoading = false
+            }
+            .store(in: &cancellables)
     }
     
     // Metoda do pobierania całkowitej liczby godzin w bieżącym tygodniu

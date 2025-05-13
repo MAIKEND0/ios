@@ -29,9 +29,8 @@ class AuthService {
     private let session: URLSession
     
     private init() {
-        // Ładowanie konfiguracji baseURL
-        // Upewnij się, że masz jedną, poprawną definicję `Configuration` w projekcie
-        self.baseURL = Configuration.apiBaseURL
+        // Poprawiona ścieżka dostępu do baseURL
+        self.baseURL = Configuration.API.baseURL
         
         let config = URLSessionConfiguration.default
         config.timeoutIntervalForRequest = 30 // sekundy
