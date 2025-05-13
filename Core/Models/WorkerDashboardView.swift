@@ -1,7 +1,15 @@
+//
+//  WorkerDashboardView.swift
+//  KSR Cranes App
+//
+//  Created by Maksymilian Marcinowski on 13/05/2025.
+//
+
 import SwiftUI
 
 struct WorkerDashboardView: View {
     @StateObject private var viewModel = WorkerDashboardViewModel()
+    @State private var showWorkHoursForm = false
     
     var body: some View {
         NavigationView {
@@ -13,10 +21,19 @@ struct WorkerDashboardView: View {
                             Text("Welcome,")
                                 .font(.title3)
                                 .foregroundColor(Color.ksrMediumGray)
-                            Text("Operator")
-                                .font(.title)
-                                .fontWeight(.bold)
-                                .foregroundColor(Color.ksrDarkGray)
+                            
+                            // Pobierz nazwę użytkownika z AuthService jeśli jest dostępna
+                            if let userName = UserDefaults.standard.string(forKey: "employee_name") {
+                                Text(userName)
+                                    .font(.title)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(Color.ksrDarkGray)
+                            } else {
+                                Text("Operator")
+                                    .font(.title)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(Color.ksrDarkGray)
+                            }
                         }
                         Spacer()
                         
@@ -36,7 +53,7 @@ struct WorkerDashboardView: View {
                     
                     // Stats summary
                     HStack(spacing: 15) {
-                        statCard(title: "Hours This Week", value: "32", icon: "clock.fill", color: Color.ksrYellow)
+                        statCard(title: "Hours This Week", value: "\(viewModel.workHoursViewModel.totalWeeklyHours, specifier: "%.1f")", icon: "clock.fill", color: Color.ksrYellow)
                         statCard(title: "Active Projects", value: "2", icon: "folder.fill", color: Color.ksrDarkGray)
                     }
                     .padding(.horizontal)
@@ -50,7 +67,7 @@ struct WorkerDashboardView: View {
                             
                             Spacer()
                             
-                            NavigationLink(destination: Text("Work Hours List")) {
+                            NavigationLink(destination: WorkHoursView()) {
                                 Text("View All")
                                     .font(.caption)
                                     .foregroundColor(Color.ksrYellow)
@@ -74,7 +91,7 @@ struct WorkerDashboardView: View {
                         }
                         
                         Button(action: {
-                            // Add work hours action
+                            showWorkHoursForm = true
                         }) {
                             HStack {
                                 Image(systemName: "plus.circle.fill")
@@ -139,7 +156,35 @@ struct WorkerDashboardView: View {
             .onAppear {
                 viewModel.loadData()
             }
+            .sheet(isPresented: $showWorkHoursForm) {
+                if let employeeId = AuthService.shared.getEmployeeId() {
+                    WeeklyWorkEntryForm(
+                        employeeId: employeeId,
+                        taskId: viewModel.getSelectedTaskId(), // Pobiera aktywne zadanie
+                        selectedMonday: getMondayOfCurrentWeek()
+                    )
+                } else {
+                    // Fallback dla przypadku gdy nie ma zalogowanego użytkownika
+                    WeeklyWorkEntryForm(
+                        employeeId: "emp-456", // Domyślne ID
+                        taskId: "task-123",    // Domyślne ID zadania
+                        selectedMonday: getMondayOfCurrentWeek()
+                    )
+                }
+            }
         }
+    }
+    
+    // Helper function do pobierania poniedziałku bieżącego tygodnia
+    func getMondayOfCurrentWeek() -> Date {
+        let calendar = Calendar.current
+        let today = Date()
+        let weekday = calendar.component(.weekday, from: today)
+        
+        // Sunday=1, Monday=2, ..., Saturday=7
+        let daysToSubtract = (weekday + 6) % 7
+        
+        return calendar.date(byAdding: .day, value: -daysToSubtract, to: today) ?? today
     }
     
     // Helper views
@@ -190,6 +235,29 @@ struct WorkerDashboardView: View {
                     .font(.caption)
                     .foregroundColor(Color.ksrMediumGray)
                     .lineLimit(2)
+            }
+            
+            // Status indikator
+            HStack {
+                Spacer()
+                
+                if entry.isDraft {
+                    Text("Draft")
+                        .font(.caption)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.orange.opacity(0.2))
+                        .foregroundColor(.orange)
+                        .cornerRadius(5)
+                } else {
+                    Text(entry.status.rawValue.capitalized)
+                        .font(.caption)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(statusColor(entry.status).opacity(0.2))
+                        .foregroundColor(statusColor(entry.status))
+                        .cornerRadius(5)
+                }
             }
         }
         .padding()
@@ -246,7 +314,9 @@ struct WorkerDashboardView: View {
         return formatter.string(from: date)
     }
     
-    func formatTime(_ date: Date) -> String {
+    func formatTime(_ date: Date?) -> String {
+        guard let date = date else { return "-" }
+        
         let formatter = DateFormatter()
         formatter.dateStyle = .none
         formatter.timeStyle = .short
@@ -273,6 +343,30 @@ struct WorkerDashboardView: View {
         case .high:
             return Color.red
         }
+    }
+    
+    func statusColor(_ status: EntryStatus) -> Color {
+        switch status {
+        case .draft:
+            return Color.orange
+        case .pending:
+            return Color.blue
+        case .submitted:
+            return Color.purple
+        case .confirmed:
+            return Color.green
+        case .rejected:
+            return Color.red
+        }
+    }
+}
+
+// Rozszerzenie ViewModel o metodę do pobierania ID zadania
+extension WorkerDashboardViewModel {
+    func getSelectedTaskId() -> String {
+        // Tutaj możesz zaimplementować logikę wybierania aktywnego projektu/zadania
+        // Na razie zwracamy domyślną wartość
+        return "task-123"
     }
 }
 
