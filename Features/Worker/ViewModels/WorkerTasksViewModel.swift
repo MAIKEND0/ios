@@ -11,7 +11,8 @@ final class WorkerTasksViewModel: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
 
     func loadTasks() {
-        guard let employeeId = AuthService.shared.getEmployeeId() else {
+        // Check if user is logged in - but don't store the employeeId variable since we don't use it
+        if AuthService.shared.getEmployeeId() == nil {
             error = "Brak zalogowanego pracownika"
             tasks = []
             return

@@ -28,40 +28,14 @@ struct WeeklyWorkEntryForm: View {
         NavigationStack {
             List {
                 ForEach(Array(vm.weekData.enumerated()), id: \.element.date) { index, entry in
-                    Section(header: Text(DateFormatter.dayHeader.string(from: entry.date))) {
-                        // Picker godzin rozpoczęcia
-                        DatePicker(
-                            "Początek",
-                            selection: Binding(
-                                get: { entry.startTime ?? entry.date },
-                                set: { vm.updateStartTime(at: index, to: $0) }
-                            ),
-                            displayedComponents: .hourAndMinute
-                        )
-
-                        // Picker godzin zakończenia
-                        DatePicker(
-                            "Koniec",
-                            selection: Binding(
-                                get: { entry.endTime ?? entry.date },
-                                set: { vm.updateEndTime(at: index, to: $0) }
-                            ),
-                            displayedComponents: .hourAndMinute
-                        )
-
-                        // Pole na opis
-                        TextField(
-                            "Opis (opcjonalnie)",
-                            text: Binding(
-                                get: { entry.description ?? "" },
-                                set: { vm.updateDescription(at: index, to: $0) }
-                            )
-                        )
-                        .textFieldStyle(.roundedBorder)
+                    Section {
+                        dayEntryView(for: entry, at: index)
+                    } header: {
+                        Text(formatDate(entry.date))
                     }
                 }
             }
-            .navigationTitle("Tydzień od \(DateFormatter.weekHeader.string(from: vm.selectedMonday))")
+            .navigationTitle("Tydzień od \(formatWeek(vm.selectedMonday))")
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Zapisz") {
@@ -81,34 +55,109 @@ struct WeeklyWorkEntryForm: View {
             }
             .overlay {
                 if vm.isLoading {
-                    ZStack {
-                        Color(.systemBackground)
-                            .opacity(0.5)
-                            .ignoresSafeArea()
-                        ProgressView("Ładowanie…")
-                            .padding()
-                            .background(RoundedRectangle(cornerRadius: 10).fill(Color(.systemBackground)))
-                    }
+                    loadingOverlay
                 }
             }
+            #if DEBUG
+            .withAuthDebugging() // Dodaj przycisk debugowania w DEBUG
+            #endif
         }
     }
-}
-
-private extension DateFormatter {
-    /// Nagłówek dla pojedynczego dnia
-    static let dayHeader: DateFormatter = {
-        let df = DateFormatter()
-        df.dateFormat = "EEEE, dd.MM.yyyy"
-        return df
-    }()
     
-    /// Nagłówek tygodnia (już masz w innym miejscu, tu tylko dla pewności)
-    static let weekHeader: DateFormatter = {
-        let df = DateFormatter()
-        df.dateFormat = "'Tydz.' W (dd.MM.yyyy)"
-        return df
-    }()
+    // MARK: - Helper Views
+    
+    private func dayEntryView(for entry: EditableWorkEntry, at index: Int) -> some View {
+        VStack(spacing: 12) {
+            startTimePicker(for: entry, at: index)
+            endTimePicker(for: entry, at: index)
+            notesField(for: entry, at: index)
+        }
+    }
+    
+    private func startTimePicker(for entry: EditableWorkEntry, at index: Int) -> some View {
+        DatePicker(
+            "Początek",
+            selection: startTimeBinding(for: index, defaultDate: entry.date),
+            displayedComponents: .hourAndMinute
+        )
+    }
+    
+    private func endTimePicker(for entry: EditableWorkEntry, at index: Int) -> some View {
+        DatePicker(
+            "Koniec",
+            selection: endTimeBinding(for: index, defaultDate: entry.date),
+            displayedComponents: .hourAndMinute
+        )
+    }
+    
+    private func notesField(for entry: EditableWorkEntry, at index: Int) -> some View {
+        TextField(
+            "Opis (opcjonalnie)",
+            text: notesBinding(for: index)
+        )
+        .textFieldStyle(.roundedBorder)
+    }
+    
+    private var loadingOverlay: some View {
+        ZStack {
+            Color(.systemBackground)
+                .opacity(0.5)
+                .ignoresSafeArea()
+            
+            ProgressView("Ładowanie…")
+                .padding()
+                .background(
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(Color(.systemBackground))
+                )
+        }
+    }
+    
+    // MARK: - Bindings
+    
+    private func startTimeBinding(for index: Int, defaultDate: Date) -> Binding<Date> {
+        Binding(
+            get: {
+                guard index < vm.weekData.count else { return defaultDate }
+                return vm.weekData[index].startTime ?? defaultDate
+            },
+            set: { vm.updateStartTime(at: index, to: $0) }
+        )
+    }
+    
+    private func endTimeBinding(for index: Int, defaultDate: Date) -> Binding<Date> {
+        Binding(
+            get: {
+                guard index < vm.weekData.count else { return defaultDate }
+                return vm.weekData[index].endTime ?? defaultDate
+            },
+            set: { vm.updateEndTime(at: index, to: $0) }
+        )
+    }
+    
+    private func notesBinding(for index: Int) -> Binding<String> {
+        Binding(
+            get: {
+                guard index < vm.weekData.count else { return "" }
+                return vm.weekData[index].notes
+            },
+            set: { vm.updateDescription(at: index, to: $0) }
+        )
+    }
+    
+    // MARK: - Formatting
+    
+    private func formatDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "EEEE, dd.MM.yyyy"
+        return formatter.string(from: date)
+    }
+    
+    private func formatWeek(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "'Tydz.' W (dd.MM.yyyy)"
+        return formatter.string(from: date)
+    }
 }
 
 struct WeeklyWorkEntryForm_Previews: PreviewProvider {

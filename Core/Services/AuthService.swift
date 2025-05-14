@@ -61,7 +61,8 @@ final class AuthService {
         }
 
         #if DEBUG
-        print("[AuthService] → POST \(urlString)\nBody: \(String(data: req.httpBody!, encoding: .utf8)!)")
+        print("[AuthService] → POST \(urlString)")
+        print("[AuthService] → Login attempt for: \(email)")
         #endif
 
         return session.dataTaskPublisher(for: req)
@@ -72,6 +73,9 @@ final class AuthService {
                 }
                 #if DEBUG
                 print("[AuthService] ← Status: \(http.statusCode)")
+                if let respStr = String(data: data, encoding: .utf8) {
+                    print("[AuthService] ← Response: \(respStr)")
+                }
                 #endif
 
                 if (200...299).contains(http.statusCode) {
@@ -88,8 +92,15 @@ final class AuthService {
             .decode(type: AuthResponse.self, decoder: JSONDecoder())
             .mapError { ($0 as? APIError) ?? .decodingError($0) }
             .handleEvents(receiveOutput: { [weak self] auth in
+                // Store token as-is, without adding Bearer prefix
+                // The APIService will add the Bearer prefix when needed
                 APIService.shared.authToken = auth.token
                 self?.save(auth: auth)
+                
+                #if DEBUG
+                print("[AuthService] ✅ Login successful for: \(email)")
+                print("[AuthService] ✅ Token received: \(String(auth.token.prefix(15)))...")
+                #endif
             }, receiveCompletion: { completion in
                 if case let .failure(error) = completion {
                     #if DEBUG
@@ -103,14 +114,34 @@ final class AuthService {
     // MARK: – Persistence
 
     private func save(auth: AuthResponse) {
-        _ = KeychainService.shared.storeToken(auth.token)
+        // Store token as-is in keychain
+        let storeResult = KeychainService.shared.storeToken(auth.token)
+        
+        #if DEBUG
+        if storeResult {
+            print("[AuthService] ✅ Token stored in keychain")
+        } else {
+            print("[AuthService] ❌ Failed to store token in keychain")
+        }
+        #endif
+        
         UserDefaults.standard.set(auth.employeeId,   forKey: Configuration.StorageKeys.employeeId)
         UserDefaults.standard.set(auth.name,         forKey: Configuration.StorageKeys.employeeName)
         UserDefaults.standard.set(auth.role,         forKey: Configuration.StorageKeys.employeeRole)
     }
 
     func getSavedToken() -> String? {
-        KeychainService.shared.getToken()
+        let token = KeychainService.shared.getToken()
+        
+        #if DEBUG
+        if let tokenValue = token {
+            print("[AuthService] ✅ Token retrieved from keychain: \(String(tokenValue.prefix(10)))...")
+        } else {
+            print("[AuthService] ⚠️ No token found in keychain")
+        }
+        #endif
+        
+        return token
     }
 
     var isLoggedIn: Bool {
@@ -122,8 +153,21 @@ final class AuthService {
     }
 
     func logout() {
+        #if DEBUG
+        print("[AuthService] Logging out user")
+        #endif
+        
         APIService.shared.authToken = nil
-        _ = KeychainService.shared.deleteToken()
+        let deleteResult = KeychainService.shared.deleteToken()
+        
+        #if DEBUG
+        if deleteResult {
+            print("[AuthService] ✅ Token deleted from keychain")
+        } else {
+            print("[AuthService] ⚠️ No token to delete or failed to delete")
+        }
+        #endif
+        
         UserDefaults.standard.removeObject(forKey: Configuration.StorageKeys.employeeId)
         UserDefaults.standard.removeObject(forKey: Configuration.StorageKeys.employeeName)
         UserDefaults.standard.removeObject(forKey: Configuration.StorageKeys.employeeRole)
@@ -135,12 +179,23 @@ final class AuthService {
     func getEmployeeRole() -> String? {
         UserDefaults.standard.string(forKey: Configuration.StorageKeys.employeeRole)
     }
+    
     func getEmployeeId() -> String? {
         UserDefaults.standard.string(forKey: Configuration.StorageKeys.employeeId)
     }
+    
     func getEmployeeName() -> String? {
         UserDefaults.standard.string(forKey: Configuration.StorageKeys.employeeName)
     }
+    
+    // MARK: - Debug
+    
+    #if DEBUG
+    /// For debugging: tests the token by making a simple API call
+    func testToken() -> AnyPublisher<String, APIService.APIError> {
+        return APIService.shared.testConnection()
+    }
+    #endif
 }
 
 // MARK: – Notification.Name

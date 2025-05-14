@@ -35,6 +35,11 @@
 		1B71F0382DD4B29A00731223 /* WorkerDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B71F0362DD4AF7200731223 /* WorkerDashboardView.swift */; };
 		1B71F03A2DD4B53C00731223 /* WorkerDashboardViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B71F0392DD4B53700731223 /* WorkerDashboardViewModel.swift */; };
 		1B71F03C2DD4BA2F00731223 /* WeeklyWorkEntryForm.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B71F03B2DD4BA2900731223 /* WeeklyWorkEntryForm.swift */; };
+		1B71F03E2DD4BBC400731223 /* Calendar+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B71F03D2DD4BBC300731223 /* Calendar+Extensions.swift */; };
+		1B71F0402DD4BBFB00731223 /* WorkHourEntry+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B71F03F2DD4BBF900731223 /* WorkHourEntry+Extensions.swift */; };
+		1B71F0422DD4BE9200731223 /* AuthInterceptor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B71F0412DD4BE9100731223 /* AuthInterceptor.swift */; };
+		1B71F0452DD4C41400731223 /* AuthDebugger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B71F0442DD4C40B00731223 /* AuthDebugger.swift */; };
+		1B71F0482DD4C44900731223 /* AuthenticationHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B71F0472DD4C43D00731223 /* AuthenticationHandler.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -86,6 +91,11 @@
 		1B71F0362DD4AF7200731223 /* WorkerDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkerDashboardView.swift; sourceTree = "<group>"; };
 		1B71F0392DD4B53700731223 /* WorkerDashboardViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkerDashboardViewModel.swift; sourceTree = "<group>"; };
 		1B71F03B2DD4BA2900731223 /* WeeklyWorkEntryForm.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyWorkEntryForm.swift; sourceTree = "<group>"; };
+		1B71F03D2DD4BBC300731223 /* Calendar+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Calendar+Extensions.swift"; sourceTree = "<group>"; };
+		1B71F03F2DD4BBF900731223 /* WorkHourEntry+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "WorkHourEntry+Extensions.swift"; sourceTree = "<group>"; };
+		1B71F0412DD4BE9100731223 /* AuthInterceptor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthInterceptor.swift; sourceTree = "<group>"; };
+		1B71F0442DD4C40B00731223 /* AuthDebugger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthDebugger.swift; sourceTree = "<group>"; };
+		1B71F0472DD4C43D00731223 /* AuthenticationHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthenticationHandler.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -134,6 +144,7 @@
 		1B71EF452DD3102000731223 = {
 			isa = PBXGroup;
 			children = (
+				1B71F0432DD4C3C600731223 /* Debug */,
 				1B71F0332DD4A4D900731223 /* Utils */,
 				1B71EFB02DD3170F00731223 /* ViewModels */,
 				1B71EFAA2DD315B000731223 /* Extensions */,
@@ -225,6 +236,8 @@
 		1B71EF942DD3126E00731223 /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				1B71F0472DD4C43D00731223 /* AuthenticationHandler.swift */,
+				1B71F0412DD4BE9100731223 /* AuthInterceptor.swift */,
 				1B71EFF22DD3A06300731223 /* APIError.swift */,
 				1B71EFF02DD371D500731223 /* KeychainService.swift */,
 				1B71EFCE2DD3355200731223 /* AuthService.swift */,
@@ -321,6 +334,7 @@
 		1B71EFA02DD3128600731223 /* Worker */ = {
 			isa = PBXGroup;
 			children = (
+				1B71F03F2DD4BBF900731223 /* WorkHourEntry+Extensions.swift */,
 				1B71F03B2DD4BA2900731223 /* WeeklyWorkEntryForm.swift */,
 				1B71F0302DD4A4A600731223 /* ViewModels */,
 				1B71F02E2DD4A48F00731223 /* WorkHourEntry.swift */,
@@ -430,9 +444,18 @@
 		1B71F0332DD4A4D900731223 /* Utils */ = {
 			isa = PBXGroup;
 			children = (
+				1B71F03D2DD4BBC300731223 /* Calendar+Extensions.swift */,
 				1B71F0342DD4A4E000731223 /* DateFormatter+ISO.swift */,
 			);
 			path = Utils;
+			sourceTree = "<group>";
+		};
+		1B71F0432DD4C3C600731223 /* Debug */ = {
+			isa = PBXGroup;
+			children = (
+				1B71F0442DD4C40B00731223 /* AuthDebugger.swift */,
+			);
+			path = Debug;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -586,7 +609,9 @@
 				1B71F0322DD4A4BB00731223 /* WorkHoursViewModel.swift in Sources */,
 				1B71F01E2DD496FF00731223 /* WorkerTasksViewModel.swift in Sources */,
 				1B71EFCD2DD3351E00731223 /* APIService.swift in Sources */,
+				1B71F0402DD4BBFB00731223 /* WorkHourEntry+Extensions.swift in Sources */,
 				1B71EFAC2DD315C900731223 /* Color+Extensions.swift in Sources */,
+				1B71F0422DD4BE9200731223 /* AuthInterceptor.swift in Sources */,
 				1B71F03C2DD4BA2F00731223 /* WeeklyWorkEntryForm.swift in Sources */,
 				1B71EFEF2DD363F700731223 /* RoleBasedRootView.swift in Sources */,
 				1B71F00F2DD470FA00731223 /* SplashLoginContainerView.swift in Sources */,
@@ -604,7 +629,10 @@
 				1B71F00D2DD46AEC00731223 /* UIApplication+Extensions.swift in Sources */,
 				1B71EFED2DD3636000731223 /* LoginViewModel.swift in Sources */,
 				1B71F0142DD494F400731223 /* WorkerTasksView.swift in Sources */,
+				1B71F0482DD4C44900731223 /* AuthenticationHandler.swift in Sources */,
 				1B71F0382DD4B29A00731223 /* WorkerDashboardView.swift in Sources */,
+				1B71F0452DD4C41400731223 /* AuthDebugger.swift in Sources */,
+				1B71F03E2DD4BBC400731223 /* Calendar+Extensions.swift in Sources */,
 				1B71EFC42DD3307700731223 /* WeeklyWorkEntryViewModel.swift in Sources */,
 				1B71EFF32DD3A06800731223 /* APIError.swift in Sources */,
 			);

@@ -11,14 +11,76 @@ final class APIService {
     private let baseURL: String
     private let session: URLSession
     var authToken: String?
+    
+    enum APIError: Error, LocalizedError {
+        case invalidURL
+        case invalidResponse
+        case networkError(Error)
+        case decodingError(Error)
+        case serverError(Int, String)
+        case unknown
+        
+        var errorDescription: String? {
+            switch self {
+            case .invalidURL:           return "Niepoprawny adres URL"
+            case .invalidResponse:      return "Niepoprawna odpowiedź serwera"
+            case .networkError(let e):  return "Błąd sieci: \(e.localizedDescription)"
+            case .decodingError(let e): return "Błąd dekodowania: \(e.localizedDescription)"
+            case .serverError(let c, let m): return "Błąd serwera (\(c)): \(m)"
+            case .unknown:              return "Nieznany błąd"
+            }
+        }
+    }
 
     private init() {
         self.baseURL = Configuration.API.baseURL
         let config = URLSessionConfiguration.default
         config.timeoutIntervalForRequest = 30
         session = URLSession(configuration: config)
+        
+        // Załaduj token z keychain przy inicjalizacji
+        refreshTokenFromKeychain()
+    }
+    
+    // MARK: - Token Management
+    
+    /// Odświeża token z keychain
+    func refreshTokenFromKeychain() {
         if let token = KeychainService.shared.getToken() {
-            authToken = token
+            self.authToken = token
+            #if DEBUG
+            print("[APIService] Token załadowany z keychain")
+            #endif
+        }
+    }
+    
+    /// Poprawnie formatuje i dodaje token do żądania
+    private func applyAuthToken(to request: inout URLRequest) {
+        if let token = authToken, !token.isEmpty {
+            // Upewnij się, że token ma prefix "Bearer " jakiego oczekuje backend
+            let tokenValue = token.hasPrefix("Bearer ") ? token : "Bearer \(token)"
+            request.setValue(tokenValue, forHTTPHeaderField: "Authorization")
+            
+            #if DEBUG
+            print("[APIService] Dodano token do żądania: \(request.url?.absoluteString ?? "")")
+            #endif
+        } else {
+            // Próbuj pobrać token z keychain
+            refreshTokenFromKeychain()
+            
+            // Spróbuj ponownie z odświeżonym tokenem
+            if let token = authToken, !token.isEmpty {
+                let tokenValue = token.hasPrefix("Bearer ") ? token : "Bearer \(token)"
+                request.setValue(tokenValue, forHTTPHeaderField: "Authorization")
+                
+                #if DEBUG
+                print("[APIService] Dodano odświeżony token do żądania")
+                #endif
+            } else {
+                #if DEBUG
+                print("[APIService] ⚠️ Brak dostępnego tokenu dla żądania: \(request.url?.absoluteString ?? "")")
+                #endif
+            }
         }
     }
 
@@ -32,36 +94,64 @@ final class APIService {
         guard let url = URL(string: baseURL + endpoint) else {
             return Fail(error: APIError.invalidURL).eraseToAnyPublisher()
         }
+        
         var request = URLRequest(url: url)
         request.httpMethod = method
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-        if let token = authToken {
-            request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        }
+        
+        // Dodaj token z odpowiednią obsługą błędów
+        applyAuthToken(to: &request)
+        
         if method != "GET", let body = body {
             do {
                 let encoder = JSONEncoder()
                 encoder.dateEncodingStrategy = .iso8601
                 request.httpBody = try encoder.encode(body)
+                
+                #if DEBUG
+                if let jsonStr = String(data: request.httpBody!, encoding: .utf8) {
+                    print("[APIService] Request body: \(jsonStr)")
+                }
+                #endif
             } catch {
                 return Fail(error: APIError.decodingError(error)).eraseToAnyPublisher()
             }
         }
+        
         #if DEBUG
         print("[APIService] \(method) \(url)")
         #endif
+        
         return session.dataTaskPublisher(for: request)
             .mapError { APIError.networkError($0) }
             .flatMap { data, resp -> AnyPublisher<Data, APIError> in
                 guard let http = resp as? HTTPURLResponse else {
                     return Fail(error: APIError.invalidResponse).eraseToAnyPublisher()
                 }
+                
                 #if DEBUG
                 print("[APIService] Status: \(http.statusCode)")
+                if let responseStr = String(data: data, encoding: .utf8) {
+                    print("[APIService] Response: \(responseStr.prefix(200))")
+                }
                 #endif
+                
                 if (200...299).contains(http.statusCode) {
                     return Just(data)
                         .setFailureType(to: APIError.self)
+                        .eraseToAnyPublisher()
+                } else if http.statusCode == 401 {
+                    // Specjalna obsługa błędu 401 Unauthorized - token wygasł
+                    #if DEBUG
+                    print("[APIService] ⚠️ 401 Unauthorized - token może być wygasły")
+                    #endif
+                    
+                    // Powiadom o błędzie autoryzacji
+                    DispatchQueue.main.async {
+                        NotificationCenter.default.post(name: .authenticationFailure, object: nil)
+                    }
+                    
+                    return Fail(error: APIError.serverError(401, "Authentication expired. Please log in again."))
                         .eraseToAnyPublisher()
                 } else {
                     let raw = String(data: data, encoding: .utf8) ?? ""
@@ -124,6 +214,13 @@ extension APIService {
             .mapError { ($0 as? APIError) ?? .decodingError($0) }
             .eraseToAnyPublisher()
     }
+    
+    /// Testuje połączenie z API
+    func testConnection() -> AnyPublisher<String, APIError> {
+        makeRequest(endpoint: "/api/app/tasks", method: "GET", body: Optional<String>.none)
+            .map { _ in "Connection successful" }
+            .eraseToAnyPublisher()
+    }
 }
 
 // MARK: – Modele dla iOS‐owych endpointów
@@ -158,7 +255,7 @@ extension APIService {
         let pause_minutes: Int?
         let status: String?
         let is_draft: Bool?
-        let tasks: Task?   // JSON pole “Tasks”
+        let tasks: Task?   // JSON pole "Tasks"
 
         private enum CodingKeys: String, CodingKey {
             case entry_id, employee_id, task_id, work_date,
@@ -166,4 +263,9 @@ extension APIService {
                  status, is_draft, tasks = "Tasks"
         }
     }
+}
+
+// MARK: - Authentication Notification
+extension Notification.Name {
+    static let authenticationFailure = Notification.Name("authenticationFailure")
 }
