@@ -11,9 +11,9 @@ struct Configuration {
     // API Configuration
     struct API {
         #if DEBUG
-        static let baseURL = "https://api-dev.ksrcranes.dk/v1"
+        static let baseURL = "https://ksrcranes.dk"
         #else
-        static let baseURL = "https://api.ksrcranes.dk/v1"
+        static let baseURL = "https://api.ksrcranes.dk"
         #endif
     }
     

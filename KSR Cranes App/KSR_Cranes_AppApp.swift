@@ -11,7 +11,8 @@ import SwiftUI
 struct KSR_Cranes_AppApp: App {
     var body: some Scene {
         WindowGroup {
-            SplashScreenView()
+           
+          SplashLoginContainerView()
         }
     }
 }

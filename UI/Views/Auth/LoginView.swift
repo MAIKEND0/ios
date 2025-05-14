@@ -10,136 +10,128 @@ import Combine
 
 struct LoginView: View {
     @StateObject private var viewModel = LoginViewModel()
-    
+
     var body: some View {
         NavigationView {
             ZStack {
-                // Background
-                Color.ksrLightGray.ignoresSafeArea()
-                
-                VStack {
-                    // Logo and Header
-                    VStack(spacing: 20) {
-                        // Logo
-                        ZStack {
-                            Rectangle()
-                                .fill(Color.ksrYellow)
-                                .frame(width: 120, height: 120)
-                                .cornerRadius(16)
-                            Text("KSR")
-                                .font(.system(size: 40, weight: .bold))
-                                .foregroundColor(.black)
+                // 1) Tło ekranowe
+                Color.ksrDarkGray
+                    .ignoresSafeArea()
+
+                // 2) ScrollView z logo i formularzem
+                ScrollView {
+                    VStack(spacing: 32) {
+                        // Logo + nagłówki
+                        VStack(spacing: 16) {
+                            Image("KSRLogo")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 100, height: 100)
+                                .shadow(color: .black.opacity(0.3), radius: 8, x: 0, y: 4)
+
+                            Text("KSR CRANES")
+                                .font(.largeTitle).bold()
+                                .foregroundColor(.white)
+
+                            Text("Employee Portal")
+                                .font(.subheadline)
+                                .foregroundColor(.white.opacity(0.7))
                         }
                         .padding(.top, 60)
-                        
-                        // App name
-                        Text("KSR CRANES")
-                            .font(.title)
-                            .fontWeight(.bold)
-                            .foregroundColor(Color.ksrDarkGray)
-                        
-                        // Subtitle
-                        Text("Employee Portal")
-                            .font(.headline)
-                            .foregroundColor(Color.ksrMediumGray)
-                            .padding(.bottom, 40)
-                    }
-                    
-                    // Login Form
-                    VStack(spacing: 20) {
-                        // Email field
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Email")
-                                .font(.subheadline)
-                                .foregroundColor(Color.ksrDarkGray)
-                            
-                            TextField("", text: $viewModel.email)
-                                .keyboardType(.emailAddress)
-                                .autocapitalization(.none)
-                                .disableAutocorrection(true)
-                                .padding()
-                                .background(Color.white)
-                                .cornerRadius(10)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 10)
-                                        .stroke(Color.ksrMediumGray.opacity(0.3), lineWidth: 1)
-                                )
-                        }
-                        
-                        // Password field
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Password")
-                                .font(.subheadline)
-                                .foregroundColor(Color.ksrDarkGray)
-                            
-                            SecureField("", text: $viewModel.password)
-                                .padding()
-                                .background(Color.white)
-                                .cornerRadius(10)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 10)
-                                        .stroke(Color.ksrMediumGray.opacity(0.3), lineWidth: 1)
-                                )
-                        }
-                        
-                        // Error message (if any)
-                        if !viewModel.errorMessage.isEmpty {
-                            Text(viewModel.errorMessage)
-                                .font(.caption)
-                                .foregroundColor(.red)
-                                .padding(.top, 5)
-                        }
-                        
-                        // Login button
-                        Button(action: {
-                            viewModel.login()
-                        }) {
-                            if viewModel.isLoading {
-                                ProgressView()
-                                    .progressViewStyle(CircularProgressViewStyle(tint: .black))
-                                    .frame(maxWidth: .infinity)
+
+                        // Formularz logowania
+                        VStack(spacing: 20) {
+                            // Email
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Email")
+                                    .font(.caption).bold()
+                                    .foregroundColor(.white.opacity(0.8))
+
+                                TextField("Wpisz swój email", text: $viewModel.email)
+                                    .textContentType(.username)
+                                    .keyboardType(.emailAddress)
+                                    .autocapitalization(.none)
+                                    .disableAutocorrection(true)
                                     .padding()
-                                    .background(Color.ksrYellow)
-                                    .cornerRadius(10)
-                            } else {
-                                Text("Login")
-                                    .font(.headline)
+                                    .background(Color.ksrLightGray)
+                                    .cornerRadius(8)
                                     .foregroundColor(.black)
-                                    .frame(maxWidth: .infinity)
-                                    .padding()
-                                    .background(Color.ksrYellow)
-                                    .cornerRadius(10)
                             }
+
+                            // Hasło
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Hasło")
+                                    .font(.caption).bold()
+                                    .foregroundColor(.white.opacity(0.8))
+
+                                SecureField("Wpisz swoje hasło", text: $viewModel.password)
+                                    .textContentType(.password)
+                                    .padding()
+                                    .background(Color.ksrLightGray)
+                                    .cornerRadius(8)
+                                    .foregroundColor(.black)
+                            }
+
+                            // Komunikat o błędzie
+                            if !viewModel.errorMessage.isEmpty {
+                                Text(viewModel.errorMessage)
+                                    .font(.caption)
+                                    .foregroundColor(.red)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+
+                            // Przycisk logowania
+                            Button(action: { viewModel.login() }) {
+                                HStack {
+                                    Spacer()
+                                    if viewModel.isLoading {
+                                        ProgressView()
+                                            .progressViewStyle(CircularProgressViewStyle(tint: .black))
+                                    } else {
+                                        Text("Zaloguj się")
+                                            .font(.headline)
+                                            .foregroundColor(.black)
+                                    }
+                                    Spacer()
+                                }
+                                .padding()
+                                .background(Color.ksrYellow)
+                                .cornerRadius(8)
+                            }
+                            .disabled(viewModel.isLoading)
+
+                            // Zapomniałeś hasła?
+                            Button("Zapomniałeś hasła?") {
+                                viewModel.forgotPassword()
+                            }
+                            .font(.footnote)
+                            .foregroundColor(.white.opacity(0.7))
+                            .padding(.top, 4)
                         }
-                        .disabled(viewModel.isLoading)
-                        .padding(.top, 10)
-                        
-                        // Forgot password button
-                        Button(action: {
-                            // Handle forgot password
-                            viewModel.forgotPassword()
-                        }) {
-                            Text("Forgot Password?")
-                                .font(.subheadline)
-                                .foregroundColor(Color.ksrMediumGray)
-                        }
-                        .padding(.top, 5)
+                        .padding(.horizontal, 24)
+
+                        Spacer(minLength: 20)
+
+                        // Wersja aplikacji
+                        Text("v1.0.0")
+                            .font(.caption2)
+                            .foregroundColor(.white.opacity(0.5))
+                            .padding(.bottom, 16)
                     }
-                    .padding(.horizontal, 30)
-                    
-                    Spacer()
-                    
-                    // Version info
-                    Text("v1.0.0")
-                        .font(.caption)
-                        .foregroundColor(Color.ksrMediumGray)
-                        .padding(.bottom, 20)
                 }
+                // unikanie zasłonięcia przez klawiaturę
+                .ignoresSafeArea(.keyboard, edges: .bottom)
             }
+            // 3) Tapnij gdziekolwiek, aby ukryć klawiaturę.
+            //    Na ZStack, nie na tle Color, żeby nie blokować pola.
+            .onTapGesture {
+                UIApplication.shared.hideKeyboard()
+            }
+            // 4) Po zalogowaniu przechodzimy dalej
             .fullScreenCover(isPresented: $viewModel.isLoggedIn) {
-                // Use the role-based router instead of directly going to MainTabView
                 RoleBasedRootView(userRole: viewModel.userRole)
             }
+            // 5) Alert do „Zapomniałeś hasła?”
             .alert(isPresented: $viewModel.showAlert) {
                 Alert(
                     title: Text(viewModel.alertTitle),
@@ -155,5 +147,6 @@ struct LoginView: View {
 struct LoginView_Previews: PreviewProvider {
     static var previews: some View {
         LoginView()
+            .preferredColorScheme(.dark)
     }
 }
