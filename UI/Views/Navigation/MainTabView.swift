@@ -10,32 +10,38 @@ import SwiftUI
 struct MainTabView: View {
     var body: some View {
         TabView {
+            // Dashboard
             WorkerDashboardView()
                 .tabItem {
                     Label("Dashboard", systemImage: "house.fill")
                 }
 
-            WorkHoursView()
+            // Work Hours
+            WorkerWorkHoursView()
                 .tabItem {
                     Label("Hours", systemImage: "clock.fill")
                 }
 
-            Text("Projects View Coming Soon")
+            // Tasks
+            WorkerTasksView()
                 .tabItem {
-                    Label("Projects", systemImage: "folder.fill")
+                    Label("Tasks", systemImage: "list.bullet")
                 }
 
+            // Profile
             ProfileView()
                 .tabItem {
                     Label("Profile", systemImage: "person.fill")
                 }
         }
-        .accentColor(Color.ksrYellow)
+        .accentColor(.ksrYellow)
     }
 }
 
 struct MainTabView_Previews: PreviewProvider {
     static var previews: some View {
         MainTabView()
+            .preferredColorScheme(.light)
+            .previewDevice("iPhone 14")
     }
 }

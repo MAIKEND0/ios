@@ -14,18 +14,15 @@ final class APIService {
 
     private init() {
         self.baseURL = Configuration.API.baseURL
-
         let config = URLSessionConfiguration.default
         config.timeoutIntervalForRequest = 30
         session = URLSession(configuration: config)
-
-        // Jeśli token w Keychain lub UserDefaults
         if let token = KeychainService.shared.getToken() {
-            self.authToken = token
+            authToken = token
         }
     }
 
-    // MARK: - Generic Request Method
+    // MARK: – Generic Request
 
     private func makeRequest<T: Encodable>(
         endpoint: String,
@@ -35,14 +32,12 @@ final class APIService {
         guard let url = URL(string: baseURL + endpoint) else {
             return Fail(error: APIError.invalidURL).eraseToAnyPublisher()
         }
-
         var request = URLRequest(url: url)
         request.httpMethod = method
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
         if let token = authToken {
             request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
-
         if method != "GET", let body = body {
             do {
                 let encoder = JSONEncoder()
@@ -52,21 +47,18 @@ final class APIService {
                 return Fail(error: APIError.decodingError(error)).eraseToAnyPublisher()
             }
         }
-
         #if DEBUG
         print("[APIService] \(method) \(url)")
         #endif
-
         return session.dataTaskPublisher(for: request)
             .mapError { APIError.networkError($0) }
-            .flatMap { data, response -> AnyPublisher<Data, APIError> in
-                guard let http = response as? HTTPURLResponse else {
+            .flatMap { data, resp -> AnyPublisher<Data, APIError> in
+                guard let http = resp as? HTTPURLResponse else {
                     return Fail(error: APIError.invalidResponse).eraseToAnyPublisher()
                 }
                 #if DEBUG
                 print("[APIService] Status: \(http.statusCode)")
                 #endif
-
                 if (200...299).contains(http.statusCode) {
                     return Just(data)
                         .setFailureType(to: APIError.self)
@@ -74,7 +66,7 @@ final class APIService {
                 } else {
                     let raw = String(data: data, encoding: .utf8) ?? ""
                     let msg = raw.isEmpty
-                        ? "Kod: \(http.statusCode)"
+                        ? "Code \(http.statusCode)"
                         : "\(raw.prefix(200))…"
                     return Fail(error: APIError.serverError(http.statusCode, msg))
                         .eraseToAnyPublisher()
@@ -83,59 +75,95 @@ final class APIService {
             .eraseToAnyPublisher()
     }
 
-    // MARK: - Work Hours Endpoints
-
-    func saveDraftWorkEntries(_ entries: [WorkHourEntry]) -> AnyPublisher<Bool, APIError> {
-        return makeRequest(
-            endpoint: "/api/worker/work-entries/draft",
-            method: "POST",
-            body: ["entries": entries]
-        )
-        .map { _ in true }
-        .eraseToAnyPublisher()
-    }
-
-    func submitWorkEntries(_ entries: [WorkHourEntry]) -> AnyPublisher<Bool, APIError> {
-        return makeRequest(
-            endpoint: "/api/worker/work-entries/bulk",
-            method: "POST",
-            body: ["entries": entries]
-        )
-        .map { _ in true }
-        .eraseToAnyPublisher()
-    }
-
-    func fetchWorkEntries(employeeId: String, weekStartDate: String)
-      -> AnyPublisher<[WorkHourEntry], APIError> {
-        return makeRequest(
-          endpoint: "/api/worker/work-entries?employee_id=\(employeeId)&selectedMonday=\(weekStartDate)",
-          method: "GET",
-          body: Optional<String>.none
-        )
-        .decode(type: [WorkHourEntry].self, decoder: createJsonDecoder())
-        .mapError { error in
-            (error as? APIError) ?? .decodingError(error)
-        }
-        .eraseToAnyPublisher()
-    }
-
-    func fetchDraftWorkEntries(employeeId: String, weekStartDate: String)
-      -> AnyPublisher<[WorkHourEntry], APIError> {
-        return makeRequest(
-          endpoint: "/api/worker/work-entries/draft?employee_id=\(employeeId)&selectedMonday=\(weekStartDate)",
-          method: "GET",
-          body: Optional<String>.none
-        )
-        .decode(type: [WorkHourEntry].self, decoder: createJsonDecoder())
-        .mapError { error in
-            (error as? APIError) ?? .decodingError(error)
-        }
-        .eraseToAnyPublisher()
-    }
-
-    private func createJsonDecoder() -> JSONDecoder {
+    private func jsonDecoder() -> JSONDecoder {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         return decoder
+    }
+}
+
+// MARK: – App‐only endpoints (iOS)
+
+extension APIService {
+    /// Pobiera zadania przypisane do pracownika
+    func fetchTasks() -> AnyPublisher<[Task], APIError> {
+        makeRequest(endpoint: "/api/app/tasks", method: "GET", body: Optional<String>.none)
+            .decode(type: [Task].self, decoder: jsonDecoder())
+            .mapError { ($0 as? APIError) ?? .decodingError($0) }
+            .eraseToAnyPublisher()
+    }
+
+    /// Pobiera wpisy godzin pracy (draft lub finalne) dla danego tygodnia
+    func fetchWorkEntries(
+        employeeId: String,
+        weekStartDate: String,
+        isDraft: Bool? = nil
+    ) -> AnyPublisher<[WorkHourEntry], APIError> {
+        var ep = "/api/app/work-entries?employee_id=\(employeeId)&selectedMonday=\(weekStartDate)"
+        if let d = isDraft {
+            ep += "&is_draft=\(d)"
+        }
+        return makeRequest(endpoint: ep, method: "GET", body: Optional<String>.none)
+            .decode(type: [WorkHourEntry].self, decoder: jsonDecoder())
+            .mapError { ($0 as? APIError) ?? .decodingError($0) }
+            .eraseToAnyPublisher()
+    }
+
+    /// Upsert (draft lub finalne) wpisów godzin pracy
+    func upsertWorkEntries(_ entries: [WorkHourEntry]) -> AnyPublisher<Bool, APIError> {
+        let body = ["entries": entries]
+        return makeRequest(endpoint: "/api/app/work-entries", method: "POST", body: body)
+            .map { _ in true }
+            .eraseToAnyPublisher()
+    }
+
+    /// **NOWOŚĆ** – pobiera listę ogłoszeń
+    func fetchAnnouncements() -> AnyPublisher<[Announcement], APIError> {
+        makeRequest(endpoint: "/api/app/announcements", method: "GET", body: Optional<String>.none)
+            .decode(type: [Announcement].self, decoder: jsonDecoder())
+            .mapError { ($0 as? APIError) ?? .decodingError($0) }
+            .eraseToAnyPublisher()
+    }
+}
+
+// MARK: – Modele dla iOS‐owych endpointów
+
+extension APIService {
+    struct Task: Codable, Identifiable {
+        let id = UUID()
+        let task_id: Int
+        let title: String
+        let description: String?
+        let deadline: Date?
+        let project: Project?
+
+        struct Project: Codable {
+            let project_id: Int
+            let title: String
+        }
+
+        private enum CodingKeys: String, CodingKey {
+            case task_id, title, description, deadline, project = "Projects"
+        }
+    }
+
+    struct WorkHourEntry: Codable, Identifiable {
+        let id = UUID()
+        let entry_id: Int
+        let employee_id: Int
+        let task_id: Int
+        let work_date: Date
+        let start_time: Date?
+        let end_time: Date?
+        let pause_minutes: Int?
+        let status: String?
+        let is_draft: Bool?
+        let tasks: Task?   // JSON pole “Tasks”
+
+        private enum CodingKeys: String, CodingKey {
+            case entry_id, employee_id, task_id, work_date,
+                 start_time, end_time, pause_minutes,
+                 status, is_draft, tasks = "Tasks"
+        }
     }
 }
