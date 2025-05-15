@@ -421,6 +421,41 @@ struct WorkerDashboardView: View {
         .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.3 : 0.05), radius: 2, x: 0, y: 1)
     }
     
+    // Function to determine the effective status for an entry
+    private func effectiveStatus(for entry: APIService.WorkHourEntry) -> EntryStatus {
+        // Najpierw sprawdzamy confirmation_status, jeśli istnieje i nie jest "pending"
+        if let confirmationStatus = entry.confirmation_status, confirmationStatus != "pending" {
+            switch confirmationStatus {
+            case "confirmed":
+                return .confirmed
+            case "rejected":
+                return .rejected
+            default:
+                break // Nieznany status, przejdziemy do dalszej logiki
+            }
+        }
+        
+        // Jeśli confirmation_status jest "pending" lub nil, sprawdzamy is_draft
+        if entry.is_draft == true {
+            return .draft
+        }
+        
+        // Następnie używamy status, ale tylko do rozróżnienia pending/submitted
+        if let status = entry.status {
+            switch status {
+            case "submitted":
+                return .submitted
+            case "pending":
+                return .pending
+            default:
+                break
+            }
+        }
+        
+        // Domyślnie pending
+        return .pending
+    }
+    
     // Function to generate week statuses for a task
     private func getWeekStatuses(for taskId: Int, entries: [APIService.WorkHourEntry], count: Int) -> [WeekStatus] {
         var statuses: [WeekStatus] = []
@@ -451,17 +486,18 @@ struct WorkerDashboardView: View {
             if currentWeekEntries.isEmpty {
                 return .pending
             }
-            if currentWeekEntries.contains(where: { $0.is_draft == true }) {
-                return .draft
-            }
-            if currentWeekEntries.contains(where: { $0.status == "rejected" }) {
+            // Znajdź najbardziej "istotny" status w tygodniu
+            if currentWeekEntries.contains(where: { effectiveStatus(for: $0) == .rejected }) {
                 return .rejected
             }
-            if currentWeekEntries.contains(where: { $0.status == "confirmed" }) {
+            if currentWeekEntries.contains(where: { effectiveStatus(for: $0) == .confirmed }) {
                 return .confirmed
             }
-            if currentWeekEntries.contains(where: { $0.status == "submitted" }) {
+            if currentWeekEntries.contains(where: { effectiveStatus(for: $0) == .submitted }) {
                 return .submitted
+            }
+            if currentWeekEntries.contains(where: { effectiveStatus(for: $0) == .draft }) {
+                return .draft
             }
             return .pending
         }()
@@ -511,17 +547,17 @@ struct WorkerDashboardView: View {
                 if weekEntries.isEmpty {
                     return .pending
                 }
-                if weekEntries.contains(where: { $0.is_draft == true }) {
-                    return .draft
-                }
-                if weekEntries.contains(where: { $0.status == "rejected" }) {
+                if weekEntries.contains(where: { effectiveStatus(for: $0) == .rejected }) {
                     return .rejected
                 }
-                if weekEntries.contains(where: { $0.status == "confirmed" }) {
+                if weekEntries.contains(where: { effectiveStatus(for: $0) == .confirmed }) {
                     return .confirmed
                 }
-                if weekEntries.contains(where: { $0.status == "submitted" }) {
+                if weekEntries.contains(where: { effectiveStatus(for: $0) == .submitted }) {
                     return .submitted
+                }
+                if weekEntries.contains(where: { effectiveStatus(for: $0) == .draft }) {
+                    return .draft
                 }
                 return .pending
             }()
@@ -657,6 +693,8 @@ struct WorkerDashboardView: View {
             pauseMinutes: entry.pause_minutes ?? 0
         )
         
+        let entryStatus = effectiveStatus(for: entry) // Używamy nowej funkcji
+        
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Text(entry.workDateFormatted)
@@ -681,11 +719,12 @@ struct WorkerDashboardView: View {
                         .foregroundColor(Color.orange)
                         .cornerRadius(4)
                 } else {
-                    Text(entry.status ?? "Pending")
+                    let (label, color) = statusLabel(for: entryStatus)
+                    Text(label)
                         .font(Font.caption2).bold()
                         .padding(4)
-                        .background(Color.ksrYellow.opacity(0.2))
-                        .foregroundColor(Color.ksrYellow)
+                        .background(color.opacity(0.2))
+                        .foregroundColor(color)
                         .cornerRadius(4)
                 }
             }
@@ -703,6 +742,22 @@ struct WorkerDashboardView: View {
         .padding()
         .background(colorScheme == .dark ? Color(.systemGray6).opacity(0.2) : Color(UIColor.secondarySystemGroupedBackground))
         .cornerRadius(10)
+    }
+
+    // Helper function to determine label and color for status
+    private func statusLabel(for status: EntryStatus) -> (String, Color) {
+        switch status {
+        case .draft:
+            return ("Draft", .orange)
+        case .pending:
+            return ("Pending", .blue)
+        case .submitted:
+            return ("Submitted", .purple)
+        case .confirmed:
+            return ("Confirmed", .green)
+        case .rejected:
+            return ("Rejected", .red)
+        }
     }
 
     @ViewBuilder

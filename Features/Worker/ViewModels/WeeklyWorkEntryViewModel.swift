@@ -368,6 +368,7 @@ final class WeeklyWorkEntryViewModel: ObservableObject {
                 end_time: entry.endTime,
                 pause_minutes: entry.pauseMinutes,
                 status: asDraft ? "pending" : "submitted",
+                confirmation_status: "pending", // Dodajemy confirmation_status
                 is_draft: asDraft,
                 description: entry.notes,
                 tasks: nil
@@ -425,4 +426,4 @@ final class WeeklyWorkEntryViewModel: ObservableObject {
             weekData[index].pauseMinutes = minutes
         }
     }
-}
+}   

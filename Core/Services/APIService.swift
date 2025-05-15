@@ -253,6 +253,7 @@ extension APIService {
         let end_time: Date?
         let pause_minutes: Int?
         let status: String?
+        let confirmation_status: String? // Dodajemy pole confirmation_status
         let is_draft: Bool?
         let description: String?
         let tasks: Task?
@@ -260,7 +261,7 @@ extension APIService {
         private enum CodingKeys: String, CodingKey {
             case entry_id, employee_id, task_id, work_date,
                  start_time, end_time, pause_minutes,
-                 status, is_draft, description, tasks = "Tasks"
+                 status, confirmation_status, is_draft, description, tasks = "Tasks"
         }
     }
     
