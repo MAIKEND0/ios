@@ -27,7 +27,7 @@ extension EditableWorkEntry {
         return "\(hours)h \(minutes)m"
     }
     
-    /// Checks if this entry is for a future date (after today)
+    /// Sprawdza, czy wpis dotyczy przyszłej daty (po dzisiejszym dniu)
     var isFutureDate: Bool {
         let calendar = Calendar.current
         return calendar.startOfDay(for: date) > calendar.startOfDay(for: Date())
@@ -80,9 +80,7 @@ final class WeeklyWorkEntryViewModel: ObservableObject {
         }
 
         APIService.shared
-            .fetchWorkEntries(employeeId: employeeId,
-                              weekStartDate: mondayStr,
-                              isDraft: true)
+            .fetchWorkEntries(employeeId: employeeId, weekStartDate: mondayStr, isDraft: true)
             .flatMap { drafts -> AnyPublisher<[EditableWorkEntry], APIService.APIError> in
                 let draftModels = drafts.map(EditableWorkEntry.init)
                 
@@ -97,9 +95,7 @@ final class WeeklyWorkEntryViewModel: ObservableObject {
                 } else {
                     // W przeciwnym razie pobieramy wpisy zatwierdzone
                     return APIService.shared
-                        .fetchWorkEntries(employeeId: self.employeeId,
-                                          weekStartDate: mondayStr,
-                                          isDraft: false)
+                        .fetchWorkEntries(employeeId: self.employeeId, weekStartDate: mondayStr, isDraft: false)
                         .map { $0.map(EditableWorkEntry.init) }
                         .eraseToAnyPublisher()
                 }
@@ -110,24 +106,19 @@ final class WeeklyWorkEntryViewModel: ObservableObject {
                     return self.weekData
                 }
                 
-                // Since API may not return all 7 days, we need to ensure we have data for each day
-                // Start with our empty week data
+                // Since API may not return all 7 days, ensure we have data for each day
                 var result = self.generateEmptyWeekData()
-                
-                // Replace the empty entries with data from API where we have it
                 let calendar = Calendar.current
                 for apiEntry in entries {
                     if let index = result.firstIndex(where: { calendar.isDate($0.date, inSameDayAs: apiEntry.date) }) {
                         result[index] = apiEntry
                     }
                 }
-                
                 return result
             }
             .catch { error -> AnyPublisher<[EditableWorkEntry], Never> in
-                // Obsługa błędu bezpośrednio tutaj
                 #if DEBUG
-                print("[WeeklyWorkEntryViewModel] Error: \(error.localizedDescription)")
+                print("[WeeklyWorkEntryViewModel] Error loading data: \(error.localizedDescription)")
                 #endif
                 
                 DispatchQueue.main.async {
@@ -135,13 +126,11 @@ final class WeeklyWorkEntryViewModel: ObservableObject {
                     self.alertTitle = "Błąd"
                     self.alertMessage = error.localizedDescription
                 }
-                // Zwracamy puste dane tygodnia
                 return Just(self.weekData)
                     .eraseToAnyPublisher()
             }
             .receive(on: DispatchQueue.main)
             .sink { [weak self] entries in
-                // Ostatecznie przypisujemy dane do tablicy
                 self?.weekData = entries
                 self?.isLoading = false
             }
@@ -159,7 +148,7 @@ final class WeeklyWorkEntryViewModel: ObservableObject {
             APIService.shared.refreshTokenFromKeychain()
         }
         
-        // Check for future dates - reject any entries with future dates
+        // Sprawdź przyszłe daty - odrzuć wpisy z przyszłości
         let futureDates = weekData.filter { entry in
             return entry.isFutureDate && (entry.startTime != nil || entry.endTime != nil)
         }
@@ -174,7 +163,7 @@ final class WeeklyWorkEntryViewModel: ObservableObject {
             return
         }
         
-        // Przekształć EditableWorkEntry na model API
+        // Przygotuj wpisy do API
         let apiEntries = prepareEntriesForAPI(asDraft: true)
         
         // Jeśli nie ma wpisów do zapisania, pokaż sukces
@@ -204,7 +193,7 @@ final class WeeklyWorkEntryViewModel: ObservableObject {
         
         // Wykonaj zapytanie API
         #if DEBUG
-        print("[WeeklyWorkEntryViewModel] Wysyłanie \(apiEntries.count) wpisów do API")
+        print("[WeeklyWorkEntryViewModel] Wysyłanie \(apiEntries.count) wpisów jako wersję roboczą")
         #endif
         
         APIService.shared.upsertWorkEntries(apiEntries)
@@ -215,25 +204,18 @@ final class WeeklyWorkEntryViewModel: ObservableObject {
                 
                 switch completion {
                 case .finished:
-                    break // Handle success in receiveValue
-                    
+                    // Ponowne załadowanie danych po sukcesie, aby zsynchronizować entry_id
+                    self.loadWeekDataFromAPI()
                 case .failure(let error):
-                    // Obsłuż błędy API
                     self.alertTitle = "Błąd"
-                    
-                    // Specjalna obsługa błędów 401
                     if case .serverError(401, _) = error {
                         self.alertMessage = "Wygasła sesja. Zaloguj się ponownie."
-                    } else if case .serverError(500, let message) = error,
-                              message.contains("Unique constraint failed") {
-                        // Specjalna obsługa błędu unikalności
+                    } else if case .serverError(409, _) = error {
                         self.alertMessage = "Wystąpił konflikt danych. Wpis o tych parametrach już istnieje."
                     } else {
                         self.alertMessage = error.localizedDescription
                     }
-                    
                     self.showAlert = true
-                    
                     #if DEBUG
                     print("[WeeklyWorkEntryViewModel] Zapisywanie nie powiodło się: \(error.localizedDescription)")
                     #endif
@@ -241,23 +223,23 @@ final class WeeklyWorkEntryViewModel: ObservableObject {
             } receiveValue: { [weak self] response in
                 guard let self = self else { return }
                 self.alertTitle = "Sukces"
-                self.alertMessage = "Zapisano wersję roboczą"
+                self.alertMessage = response.message.isEmpty ? "Zapisano wersję roboczą" : response.message
                 self.showAlert = true
                 self.anyDrafts = true
-                
                 #if DEBUG
                 print("[WeeklyWorkEntryViewModel] Zapis pomyślny: \(response.message)")
                 #endif
+                // Ponowne załadowanie danych po sukcesie
+                self.loadWeekDataFromAPI()
             }
             .store(in: &cancellables)
     }
     
-    /// Przygotowuje dane do zatwierdzenia (status: submitted) i wysyła email do przełożonego
+    /// Przygotowuje dane do zatwierdzenia (status: submitted) i wysyła e-mail do przełożonego
     func submitEntries() {
-        // Set loading state
         isLoading = true
         
-        // Check for future dates - reject any entries with future dates
+        // Sprawdź przyszłe daty - odrzuć wpisy z przyszłości
         let futureDates = weekData.filter { entry in
             return entry.isFutureDate && (entry.startTime != nil || entry.endTime != nil)
         }
@@ -272,21 +254,19 @@ final class WeeklyWorkEntryViewModel: ObservableObject {
             return
         }
         
-        // Set isConfirmingSubmission flag to prevent duplicate submissions
+        // Ustaw flagę, aby zapobiec duplikatom
         isConfirmingSubmission = true
         
-        // Oznacz wszystkie wpisy jako nie-draft
-        for i in 0..<weekData.count {
-            if !weekData[i].isFutureDate {
-                weekData[i].isDraft = false
-                weekData[i].status = "submitted"
-            }
+        // Oznacz wszystkie wpisy jako nie-draft, jeśli nie są z przyszłości
+        for i in 0..<weekData.count where !weekData[i].isFutureDate {
+            weekData[i].isDraft = false
+            weekData[i].status = "submitted"
         }
         
-        // Przekształć EditableWorkEntry na model API - explicitly set is_draft to false
+        // Przygotuj wpisy do API
         let apiEntries = prepareEntriesForAPI(asDraft: false)
         
-        // Jeśli nie ma wpisów do zapisania, pokaż błąd
+        // Jeśli nie ma wpisów do zatwierdzenia, pokaż błąd
         if apiEntries.isEmpty {
             DispatchQueue.main.async {
                 self.alertTitle = "Błąd"
@@ -298,7 +278,26 @@ final class WeeklyWorkEntryViewModel: ObservableObject {
             return
         }
         
-        // Send entries - the backend will handle the confirmation email
+        // Walidacja dat - sprawdź, czy end_time jest późniejsze niż start_time
+        for entry in apiEntries {
+            if let start = entry.start_time, let end = entry.end_time,
+               end.compare(start) == .orderedAscending {
+                DispatchQueue.main.async {
+                    self.alertTitle = "Błąd"
+                    self.alertMessage = "Godzina zakończenia nie może być wcześniejsza niż godzina rozpoczęcia."
+                    self.showAlert = true
+                    self.isLoading = false
+                    self.isConfirmingSubmission = false
+                }
+                return
+            }
+        }
+        
+        // Wykonaj zapytanie API - backend wyśle e-mail z potwierdzeniem
+        #if DEBUG
+        print("[WeeklyWorkEntryViewModel] Wysyłanie \(apiEntries.count) wpisów do zatwierdzenia")
+        #endif
+        
         APIService.shared.upsertWorkEntries(apiEntries)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] completion in
@@ -308,38 +307,45 @@ final class WeeklyWorkEntryViewModel: ObservableObject {
                 
                 switch completion {
                 case .finished:
-                    break // Handle success in receiveValue
-                    
+                    break
                 case .failure(let error):
-                    self.alertTitle = "Error"
-                    
+                    self.alertTitle = "Błąd"
                     if case .serverError(401, _) = error {
-                        self.alertMessage = "Session expired. Please log in again."
+                        self.alertMessage = "Wygasła sesja. Zaloguj się ponownie."
+                    } else if case .serverError(409, _) = error {
+                        self.alertMessage = "Wystąpił konflikt danych. Wpis o tych parametrach już istnieje."
                     } else {
-                        self.alertMessage = "Failed to submit hours: \(error.localizedDescription)"
+                        self.alertMessage = "Nie udało się wysłać godzin: \(error.localizedDescription)"
                     }
-                    
                     self.showAlert = true
-                    
                     #if DEBUG
-                    print("[WeeklyWorkEntryViewModel] Submit failed: \(error.localizedDescription)")
+                    print("[WeeklyWorkEntryViewModel] Wysyłanie nie powiodło się: \(error.localizedDescription)")
                     #endif
                 }
             } receiveValue: { [weak self] response in
                 guard let self = self else { return }
-                // Successfully saved and sent confirmation
-                self.alertTitle = "Success"
-                self.alertMessage = "Your hours have been submitted and sent for approval to your supervisor."
+                self.alertTitle = "Sukces"
+                var message = response.message.isEmpty ? "Twoje godziny zostały wysłane do zatwierdzenia przełożonemu." : response.message
+                if let confirmationSent = response.confirmationSent, confirmationSent {
+                    message += "\nE-mail z potwierdzeniem został wysłany do przełożonego."
+                    if let token = response.confirmationToken {
+                        message += "\nToken: \(token)"
+                    }
+                } else if let confirmationError = response.confirmationError {
+                    message += "\nNie udało się wysłać e-maila z potwierdzeniem: \(confirmationError)"
+                }
+                self.alertMessage = message
                 self.showAlert = true
                 self.anyDrafts = false
-                
                 #if DEBUG
-                print("[WeeklyWorkEntryViewModel] Submit successful. Message: \(response.message)")
-                print("[WeeklyWorkEntryViewModel] Confirmation sent: \(response.confirmationSent ?? false)")
+                print("[WeeklyWorkEntryViewModel] Wysyłanie pomyślne. Wiadomość: \(response.message)")
+                print("[WeeklyWorkEntryViewModel] Potwierdzenie wysłane: \(response.confirmationSent ?? false)")
                 if let token = response.confirmationToken {
-                    print("[WeeklyWorkEntryViewModel] Confirmation token: \(token)")
+                    print("[WeeklyWorkEntryViewModel] Token potwierdzenia: \(token)")
                 }
                 #endif
+                // Ponowne załadowanie danych po sukcesie
+                self.loadWeekDataFromAPI()
             }
             .store(in: &cancellables)
     }
@@ -348,14 +354,13 @@ final class WeeklyWorkEntryViewModel: ObservableObject {
     private func prepareEntriesForAPI(asDraft: Bool = true) -> [APIService.WorkHourEntry] {
         // Filtruj wpisy bez czasu rozpoczęcia lub zakończenia i przyszłe dni
         let validEntries = weekData.filter { entry in
-            return entry.startTime != nil && entry.endTime != nil && !entry.isFutureDate
+            return (entry.startTime != nil && entry.endTime != nil) && !entry.isFutureDate
         }
         
-        // Mapuj EditableWorkEntry na APIService.WorkHourEntry
-        return validEntries.compactMap { entry in
-            // Tworzymy nowy UUID dla każdego nowego wpisu zamiast używać UUID z EditableWorkEntry
-            return APIService.WorkHourEntry(
-                entry_id: entry.id,
+        // Mapuj EditableWorkEntry na APIService.WorkHourEntry, używając istniejącego id
+        return validEntries.map { entry in
+            APIService.WorkHourEntry(
+                entry_id: entry.id, // Użyj istniejącego ID
                 employee_id: Int(employeeId) ?? 0,
                 task_id: Int(taskId) ?? 0,
                 work_date: entry.date,
@@ -364,6 +369,7 @@ final class WeeklyWorkEntryViewModel: ObservableObject {
                 pause_minutes: entry.pauseMinutes,
                 status: asDraft ? "pending" : "submitted",
                 is_draft: asDraft,
+                description: entry.notes,
                 tasks: nil
             )
         }
@@ -380,7 +386,7 @@ final class WeeklyWorkEntryViewModel: ObservableObject {
         }
         
         #if DEBUG
-        print("[WeeklyWorkEntryViewModel] Generated \(arr.count) empty days for week")
+        print("[WeeklyWorkEntryViewModel] Wygenerowano \(arr.count) pustych dni dla tygodnia")
         #endif
         
         return arr
@@ -391,40 +397,32 @@ final class WeeklyWorkEntryViewModel: ObservableObject {
     /// Aktualizuje godzinę rozpoczęcia dla wpisu
     func updateStartTime(at index: Int, to newTime: Date) {
         guard index < weekData.count else { return }
-        // Don't allow updates for future dates
-        if weekData[index].isFutureDate {
-            return
+        if !weekData[index].isFutureDate {
+            weekData[index].startTime = newTime
         }
-        weekData[index].startTime = newTime
     }
     
     /// Aktualizuje godzinę zakończenia dla wpisu
     func updateEndTime(at index: Int, to newTime: Date) {
         guard index < weekData.count else { return }
-        // Don't allow updates for future dates
-        if weekData[index].isFutureDate {
-            return
+        if !weekData[index].isFutureDate {
+            weekData[index].endTime = newTime
         }
-        weekData[index].endTime = newTime
     }
     
     /// Aktualizuje opis/notatki dla wpisu
     func updateDescription(at index: Int, to newDescription: String) {
         guard index < weekData.count else { return }
-        // Don't allow updates for future dates
-        if weekData[index].isFutureDate {
-            return
+        if !weekData[index].isFutureDate {
+            weekData[index].notes = newDescription
         }
-        weekData[index].notes = newDescription
     }
     
     /// Aktualizuje minuty przerwy dla wpisu
     func updatePauseMinutes(at index: Int, to minutes: Int) {
         guard index < weekData.count else { return }
-        // Don't allow updates for future dates
-        if weekData[index].isFutureDate {
-            return
+        if !weekData[index].isFutureDate {
+            weekData[index].pauseMinutes = minutes
         }
-        weekData[index].pauseMinutes = minutes
     }
 }

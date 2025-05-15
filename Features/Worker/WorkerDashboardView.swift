@@ -67,7 +67,7 @@ struct WorkerDashboardView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button {
-                        // obsługa powiadomień
+                        // Obsługa powiadomień
                     } label: {
                         Image(systemName: "bell")
                             .foregroundColor(colorScheme == .dark ? .white : Color.ksrDarkGray)
@@ -93,7 +93,6 @@ struct WorkerDashboardView: View {
                 hasAppeared = true
             }
             // Force refresh when we come back to this view from another tab
-            // Updated for iOS 17 compatibility
             .onChange(of: hasAppeared) { _, _ in
                 viewModel.loadData()
             }
@@ -305,16 +304,16 @@ struct WorkerDashboardView: View {
             $0.task_id == task.task_id
         }
         
-        // Calculate total hours
+        // Calculate total hours using entries directly
         let totalHours = taskEntries.reduce(0.0) { sum, entry in
             guard let start = entry.start_time, let end = entry.end_time else { return sum }
             let interval = end.timeIntervalSince(start)
-            let pauseMinutes = Double(entry.pause_minutes ?? 0) * 60
-            return sum + max(0, (interval - pauseMinutes) / 3600)
+            let pauseSeconds = Double(entry.pause_minutes ?? 0) * 60
+            return sum + max(0, (interval - pauseSeconds) / 3600)
         }
         
         // Get weeks statuses for the last 4 weeks
-        let weekStatuses = getWeekStatuses(for: task.task_id, count: 4)
+        let weekStatuses = getWeekStatuses(for: task.task_id, entries: taskEntries, count: 4)
         
         return VStack(alignment: .leading, spacing: 12) {
             // Nagłówek
@@ -422,36 +421,60 @@ struct WorkerDashboardView: View {
         .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.3 : 0.05), radius: 2, x: 0, y: 1)
     }
     
-    // Function to generate week statuses for a task (would normally come from API)
-    private func getWeekStatuses(for taskId: Int, count: Int) -> [WeekStatus] {
-        var statuses = [WeekStatus]()
+    // Function to generate week statuses for a task
+    private func getWeekStatuses(for taskId: Int, entries: [APIService.WorkHourEntry], count: Int) -> [WeekStatus] {
+        var statuses: [WeekStatus] = []
         let calendar = Calendar.current
         let currentDate = Date()
         let currentWeek = calendar.component(.weekOfYear, from: currentDate)
         let currentYear = calendar.component(.year, from: currentDate)
         
-        // Check if there are draft entries in the current week
-        let hasDrafts = viewModel.hoursViewModel.entries.contains { entry in
+        // Filter entries for the current week
+        let currentWeekEntries = entries.filter { entry in
             guard entry.task_id == taskId,
-                  let isDraft = entry.is_draft, isDraft,
-                  let startTime = entry.start_time else {
-                return false
-            }
-            
-            let entryWeek = calendar.component(.weekOfYear, from: startTime)
-            let entryYear = calendar.component(.year, from: startTime)
-            return entryWeek == currentWeek && entryYear == currentYear
+                  let startTime = entry.start_time else { return false }
+            return calendar.component(.weekOfYear, from: startTime) == currentWeek &&
+                   calendar.component(.year, from: startTime) == currentYear
         }
         
-        // Add current week with appropriate status
+        // Calculate hours for the current week
+        let currentWeekHours = currentWeekEntries.reduce(0.0) { sum, entry in
+            guard let startTime = entry.start_time,
+                  let endTime = entry.end_time else { return sum }
+            let interval = endTime.timeIntervalSince(startTime)
+            let pauseSeconds = Double(entry.pause_minutes ?? 0) * 60
+            return sum + max(0, (interval - pauseSeconds) / 3600)
+        }
+        
+        // Determine status for the current week
+        let currentWeekStatus: EntryStatus = {
+            if currentWeekEntries.isEmpty {
+                return .pending
+            }
+            if currentWeekEntries.contains(where: { $0.is_draft == true }) {
+                return .draft
+            }
+            if currentWeekEntries.contains(where: { $0.status == "rejected" }) {
+                return .rejected
+            }
+            if currentWeekEntries.contains(where: { $0.status == "confirmed" }) {
+                return .confirmed
+            }
+            if currentWeekEntries.contains(where: { $0.status == "submitted" }) {
+                return .submitted
+            }
+            return .pending
+        }()
+        
+        // Add current week status
         statuses.append(WeekStatus(
             weekNumber: currentWeek,
             year: currentYear,
-            hours: getHoursForWeek(taskId: taskId, weekNumber: currentWeek, year: currentYear),
-            status: hasDrafts ? .draft : .pending
+            hours: currentWeekHours,
+            status: currentWeekStatus
         ))
         
-        // Add previous weeks (these would typically have confirmed or rejected status)
+        // Add previous weeks
         for i in 1..<count {
             var dateComponents = DateComponents()
             dateComponents.weekOfYear = -i
@@ -462,53 +485,56 @@ struct WorkerDashboardView: View {
             let weekNumber = calendar.component(.weekOfYear, from: weekDate)
             let year = calendar.component(.year, from: weekDate)
             
-            // Simulate different statuses for different weeks
-            let status: EntryStatus
-            switch i {
-            case 1:
-                status = .submitted
-            case 2:
-                status = .confirmed
-            case 3:
-                status = .rejected
-            default:
-                status = .confirmed
+            // Calculate hours for the week
+            let weekHours = entries.reduce(0.0) { sum, entry in
+                guard entry.task_id == taskId,
+                      let startTime = entry.start_time,
+                      let endTime = entry.end_time,
+                      calendar.component(.weekOfYear, from: startTime) == weekNumber,
+                      calendar.component(.year, from: startTime) == year else {
+                    return sum
+                }
+                let interval = endTime.timeIntervalSince(startTime)
+                let pauseSeconds = Double(entry.pause_minutes ?? 0) * 60
+                return sum + max(0, (interval - pauseSeconds) / 3600)
             }
+            
+            // Determine status based on entries
+            let weekEntries = entries.filter { entry in
+                guard entry.task_id == taskId,
+                      let startTime = entry.start_time else { return false }
+                return calendar.component(.weekOfYear, from: startTime) == weekNumber &&
+                       calendar.component(.year, from: startTime) == year
+            }
+            
+            let status: EntryStatus = {
+                if weekEntries.isEmpty {
+                    return .pending
+                }
+                if weekEntries.contains(where: { $0.is_draft == true }) {
+                    return .draft
+                }
+                if weekEntries.contains(where: { $0.status == "rejected" }) {
+                    return .rejected
+                }
+                if weekEntries.contains(where: { $0.status == "confirmed" }) {
+                    return .confirmed
+                }
+                if weekEntries.contains(where: { $0.status == "submitted" }) {
+                    return .submitted
+                }
+                return .pending
+            }()
             
             statuses.append(WeekStatus(
                 weekNumber: weekNumber,
                 year: year,
-                hours: getHoursForWeek(taskId: taskId, weekNumber: weekNumber, year: year),
+                hours: weekHours,
                 status: status
             ))
         }
         
         return statuses
-    }
-    
-    // Function to calculate hours for a specific week
-    private func getHoursForWeek(taskId: Int, weekNumber: Int, year: Int) -> Double {
-        let calendar = Calendar.current
-        
-        // Filter entries for the specified task and week
-        return viewModel.hoursViewModel.entries.reduce(0.0) { sum, entry in
-            guard entry.task_id == taskId,
-                  let start = entry.start_time,
-                  let end = entry.end_time else {
-                return sum
-            }
-            
-            let entryWeek = calendar.component(.weekOfYear, from: start)
-            let entryYear = calendar.component(.year, from: start)
-            
-            if entryWeek == weekNumber && entryYear == year {
-                let interval = end.timeIntervalSince(start)
-                let pauseMinutes = Double(entry.pause_minutes ?? 0) * 60
-                return sum + max(0, (interval - pauseMinutes) / 3600)
-            }
-            
-            return sum
-        }
     }
     
     // Week status row component

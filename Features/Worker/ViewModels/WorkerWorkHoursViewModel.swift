@@ -1,89 +1,202 @@
+//
+//  WorkerWorkHoursViewModel.swift
+//  KSR Cranes App
+//
+
 import Foundation
 import Combine
 
-/// ViewModel do wyświetlania i analizy godzin pracy pracownika
 final class WorkerWorkHoursViewModel: ObservableObject {
     @Published var entries: [APIService.WorkHourEntry] = []
-    @Published var isLoading = false
-    @Published var error: String?
+    @Published var isLoading: Bool = false
+    @Published var errorMessage: String?
+    @Published var startDate: Date = {
+        let now = Date()
+        let cal = Calendar.current
+        return cal.date(from: cal.dateComponents([.yearForWeekOfYear, .weekOfYear], from: now))!
+    }()
+    @Published var endDate: Date = {
+        let now = Date()
+        let cal = Calendar.current
+        return cal.date(byAdding: .weekOfYear, value: 1, to: cal.date(from: cal.dateComponents([.yearForWeekOfYear, .weekOfYear], from: now))!)!
+    }()
     @Published var weekStart: Date = {
         let now = Date()
         let cal = Calendar.current
-        return cal.date(
-            from: cal.dateComponents([.yearForWeekOfYear, .weekOfYear], from: now)
-        )!
+        return cal.date(from: cal.dateComponents([.yearForWeekOfYear, .weekOfYear], from: now))!
     }()
 
     private var cancellables = Set<AnyCancellable>()
+    private var employeeId: String?
 
-    func loadEntries(isDraft: Bool = false) {
-        guard let empId = AuthService.shared.getEmployeeId() else {
-            error = "Brak zalogowanego pracownika"
-            entries = []
-            return
-        }
+    init() {
+        setupWorkEntriesUpdateObserver()
+    }
 
-        let weekStartStr = DateFormatter.isoDate.string(from: weekStart)
-        isLoading = true
-        error = nil
-
-        APIService.shared
-            .fetchWorkEntries(
-                employeeId: empId,
-                weekStartDate: weekStartStr,
-                isDraft: isDraft
-            )
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] completion in
-                self?.isLoading = false
-                if case .failure(let err) = completion {
-                    self?.error = err.localizedDescription
-                    self?.entries = []
+    private func setupWorkEntriesUpdateObserver() {
+        NotificationCenter.default
+            .publisher(for: .workEntriesUpdated)
+            .sink { [weak self] _ in
+                #if DEBUG
+                print("[WorkerWorkHoursViewModel] Otrzymano powiadomienie o aktualizacji wpisów godzin pracy")
+                #endif
+                if let employeeId = self?.employeeId, let startDate = self?.startDate, let endDate = self?.endDate {
+                    self?.loadEntries(employeeId: employeeId, startDate: startDate, endDate: endDate)
                 }
-            } receiveValue: { [weak self] fetched in
-                self?.entries = fetched
             }
             .store(in: &cancellables)
     }
 
+    /// Ładuje godziny pracy dla danego pracownika w zakresie dat od startDate do endDate
+    func loadEntries(employeeId: String? = nil, startDate: Date? = nil, endDate: Date? = nil) {
+        let calendar = Calendar.current
+        let targetEmployeeId = employeeId ?? self.employeeId ?? AuthService.shared.getEmployeeId() ?? ""
+        
+        // Ustaw zakres dat
+        self.employeeId = targetEmployeeId
+        if let startDate = startDate, let endDate = endDate {
+            self.startDate = startDate
+            self.endDate = endDate
+        } else {
+            // Domyślny zakres: tydzień od weekStart
+            self.startDate = weekStart
+            self.endDate = calendar.date(byAdding: .weekOfYear, value: 1, to: weekStart) ?? weekStart
+        }
+
+        // Przygotuj zakres dat do zapytania
+        var allEntries: [APIService.WorkHourEntry] = []
+        var currentDate = self.startDate
+        let targetEndDate = self.endDate
+        isLoading = true
+        errorMessage = nil
+
+        // Pobieraj dane tydzień po tygodniu w zakresie od startDate do endDate
+        let group = DispatchGroup()
+        while currentDate <= targetEndDate {
+            group.enter()
+            let mondayStr = DateFormatter.isoDate.string(from: currentDate)
+            APIService.shared
+                .fetchWorkEntries(
+                    employeeId: targetEmployeeId,
+                    weekStartDate: mondayStr
+                )
+                .receive(on: DispatchQueue.main)
+                .sink { [weak self] completion in
+                    if case let .failure(err) = completion {
+                        self?.errorMessage = err.localizedDescription
+                    }
+                    group.leave()
+                } receiveValue: { entries in
+                    allEntries.append(contentsOf: entries)
+                }
+                .store(in: &cancellables)
+            
+            // Przejdź do następnego tygodnia
+            currentDate = calendar.date(byAdding: .weekOfYear, value: 1, to: currentDate) ?? currentDate
+        }
+
+        group.notify(queue: .main) { [weak self] in
+            self?.entries = allEntries
+            self?.isLoading = false
+            #if DEBUG
+            print("[WorkerWorkHoursViewModel] Załadowano \(allEntries.count) wpisów z bazy danych")
+            #endif
+        }
+    }
+
     func previousWeek() {
-        weekStart = Calendar.current.date(
-            byAdding: .weekOfYear, value: -1, to: weekStart
-        )!
+        let calendar = Calendar.current
+        weekStart = calendar.date(byAdding: .weekOfYear, value: -1, to: weekStart)!
+        startDate = weekStart
+        endDate = calendar.date(byAdding: .weekOfYear, value: 1, to: weekStart)!
         loadEntries()
     }
 
     func nextWeek() {
-        weekStart = Calendar.current.date(
-            byAdding: .weekOfYear, value: 1, to: weekStart
-        )!
+        let calendar = Calendar.current
+        weekStart = calendar.date(byAdding: .weekOfYear, value: 1, to: weekStart)!
+        startDate = weekStart
+        endDate = calendar.date(byAdding: .weekOfYear, value: 1, to: weekStart)!
         loadEntries()
     }
-    
-    /// Oblicza całkowitą liczbę godzin w bieżącym tygodniu
+
+    // MARK: - Obliczenia statystyk godzin pracy
+
+    /// Suma godzin w bieżącym tygodniu
     var totalWeeklyHours: Double {
-        entries.reduce(0) { sum, entry in
-            guard let start = entry.start_time, let end = entry.end_time else { return sum }
-            
-            let intervalInSeconds = end.timeIntervalSince(start)
+        let calendar = Calendar.current
+        let currentWeek = calendar.startOfWeek(for: Date())
+        return entries.reduce(0) { sum, entry in
+            guard let start = entry.start_time,
+                  isDate(start, inSameWeekAs: currentWeek, calendar: calendar),
+                  let end = entry.end_time else { return sum }
+            let interval = end.timeIntervalSince(start)
             let pauseSeconds = Double(entry.pause_minutes ?? 0) * 60
-            let hoursWorked = max(0, (intervalInSeconds - pauseSeconds) / 3600)
-            
-            return sum + hoursWorked
+            return sum + max(0, (interval - pauseSeconds) / 3600)
         }
     }
-    
-    /// Oblicza całkowitą liczbę godzin w bieżącym miesiącu
+
+    /// Suma godzin w bieżącym miesiącu
     var totalMonthlyHours: Double {
-        // Prosta logika zastępcza - w rzeczywistej aplikacji
-        // należałoby pobrać dane z całego miesiąca
-        return totalWeeklyHours * 4 // Przybliżenie dla przykładu
+        let calendar = Calendar.current
+        let currentMonth = startOfMonth(for: Date(), calendar: calendar)
+        return entries.reduce(0) { sum, entry in
+            guard let start = entry.start_time,
+                  isDate(start, inSameMonthAs: currentMonth, calendar: calendar),
+                  let end = entry.end_time else { return sum }
+            let interval = end.timeIntervalSince(start)
+            let pauseSeconds = Double(entry.pause_minutes ?? 0) * 60
+            return sum + max(0, (interval - pauseSeconds) / 3600)
+        }
     }
-    
-    /// Oblicza całkowitą liczbę godzin w bieżącym roku
+
+    /// Suma godzin w bieżącym roku
     var totalYearlyHours: Double {
-        // Prosta logika zastępcza - w rzeczywistej aplikacji
-        // należałoby pobrać dane z całego roku
-        return totalWeeklyHours * 52 // Przybliżenie dla przykładu
+        let calendar = Calendar.current
+        let currentYear = startOfYear(for: Date(), calendar: calendar)
+        return entries.reduce(0) { sum, entry in
+            guard let start = entry.start_time,
+                  isDate(start, inSameYearAs: currentYear, calendar: calendar),
+                  let end = entry.end_time else { return sum }
+            let interval = end.timeIntervalSince(start)
+            let pauseSeconds = Double(entry.pause_minutes ?? 0) * 60
+            return sum + max(0, (interval - pauseSeconds) / 3600)
+        }
+    }
+
+    // MARK: - Pomocnicze metody do pracy z datami
+
+    private func startOfWeek(for date: Date, calendar: Calendar = Calendar.current) -> Date {
+        let components = calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: date)
+        return calendar.date(from: components)!
+    }
+
+    private func startOfMonth(for date: Date, calendar: Calendar = Calendar.current) -> Date {
+        let components = calendar.dateComponents([.year, .month], from: date)
+        return calendar.date(from: components)!
+    }
+
+    private func startOfYear(for date: Date, calendar: Calendar = Calendar.current) -> Date {
+        let components = calendar.dateComponents([.year], from: date)
+        return calendar.date(from: components)!
+    }
+
+    private func isDate(_ date1: Date, inSameWeekAs date2: Date, calendar: Calendar = Calendar.current) -> Bool {
+        let components1 = calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: date1)
+        let components2 = calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: date2)
+        return components1.yearForWeekOfYear == components2.yearForWeekOfYear &&
+               components1.weekOfYear == components2.weekOfYear
+    }
+
+    private func isDate(_ date1: Date, inSameMonthAs date2: Date, calendar: Calendar = Calendar.current) -> Bool {
+        let components1 = calendar.dateComponents([.year, .month], from: date1)
+        let components2 = calendar.dateComponents([.year, .month], from: date2)
+        return components1.year == components2.year && components1.month == components2.month
+    }
+
+    private func isDate(_ date1: Date, inSameYearAs date2: Date, calendar: Calendar = Calendar.current) -> Bool {
+        let components1 = calendar.dateComponents([.year], from: date1)
+        let components2 = calendar.dateComponents([.year], from: date2)
+        return components1.year == components2.year
     }
 }

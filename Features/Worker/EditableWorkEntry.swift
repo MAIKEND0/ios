@@ -1,4 +1,7 @@
-// Features/Worker/EditableWorkEntry.swift
+//
+//  EditableWorkEntry.swift
+//  Features/Worker/EditableWorkEntry.swift
+//
 
 import Foundation
 
@@ -23,25 +26,25 @@ struct EditableWorkEntry: Identifiable {
 
     /// Inicjalizacja z APIService.WorkHourEntry
     init(from api: APIService.WorkHourEntry) {
-        self.id           = api.entry_id
-        self.date         = api.work_date
-        self.startTime    = api.start_time
-        self.endTime      = api.end_time
+        self.id = api.entry_id
+        self.date = api.work_date
+        self.startTime = api.start_time
+        self.endTime = api.end_time
         self.pauseMinutes = api.pause_minutes ?? 0
-        self.notes        = ""                   // jeśli API będzie zwracać opis, dodaj mapowanie
-        self.isDraft      = api.is_draft ?? true
-        self.status       = api.status ?? "pending"
+        self.notes = api.description ?? "" // Poprawne mapowanie pola description
+        self.isDraft = api.is_draft ?? true
+        self.status = api.status ?? "pending"
     }
 
     /// Pusty wpis dla dni bez danych
     init(date: Date) {
-        self.id           = Int(date.timeIntervalSince1970)
-        self.date         = date
-        self.startTime    = nil
-        self.endTime      = nil
+        self.id = Int(date.timeIntervalSince1970) // Tymczasowy ID oparty na czasie
+        self.date = date
+        self.startTime = nil
+        self.endTime = nil
         self.pauseMinutes = 0
-        self.notes        = ""
-        self.isDraft      = true
-        self.status       = "pending"
+        self.notes = ""
+        self.isDraft = true
+        self.status = "pending"
     }
 }

@@ -29,10 +29,16 @@ struct WorkerWorkHoursView: View {
                 // --- Zawartość ---
                 Group {
                     if viewModel.isLoading {
-                        ProgressView("Ładowanie…")
+                        // Poprawione: Używamy ProgressView() bez wartości, aby stworzyć prosty spinner
+                        ProgressView()
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .overlay(
+                                Text("Ładowanie…")
+                                    .foregroundColor(.gray)
+                                    .padding(.top, 40)
+                            )
                     }
-                    else if let err = viewModel.error {
+                    else if let err = viewModel.errorMessage {  // Poprawione: errorMessage zamiast error
                         Text(err)
                             .foregroundColor(Color.red)
                             .multilineTextAlignment(.center)

@@ -30,7 +30,7 @@
 		1B71F0212DD4972200731223 /* WorkerWorkHoursViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B71F0202DD4972000731223 /* WorkerWorkHoursViewModel.swift */; };
 		1B71F02D2DD4A10200731223 /* EditableWorkEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B71F02C2DD4A10100731223 /* EditableWorkEntry.swift */; };
 		1B71F02F2DD4A49100731223 /* WorkHourEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B71F02E2DD4A48F00731223 /* WorkHourEntry.swift */; };
-		1B71F0322DD4A4BB00731223 /* WorkHoursViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B71F0312DD4A4B400731223 /* WorkHoursViewModel.swift */; };
+		1B71F0322DD4A4BB00731223 /* WorkHoursViewModeltemp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B71F0312DD4A4B400731223 /* WorkHoursViewModeltemp.swift */; };
 		1B71F0352DD4AA0C00731223 /* DateFormatter+ISO.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B71F0342DD4A4E000731223 /* DateFormatter+ISO.swift */; };
 		1B71F0382DD4B29A00731223 /* WorkerDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B71F0362DD4AF7200731223 /* WorkerDashboardView.swift */; };
 		1B71F03A2DD4B53C00731223 /* WorkerDashboardViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B71F0392DD4B53700731223 /* WorkerDashboardViewModel.swift */; };
@@ -40,6 +40,7 @@
 		1B71F0422DD4BE9200731223 /* AuthInterceptor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B71F0412DD4BE9100731223 /* AuthInterceptor.swift */; };
 		1B71F0452DD4C41400731223 /* AuthDebugger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B71F0442DD4C40B00731223 /* AuthDebugger.swift */; };
 		1B71F0482DD4C44900731223 /* AuthenticationHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B71F0472DD4C43D00731223 /* AuthenticationHandler.swift */; };
+		1B7A27782DD6032F004FFF06 /* Notifications.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B7A27772DD6032B004FFF06 /* Notifications.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -86,7 +87,7 @@
 		1B71F0202DD4972000731223 /* WorkerWorkHoursViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkerWorkHoursViewModel.swift; sourceTree = "<group>"; };
 		1B71F02C2DD4A10100731223 /* EditableWorkEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditableWorkEntry.swift; sourceTree = "<group>"; };
 		1B71F02E2DD4A48F00731223 /* WorkHourEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkHourEntry.swift; sourceTree = "<group>"; };
-		1B71F0312DD4A4B400731223 /* WorkHoursViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkHoursViewModel.swift; sourceTree = "<group>"; };
+		1B71F0312DD4A4B400731223 /* WorkHoursViewModeltemp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkHoursViewModeltemp.swift; sourceTree = "<group>"; };
 		1B71F0342DD4A4E000731223 /* DateFormatter+ISO.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DateFormatter+ISO.swift"; sourceTree = "<group>"; };
 		1B71F0362DD4AF7200731223 /* WorkerDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkerDashboardView.swift; sourceTree = "<group>"; };
 		1B71F0392DD4B53700731223 /* WorkerDashboardViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkerDashboardViewModel.swift; sourceTree = "<group>"; };
@@ -96,6 +97,7 @@
 		1B71F0412DD4BE9100731223 /* AuthInterceptor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthInterceptor.swift; sourceTree = "<group>"; };
 		1B71F0442DD4C40B00731223 /* AuthDebugger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthDebugger.swift; sourceTree = "<group>"; };
 		1B71F0472DD4C43D00731223 /* AuthenticationHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthenticationHandler.swift; sourceTree = "<group>"; };
+		1B7A27772DD6032B004FFF06 /* Notifications.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notifications.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -334,13 +336,13 @@
 		1B71EFA02DD3128600731223 /* Worker */ = {
 			isa = PBXGroup;
 			children = (
+				1B71F02E2DD4A48F00731223 /* WorkHourEntry.swift */,
 				1B71F03F2DD4BBF900731223 /* WorkHourEntry+Extensions.swift */,
 				1B71F03B2DD4BA2900731223 /* WeeklyWorkEntryForm.swift */,
+				1B71F0362DD4AF7200731223 /* WorkerDashboardView.swift */,
 				1B71F0302DD4A4A600731223 /* ViewModels */,
-				1B71F02E2DD4A48F00731223 /* WorkHourEntry.swift */,
 				1B71F02C2DD4A10100731223 /* EditableWorkEntry.swift */,
 				1B71EFB22DD3180700731223 /* WorkerWorkHoursView.swift */,
-				1B71F0362DD4AF7200731223 /* WorkerDashboardView.swift */,
 				1B71EF9D2DD3128600731223 /* Dashboard */,
 				1B71EF9E2DD3128600731223 /* Notifications */,
 				1B71EF9F2DD3128600731223 /* WorkHours */,
@@ -436,7 +438,7 @@
 				1B71EFC32DD3307300731223 /* WeeklyWorkEntryViewModel.swift */,
 				1B71F0202DD4972000731223 /* WorkerWorkHoursViewModel.swift */,
 				1B71F01D2DD496FD00731223 /* WorkerTasksViewModel.swift */,
-				1B71F0312DD4A4B400731223 /* WorkHoursViewModel.swift */,
+				1B71F0312DD4A4B400731223 /* WorkHoursViewModeltemp.swift */,
 			);
 			path = ViewModels;
 			sourceTree = "<group>";
@@ -444,6 +446,7 @@
 		1B71F0332DD4A4D900731223 /* Utils */ = {
 			isa = PBXGroup;
 			children = (
+				1B7A27772DD6032B004FFF06 /* Notifications.swift */,
 				1B71F03D2DD4BBC300731223 /* Calendar+Extensions.swift */,
 				1B71F0342DD4A4E000731223 /* DateFormatter+ISO.swift */,
 			);
@@ -606,7 +609,7 @@
 				1B71EFBE2DD325AB00731223 /* MainTabView.swift in Sources */,
 				1B71EFB32DD3182200731223 /* WorkerWorkHoursView.swift in Sources */,
 				1B71EFD12DD33C9E00731223 /* Configuration.swift in Sources */,
-				1B71F0322DD4A4BB00731223 /* WorkHoursViewModel.swift in Sources */,
+				1B71F0322DD4A4BB00731223 /* WorkHoursViewModeltemp.swift in Sources */,
 				1B71F01E2DD496FF00731223 /* WorkerTasksViewModel.swift in Sources */,
 				1B71EFCD2DD3351E00731223 /* APIService.swift in Sources */,
 				1B71F0402DD4BBFB00731223 /* WorkHourEntry+Extensions.swift in Sources */,
@@ -614,6 +617,7 @@
 				1B71F0422DD4BE9200731223 /* AuthInterceptor.swift in Sources */,
 				1B71F03C2DD4BA2F00731223 /* WeeklyWorkEntryForm.swift in Sources */,
 				1B71EFEF2DD363F700731223 /* RoleBasedRootView.swift in Sources */,
+				1B7A27782DD6032F004FFF06 /* Notifications.swift in Sources */,
 				1B71F00F2DD470FA00731223 /* SplashLoginContainerView.swift in Sources */,
 				1B71EFF12DD371D700731223 /* KeychainService.swift in Sources */,
 				1B71EFEB2DD3624500731223 /* ProfileView.swift in Sources */,

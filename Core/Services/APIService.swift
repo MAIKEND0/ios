@@ -254,12 +254,13 @@ extension APIService {
         let pause_minutes: Int?
         let status: String?
         let is_draft: Bool?
+        let description: String?
         let tasks: Task?
 
         private enum CodingKeys: String, CodingKey {
             case entry_id, employee_id, task_id, work_date,
                  start_time, end_time, pause_minutes,
-                 status, is_draft, tasks = "Tasks"
+                 status, is_draft, description, tasks = "Tasks"
         }
     }
     
@@ -267,11 +268,6 @@ extension APIService {
         let message: String
         let confirmationSent: Bool?
         let confirmationToken: String?
+        let confirmationError: String?
     }
-}
-
-// MARK: - Authentication Notification
-
-extension Notification.Name {
-    static let authenticationFailure = Notification.Name("authenticationFailure")
 }

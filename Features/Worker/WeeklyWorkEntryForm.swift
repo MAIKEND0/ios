@@ -363,31 +363,30 @@ struct WeeklyWorkEntryForm: View {
     
     // Custom time picker that looks better in dark mode
     private func customTimePicker(label: String, time: Binding<Date>, displayTime: String) -> some View {
-        HStack {
+        ZStack(alignment: .trailing) {
+            // DatePicker jako główny element interaktywny
             DatePicker(
                 label,
                 selection: time,
                 displayedComponents: .hourAndMinute
             )
             .labelsHidden()
-            .datePickerStyle(CompactDatePickerStyle())
-            .opacity(0.01) // Make it invisible but still functional
-            .frame(maxWidth: .infinity)
+            .datePickerStyle(.compact)
+            .accentColor(.ksrYellow)
+            .frame(maxWidth: .infinity, alignment: .leading)
             
-            Spacer()
-            
-            // Overlay that shows the time but allows interaction with DatePicker
+            // Wyświetlanie czasu jako tekst (nieblokujące interakcji)
             Text(displayTime)
                 .font(.system(size: 20, weight: .semibold))
                 .foregroundColor(colorScheme == .dark ? .white : .black)
-                .frame(width: 80)
                 .padding(8)
                 .background(
                     RoundedRectangle(cornerRadius: 8)
                         .fill(colorScheme == .dark ? Color(.systemGray5).opacity(0.5) : Color(.systemGray6))
                 )
+                .padding(.trailing, 8)
+                .allowsHitTesting(false) // Wyłącz interakcję dla Text
         }
-        .frame(maxWidth: .infinity)
         .padding(8)
         .background(colorScheme == .dark ? Color(.systemGray6).opacity(0.2) : Color(.systemGray6))
         .cornerRadius(8)
@@ -625,10 +624,8 @@ struct WeeklyWorkEntryForm: View {
 
 struct WeeklyWorkEntryForm_Previews: PreviewProvider {
     static var previews: some View {
-        // Poniedziałek bieżącego tygodnia:
-        let monday = Calendar.current.date(
-            from: Calendar.current.dateComponents([.yearForWeekOfYear, .weekOfYear], from: Date())
-        )!
+        // Poniedziałek bieżącego tygodnia (May 12, 2025, since today is May 15, 2025)
+        let monday = Calendar.current.date(from: Calendar.current.dateComponents([.yearForWeekOfYear, .weekOfYear], from: Date()))!
         
         Group {
             WeeklyWorkEntryForm(

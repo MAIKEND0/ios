@@ -26,6 +26,7 @@ final class WorkerDashboardViewModel: ObservableObject {
     init() {
         // Przy starcie pobieramy ogłoszenia
         setupDataLoadedObserver()
+        setupWorkEntriesUpdateObserver()
     }
     
     private func setupDataLoadedObserver() {
@@ -41,6 +42,19 @@ final class WorkerDashboardViewModel: ObservableObject {
             }
         }
         .store(in: &cancellables)
+    }
+
+    private func setupWorkEntriesUpdateObserver() {
+        // Nasłuchuj powiadomienia o aktualizacji wpisów godzin pracy
+        NotificationCenter.default
+            .publisher(for: .workEntriesUpdated)
+            .sink { [weak self] _ in
+                #if DEBUG
+                print("[WorkerDashboardViewModel] Otrzymano powiadomienie o aktualizacji wpisów godzin pracy")
+                #endif
+                self?.loadHoursData()
+            }
+            .store(in: &cancellables)
     }
 
     /// Odświeża wszystkie dane: godziny, zadania i ogłoszenia
@@ -63,7 +77,7 @@ final class WorkerDashboardViewModel: ObservableObject {
         }
         
         // Załaduj dane z podrzędnych view modeli
-        hoursViewModel.loadEntries()
+        loadHoursData()
         tasksViewModel.loadTasks()
         loadAnnouncements()
         
@@ -71,6 +85,14 @@ final class WorkerDashboardViewModel: ObservableObject {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
             self?.objectWillChange.send()
         }
+    }
+
+    private func loadHoursData() {
+        // Pobieraj dane dla ostatnich 4 tygodni
+        let calendar = Calendar.current
+        let endDate = Date()
+        let startDate = calendar.date(byAdding: .weekOfYear, value: -4, to: endDate) ?? endDate
+        hoursViewModel.loadEntries(startDate: startDate, endDate: endDate)
     }
 
     /// Pobiera ogłoszenia z backendu przez APIService
