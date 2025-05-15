@@ -3,6 +3,7 @@ import SwiftUI
 struct WeeklyWorkEntryForm: View {
     @StateObject private var vm: WeeklyWorkEntryViewModel
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var colorScheme
     @State private var selectedDayIndex: Int = 0
     @State private var showingCalendarView = false
     
@@ -56,6 +57,7 @@ struct WeeklyWorkEntryForm: View {
                 // Przyciski akcji na dole
                 bottomActionBar
             }
+            .background(Color(colorScheme == .dark ? .black : .systemGroupedBackground).ignoresSafeArea())
             .navigationTitle("Log Hours")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -64,11 +66,13 @@ struct WeeklyWorkEntryForm: View {
                         vm.saveDraft()
                     }
                     .fontWeight(.semibold)
+                    .foregroundColor(Color.ksrYellow)
                 }
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
                         dismiss()
                     }
+                    .foregroundColor(colorScheme == .dark ? .white : .blue)
                 }
                 
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -132,7 +136,7 @@ struct WeeklyWorkEntryForm: View {
                     .padding()
                 Spacer()
             }
-            .background(Color(.systemGroupedBackground))
+            .background(Color(colorScheme == .dark ? .black : .systemGroupedBackground))
             
             // Dni tygodnia - pills - teraz rozciągnięte na całą szerokość
             GeometryReader { geometry in
@@ -151,7 +155,7 @@ struct WeeklyWorkEntryForm: View {
                 .frame(height: 70) // Stała wysokość dla przycisków dni
             }
             .frame(height: 70)
-            .background(Color.white)
+            .background(colorScheme == .dark ? Color.black : Color.white)
             .overlay(
                 Rectangle()
                     .frame(height: 1)
@@ -173,6 +177,20 @@ struct WeeklyWorkEntryForm: View {
         let isToday = Calendar.current.isDateInToday(entry.date)
         let isFuture = entry.isFutureDate
         
+        let background: Color = {
+            if isSelected {
+                return isFuture ? Color.orange : Color.ksrYellow
+            } else {
+                if isToday {
+                    return Color.ksrYellow.opacity(0.15)
+                } else if isFuture {
+                    return Color.orange.opacity(0.1)
+                } else {
+                    return colorScheme == .dark ? Color(UIColor.systemGray6).opacity(0.3) : Color(UIColor.systemGray6)
+                }
+            }
+        }()
+        
         return VStack(spacing: 2) {
             Text(dayName)
                 .font(Font.caption2)
@@ -188,19 +206,26 @@ struct WeeklyWorkEntryForm: View {
                     .foregroundColor(isSelected ? .white : .orange)
             }
         }
-        .foregroundColor(isSelected ? Color.white : isToday ? Color.ksrYellow : isFuture ? Color.orange : Color.primary)
+        .foregroundColor(dayPillTextColor(isSelected: isSelected, isToday: isToday, isFuture: isFuture))
         .padding(.vertical, 10)
         .frame(maxWidth: .infinity) // Fill available width
         .background(
             RoundedRectangle(cornerRadius: 20)
-                .fill(
-                    isSelected ?
-                    (isFuture ? Color.orange : Color.ksrYellow) :
-                    isToday ? Color.ksrYellow.opacity(0.15) :
-                    isFuture ? Color.orange.opacity(0.1) : Color(.systemGray6)
-                )
+                .fill(background)
                 .padding(.horizontal, 4) // Add padding to the background for spacing
         )
+    }
+    
+    private func dayPillTextColor(isSelected: Bool, isToday: Bool, isFuture: Bool) -> Color {
+        if isSelected {
+            return .white
+        } else if isToday {
+            return Color.ksrYellow
+        } else if isFuture {
+            return .orange
+        } else {
+            return colorScheme == .dark ? .white : .primary
+        }
     }
     
     // MARK: - Day Entry Section
@@ -211,7 +236,7 @@ struct WeeklyWorkEntryForm: View {
             Text(formatDate(entry.date))
                 .font(Font.title3)
                 .fontWeight(.bold)
-                .foregroundColor(Color.ksrDarkGray)
+                .foregroundColor(colorScheme == .dark ? .white : Color.ksrDarkGray)
             
             // Status roboczy/złożony
             HStack {
@@ -243,7 +268,7 @@ struct WeeklyWorkEntryForm: View {
                     .foregroundColor(.secondary)
                     .frame(maxWidth: .infinity, alignment: .center)
                     .padding()
-                    .background(Color(.systemGray6))
+                    .background(colorScheme == .dark ? Color(.systemGray6).opacity(0.3) : Color(.systemGray6))
                     .cornerRadius(8)
             }
         }
@@ -255,47 +280,35 @@ struct WeeklyWorkEntryForm: View {
             VStack(alignment: .leading, spacing: 8) {
                 Text("Start Time")
                     .font(Font.subheadline)
-                    .foregroundColor(Color.ksrMediumGray)
+                    .foregroundColor(colorScheme == .dark ? .white.opacity(0.7) : Color.ksrMediumGray)
                 
-                // Kompaktowy selektor czasu
-                DatePicker(
-                    "Start Time",
-                    selection: startTimeBinding(for: index, defaultDate: entry.date),
-                    displayedComponents: .hourAndMinute
+                // Custom time picker control
+                customTimePicker(
+                    label: "Start Time",
+                    time: startTimeBinding(for: index, defaultDate: entry.date),
+                    displayTime: formatTimeOnly(entry.startTime ?? entry.date)
                 )
-                .labelsHidden()
-                .datePickerStyle(CompactDatePickerStyle()) // Kompaktowy styl
-                .frame(maxWidth: .infinity)
-                .padding(8)
-                .background(Color(.systemGray6))
-                .cornerRadius(8)
             }
             
             // Koniec
             VStack(alignment: .leading, spacing: 8) {
                 Text("End Time")
                     .font(Font.subheadline)
-                    .foregroundColor(Color.ksrMediumGray)
+                    .foregroundColor(colorScheme == .dark ? .white.opacity(0.7) : Color.ksrMediumGray)
                 
-                // Kompaktowy selektor czasu
-                DatePicker(
-                    "End Time",
-                    selection: endTimeBinding(for: index, defaultDate: entry.date),
-                    displayedComponents: .hourAndMinute
+                // Custom time picker control
+                customTimePicker(
+                    label: "End Time",
+                    time: endTimeBinding(for: index, defaultDate: entry.date),
+                    displayTime: formatTimeOnly(entry.endTime ?? entry.date)
                 )
-                .labelsHidden()
-                .datePickerStyle(CompactDatePickerStyle()) // Kompaktowy styl
-                .frame(maxWidth: .infinity)
-                .padding(8)
-                .background(Color(.systemGray6))
-                .cornerRadius(8)
             }
             
             // Przerwa
             VStack(alignment: .leading, spacing: 8) {
                 Text("Break (minutes)")
                     .font(Font.subheadline)
-                    .foregroundColor(Color.ksrMediumGray)
+                    .foregroundColor(colorScheme == .dark ? .white.opacity(0.7) : Color.ksrMediumGray)
                 
                 HStack {
                     Slider(value: pauseMinutesBinding(for: index), in: 0...120, step: 5)
@@ -304,7 +317,7 @@ struct WeeklyWorkEntryForm: View {
                     Text("\(Int(entry.pauseMinutes))")
                         .font(Font.headline)
                         .frame(width: 50)
-                        .foregroundColor(Color.ksrDarkGray)
+                        .foregroundColor(colorScheme == .dark ? .white : Color.ksrDarkGray)
                 }
             }
             
@@ -312,23 +325,72 @@ struct WeeklyWorkEntryForm: View {
             VStack(alignment: .leading, spacing: 8) {
                 Text("Notes (optional)")
                     .font(Font.subheadline)
-                    .foregroundColor(Color.ksrMediumGray)
+                    .foregroundColor(colorScheme == .dark ? .white.opacity(0.7) : Color.ksrMediumGray)
                 
-                TextEditor(text: notesBinding(for: index))
-                    .frame(height: 100)
-                    .padding(4)
-                    .background(Color(.systemGray6))
-                    .cornerRadius(8)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(Color(.systemGray3), lineWidth: 1)
-                    )
+                if colorScheme == .dark {
+                    // Dark mode version - custom text field
+                    ZStack(alignment: .topLeading) {
+                        TextEditor(text: notesBinding(for: index))
+                            .frame(height: 100)
+                            .padding(4)
+                            .foregroundColor(.white)
+                            .background(Color(.systemGray6).opacity(0.3))
+                            .cornerRadius(8)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(Color(.systemGray3), lineWidth: 1)
+                            )
+                    }
+                } else {
+                    // Light mode version
+                    TextEditor(text: notesBinding(for: index))
+                        .frame(height: 100)
+                        .padding(4)
+                        .background(Color(.systemGray6))
+                        .cornerRadius(8)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(Color(.systemGray3), lineWidth: 1)
+                        )
+                }
             }
         }
         .padding()
-        .background(Color.white)
+        .background(colorScheme == .dark ? Color(.systemGray6).opacity(0.2) : Color.white)
         .cornerRadius(12)
-        .shadow(color: Color.black.opacity(0.05), radius: 2, x: 0, y: 2)
+        .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.3 : 0.05), radius: 2, x: 0, y: 2)
+    }
+    
+    // Custom time picker that looks better in dark mode
+    private func customTimePicker(label: String, time: Binding<Date>, displayTime: String) -> some View {
+        HStack {
+            DatePicker(
+                label,
+                selection: time,
+                displayedComponents: .hourAndMinute
+            )
+            .labelsHidden()
+            .datePickerStyle(CompactDatePickerStyle())
+            .opacity(0.01) // Make it invisible but still functional
+            .frame(maxWidth: .infinity)
+            
+            Spacer()
+            
+            // Overlay that shows the time but allows interaction with DatePicker
+            Text(displayTime)
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundColor(colorScheme == .dark ? .white : .black)
+                .frame(width: 80)
+                .padding(8)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(colorScheme == .dark ? Color(.systemGray5).opacity(0.5) : Color(.systemGray6))
+                )
+        }
+        .frame(maxWidth: .infinity)
+        .padding(8)
+        .background(colorScheme == .dark ? Color(.systemGray6).opacity(0.2) : Color(.systemGray6))
+        .cornerRadius(8)
     }
     
     // MARK: - Week Summary Section
@@ -338,7 +400,7 @@ struct WeeklyWorkEntryForm: View {
             Text("Week Summary")
                 .font(Font.title3)
                 .fontWeight(.bold)
-                .foregroundColor(Color.ksrDarkGray)
+                .foregroundColor(colorScheme == .dark ? .white : Color.ksrDarkGray)
             
             VStack(spacing: 0) {
                 ForEach(0..<vm.weekData.count, id: \.self) { index in
@@ -351,7 +413,7 @@ struct WeeklyWorkEntryForm: View {
                         HStack {
                             Text(formatDayShort(entry.date))
                                 .font(Font.subheadline)
-                                .foregroundColor(entry.isFutureDate ? Color.orange : Color.ksrDarkGray)
+                                .foregroundColor(entry.isFutureDate ? Color.orange : (colorScheme == .dark ? .white : Color.ksrDarkGray))
                             
                             Spacer()
                             
@@ -378,18 +440,20 @@ struct WeeklyWorkEntryForm: View {
                         .background(
                             index == selectedDayIndex ?
                                 (entry.isFutureDate ? Color.orange.opacity(0.1) : Color.ksrYellow.opacity(0.1)) :
-                                (index % 2 == 0 ? Color(.systemGray6) : Color.white)
+                                (index % 2 == 0 ? (colorScheme == .dark ? Color(.systemGray6).opacity(0.3) : Color(.systemGray6)) :
+                                                 (colorScheme == .dark ? Color.black : Color.white))
                         )
                     }
                 }
                 
                 Divider()
+                    .background(colorScheme == .dark ? Color.gray.opacity(0.3) : Color.gray.opacity(0.2))
                 
                 // Suma
                 HStack {
                     Text("Total")
                         .font(Font.headline)
-                        .foregroundColor(Color.ksrDarkGray)
+                        .foregroundColor(colorScheme == .dark ? .white : Color.ksrDarkGray)
                     
                     Spacer()
                     
@@ -398,12 +462,12 @@ struct WeeklyWorkEntryForm: View {
                         .foregroundColor(Color.ksrYellow)
                 }
                 .padding()
-                .background(Color(.systemGray6).opacity(0.5))
+                .background(colorScheme == .dark ? Color(.systemGray6).opacity(0.2) : Color(.systemGray6).opacity(0.5))
             }
             .clipShape(RoundedRectangle(cornerRadius: 12))
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
-                    .stroke(Color(.systemGray4), lineWidth: 1)
+                    .stroke(colorScheme == .dark ? Color(.systemGray4).opacity(0.3) : Color(.systemGray4), lineWidth: 1)
             )
         }
     }
@@ -417,12 +481,12 @@ struct WeeklyWorkEntryForm: View {
             }
             .frame(maxWidth: .infinity)
             .padding()
-            .background(Color.white)
-            .foregroundColor(Color.ksrDarkGray)
+            .background(colorScheme == .dark ? Color(.systemGray6).opacity(0.3) : Color.white)
+            .foregroundColor(colorScheme == .dark ? .white : Color.ksrDarkGray)
             .font(Font.headline)
             .overlay(
                 RoundedRectangle(cornerRadius: 10)
-                    .stroke(Color.ksrDarkGray, lineWidth: 1)
+                    .stroke(colorScheme == .dark ? Color.gray.opacity(0.5) : Color.ksrDarkGray, lineWidth: 1)
             )
             .cornerRadius(10)
             
@@ -439,7 +503,7 @@ struct WeeklyWorkEntryForm: View {
         .padding()
         .background(
             Rectangle()
-                .fill(Color.white)
+                .fill(colorScheme == .dark ? Color.black : Color.white)
                 .shadow(color: Color.black.opacity(0.05), radius: 4, y: -2)
         )
     }
@@ -457,12 +521,12 @@ struct WeeklyWorkEntryForm: View {
                     .scaleEffect(1.5)
                 Text("Saving...")
                     .font(Font.headline)
-                    .foregroundColor(Color.ksrDarkGray)
+                    .foregroundColor(colorScheme == .dark ? .white : Color.ksrDarkGray)
             }
             .padding(24)
             .background(
                 RoundedRectangle(cornerRadius: 16)
-                    .fill(Color(.systemBackground))
+                    .fill(colorScheme == .dark ? Color(.systemGray6).opacity(0.7) : Color(.systemBackground))
                     .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
             )
         }
@@ -551,6 +615,12 @@ struct WeeklyWorkEntryForm: View {
         formatter.dateFormat = "MMM d, yyyy"
         return formatter.string(from: date)
     }
+    
+    private func formatTimeOnly(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH.mm"
+        return formatter.string(from: date)
+    }
 }
 
 struct WeeklyWorkEntryForm_Previews: PreviewProvider {
@@ -559,10 +629,21 @@ struct WeeklyWorkEntryForm_Previews: PreviewProvider {
         let monday = Calendar.current.date(
             from: Calendar.current.dateComponents([.yearForWeekOfYear, .weekOfYear], from: Date())
         )!
-        WeeklyWorkEntryForm(
-            employeeId: "123",
-            taskId: "456",
-            selectedMonday: monday
-        )
+        
+        Group {
+            WeeklyWorkEntryForm(
+                employeeId: "123",
+                taskId: "456",
+                selectedMonday: monday
+            )
+            .preferredColorScheme(.light)
+            
+            WeeklyWorkEntryForm(
+                employeeId: "123",
+                taskId: "456",
+                selectedMonday: monday
+            )
+            .preferredColorScheme(.dark)
+        }
     }
 }

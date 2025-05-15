@@ -178,6 +178,12 @@ extension APIService {
             .eraseToAnyPublisher()
     }
 
+    /// Pobiera wpisy godzin pracy dla danego pracownika i tygodnia
+    /// - Parameters:
+    ///   - employeeId: ID pracownika
+    ///   - weekStartDate: Data początku tygodnia (poniedziałek) w formacie YYYY-MM-DD
+    ///   - isDraft: Optional - filtrowanie po stanie draft/nondraft
+    /// - Returns: Publisher z tablicą wpisów lub błędem
     func fetchWorkEntries(
         employeeId: String,
         weekStartDate: String,
@@ -191,10 +197,14 @@ extension APIService {
             .eraseToAnyPublisher()
     }
 
-    func upsertWorkEntries(_ entries: [WorkHourEntry]) -> AnyPublisher<Bool, APIError> {
+    /// Upsert'uje wpisy godzin pracy (tworzy lub aktualizuje)
+    /// - Parameter entries: Tablica wpisów do zapisania
+    /// - Returns: Publisher z odpowiedzią lub błędem
+    func upsertWorkEntries(_ entries: [WorkHourEntry]) -> AnyPublisher<WorkEntryResponse, APIError> {
         let body = ["entries": entries]
         return makeRequest(endpoint: "/api/app/work-entries", method: "POST", body: body)
-            .map { _ in true }
+            .decode(type: WorkEntryResponse.self, decoder: jsonDecoder())
+            .mapError { ($0 as? APIError) ?? .decodingError($0) }
             .eraseToAnyPublisher()
     }
 
@@ -251,6 +261,12 @@ extension APIService {
                  start_time, end_time, pause_minutes,
                  status, is_draft, tasks = "Tasks"
         }
+    }
+    
+    struct WorkEntryResponse: Codable {
+        let message: String
+        let confirmationSent: Bool?
+        let confirmationToken: String?
     }
 }
 

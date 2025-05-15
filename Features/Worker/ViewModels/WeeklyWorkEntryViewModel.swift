@@ -42,6 +42,8 @@ final class WeeklyWorkEntryViewModel: ObservableObject {
     @Published var showAlert = false
     @Published var alertTitle = ""
     @Published var alertMessage = ""
+    @Published var isConfirmingSubmission = false
+    @Published var anyDrafts = true
 
     // MARK: – Parametry inicjalizatora
     private let employeeId: String
@@ -83,6 +85,10 @@ final class WeeklyWorkEntryViewModel: ObservableObject {
                               isDraft: true)
             .flatMap { drafts -> AnyPublisher<[EditableWorkEntry], APIService.APIError> in
                 let draftModels = drafts.map(EditableWorkEntry.init)
+                
+                // Update anyDrafts flag
+                self.anyDrafts = !draftModels.isEmpty
+                
                 if !draftModels.isEmpty {
                     // Jeśli są drafty, zwracamy je od razu
                     return Just(draftModels)
@@ -169,7 +175,7 @@ final class WeeklyWorkEntryViewModel: ObservableObject {
         }
         
         // Przekształć EditableWorkEntry na model API
-        let apiEntries = prepareEntriesForAPI()
+        let apiEntries = prepareEntriesForAPI(asDraft: true)
         
         // Jeśli nie ma wpisów do zapisania, pokaż sukces
         if apiEntries.isEmpty {
@@ -209,9 +215,7 @@ final class WeeklyWorkEntryViewModel: ObservableObject {
                 
                 switch completion {
                 case .finished:
-                    self.alertTitle = "Sukces"
-                    self.alertMessage = "Zapisano wersję roboczą"
-                    self.showAlert = true
+                    break // Handle success in receiveValue
                     
                 case .failure(let error):
                     // Obsłuż błędy API
@@ -234,16 +238,25 @@ final class WeeklyWorkEntryViewModel: ObservableObject {
                     print("[WeeklyWorkEntryViewModel] Zapisywanie nie powiodło się: \(error.localizedDescription)")
                     #endif
                 }
-            } receiveValue: { _ in
+            } receiveValue: { [weak self] response in
+                guard let self = self else { return }
+                self.alertTitle = "Sukces"
+                self.alertMessage = "Zapisano wersję roboczą"
+                self.showAlert = true
+                self.anyDrafts = true
+                
                 #if DEBUG
-                print("[WeeklyWorkEntryViewModel] Zapis pomyślny")
+                print("[WeeklyWorkEntryViewModel] Zapis pomyślny: \(response.message)")
                 #endif
             }
             .store(in: &cancellables)
     }
     
-    /// Przygotowuje dane do zatwierdzenia (status: submitted)
+    /// Przygotowuje dane do zatwierdzenia (status: submitted) i wysyła email do przełożonego
     func submitEntries() {
+        // Set loading state
+        isLoading = true
+        
         // Check for future dates - reject any entries with future dates
         let futureDates = weekData.filter { entry in
             return entry.isFutureDate && (entry.startTime != nil || entry.endTime != nil)
@@ -259,6 +272,9 @@ final class WeeklyWorkEntryViewModel: ObservableObject {
             return
         }
         
+        // Set isConfirmingSubmission flag to prevent duplicate submissions
+        isConfirmingSubmission = true
+        
         // Oznacz wszystkie wpisy jako nie-draft
         for i in 0..<weekData.count {
             if !weekData[i].isFutureDate {
@@ -267,12 +283,69 @@ final class WeeklyWorkEntryViewModel: ObservableObject {
             }
         }
         
-        // Zapisz ze zmienionym statusem
-        saveDraft()
+        // Przekształć EditableWorkEntry na model API - explicitly set is_draft to false
+        let apiEntries = prepareEntriesForAPI(asDraft: false)
+        
+        // Jeśli nie ma wpisów do zapisania, pokaż błąd
+        if apiEntries.isEmpty {
+            DispatchQueue.main.async {
+                self.alertTitle = "Błąd"
+                self.alertMessage = "Brak godzin do wysłania. Wprowadź godziny pracy."
+                self.showAlert = true
+                self.isLoading = false
+                self.isConfirmingSubmission = false
+            }
+            return
+        }
+        
+        // Send entries - the backend will handle the confirmation email
+        APIService.shared.upsertWorkEntries(apiEntries)
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] completion in
+                guard let self = self else { return }
+                self.isLoading = false
+                self.isConfirmingSubmission = false
+                
+                switch completion {
+                case .finished:
+                    break // Handle success in receiveValue
+                    
+                case .failure(let error):
+                    self.alertTitle = "Error"
+                    
+                    if case .serverError(401, _) = error {
+                        self.alertMessage = "Session expired. Please log in again."
+                    } else {
+                        self.alertMessage = "Failed to submit hours: \(error.localizedDescription)"
+                    }
+                    
+                    self.showAlert = true
+                    
+                    #if DEBUG
+                    print("[WeeklyWorkEntryViewModel] Submit failed: \(error.localizedDescription)")
+                    #endif
+                }
+            } receiveValue: { [weak self] response in
+                guard let self = self else { return }
+                // Successfully saved and sent confirmation
+                self.alertTitle = "Success"
+                self.alertMessage = "Your hours have been submitted and sent for approval to your supervisor."
+                self.showAlert = true
+                self.anyDrafts = false
+                
+                #if DEBUG
+                print("[WeeklyWorkEntryViewModel] Submit successful. Message: \(response.message)")
+                print("[WeeklyWorkEntryViewModel] Confirmation sent: \(response.confirmationSent ?? false)")
+                if let token = response.confirmationToken {
+                    print("[WeeklyWorkEntryViewModel] Confirmation token: \(token)")
+                }
+                #endif
+            }
+            .store(in: &cancellables)
     }
     
     /// Konwertuje bieżące dane EditableWorkEntry na model WorkHourEntry dla API
-    private func prepareEntriesForAPI() -> [APIService.WorkHourEntry] {
+    private func prepareEntriesForAPI(asDraft: Bool = true) -> [APIService.WorkHourEntry] {
         // Filtruj wpisy bez czasu rozpoczęcia lub zakończenia i przyszłe dni
         let validEntries = weekData.filter { entry in
             return entry.startTime != nil && entry.endTime != nil && !entry.isFutureDate
@@ -280,10 +353,8 @@ final class WeeklyWorkEntryViewModel: ObservableObject {
         
         // Mapuj EditableWorkEntry na APIService.WorkHourEntry
         return validEntries.compactMap { entry in
-            // Konwertuj na model API
-            // UWAGA: Możesz potrzebować dostosować te pola do modelu API
+            // Tworzymy nowy UUID dla każdego nowego wpisu zamiast używać UUID z EditableWorkEntry
             return APIService.WorkHourEntry(
-                // Nie przekazuj argumentu id, ponieważ jest generowany automatycznie w inicjalizatorze
                 entry_id: entry.id,
                 employee_id: Int(employeeId) ?? 0,
                 task_id: Int(taskId) ?? 0,
@@ -291,8 +362,8 @@ final class WeeklyWorkEntryViewModel: ObservableObject {
                 start_time: entry.startTime,
                 end_time: entry.endTime,
                 pause_minutes: entry.pauseMinutes,
-                status: entry.isDraft ? "pending" : "submitted",
-                is_draft: entry.isDraft,
+                status: asDraft ? "pending" : "submitted",
+                is_draft: asDraft,
                 tasks: nil
             )
         }
