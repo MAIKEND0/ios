@@ -1,3 +1,8 @@
+//
+//  WeeklyWorkEntryViewModel.swift
+//  KSR Cranes App
+//
+
 import Foundation
 import Combine
 
@@ -20,6 +25,12 @@ extension EditableWorkEntry {
         let minutes = Int((totalHoursValue - Double(hours)) * 60)
         
         return "\(hours)h \(minutes)m"
+    }
+    
+    /// Checks if this entry is for a future date (after today)
+    var isFutureDate: Bool {
+        let calendar = Calendar.current
+        return calendar.startOfDay(for: date) > calendar.startOfDay(for: Date())
     }
 }
 
@@ -46,7 +57,10 @@ final class WeeklyWorkEntryViewModel: ObservableObject {
         self.taskId = taskId
         self.selectedMonday = selectedMonday
 
-        // Automatycznie ładujemy dane z API
+        // Create empty week data first to ensure we have 7 days
+        self.weekData = generateEmptyWeekData()
+        
+        // Automatically load data from API
         loadWeekDataFromAPI()
     }
 
@@ -85,10 +99,24 @@ final class WeeklyWorkEntryViewModel: ObservableObject {
                 }
             }
             .map { entries in
-                // Jeśli wynik nadal pusty, generujemy pustą tablicę 7 dni
-                entries.isEmpty
-                    ? self.generateEmptyWeekData()
-                    : entries
+                // If there are no entries from API, use our existing empty data
+                if entries.isEmpty {
+                    return self.weekData
+                }
+                
+                // Since API may not return all 7 days, we need to ensure we have data for each day
+                // Start with our empty week data
+                var result = self.generateEmptyWeekData()
+                
+                // Replace the empty entries with data from API where we have it
+                let calendar = Calendar.current
+                for apiEntry in entries {
+                    if let index = result.firstIndex(where: { calendar.isDate($0.date, inSameDayAs: apiEntry.date) }) {
+                        result[index] = apiEntry
+                    }
+                }
+                
+                return result
             }
             .catch { error -> AnyPublisher<[EditableWorkEntry], Never> in
                 // Obsługa błędu bezpośrednio tutaj
@@ -102,7 +130,7 @@ final class WeeklyWorkEntryViewModel: ObservableObject {
                     self.alertMessage = error.localizedDescription
                 }
                 // Zwracamy puste dane tygodnia
-                return Just(self.generateEmptyWeekData())
+                return Just(self.weekData)
                     .eraseToAnyPublisher()
             }
             .receive(on: DispatchQueue.main)
@@ -123,6 +151,21 @@ final class WeeklyWorkEntryViewModel: ObservableObject {
         // Odśwież token przed wysłaniem żądania
         if APIService.shared.authToken == nil {
             APIService.shared.refreshTokenFromKeychain()
+        }
+        
+        // Check for future dates - reject any entries with future dates
+        let futureDates = weekData.filter { entry in
+            return entry.isFutureDate && (entry.startTime != nil || entry.endTime != nil)
+        }
+        
+        if !futureDates.isEmpty {
+            DispatchQueue.main.async {
+                self.alertTitle = "Błąd"
+                self.alertMessage = "Nie można zapisać godzin dla przyszłych dni."
+                self.showAlert = true
+                self.isLoading = false
+            }
+            return
         }
         
         // Przekształć EditableWorkEntry na model API
@@ -201,13 +244,27 @@ final class WeeklyWorkEntryViewModel: ObservableObject {
     
     /// Przygotowuje dane do zatwierdzenia (status: submitted)
     func submitEntries() {
-        // Tutaj możemy oznaczać wpisy jako submitted (nie draft)
-        // Najprostsze rozwiązanie: najpierw oznaczyć jako nie-draft, potem wywołać saveDraft()
+        // Check for future dates - reject any entries with future dates
+        let futureDates = weekData.filter { entry in
+            return entry.isFutureDate && (entry.startTime != nil || entry.endTime != nil)
+        }
+        
+        if !futureDates.isEmpty {
+            DispatchQueue.main.async {
+                self.alertTitle = "Błąd"
+                self.alertMessage = "Nie można zapisać godzin dla przyszłych dni."
+                self.showAlert = true
+                self.isLoading = false
+            }
+            return
+        }
         
         // Oznacz wszystkie wpisy jako nie-draft
         for i in 0..<weekData.count {
-            weekData[i].isDraft = false
-            weekData[i].status = "submitted"
+            if !weekData[i].isFutureDate {
+                weekData[i].isDraft = false
+                weekData[i].status = "submitted"
+            }
         }
         
         // Zapisz ze zmienionym statusem
@@ -216,9 +273,9 @@ final class WeeklyWorkEntryViewModel: ObservableObject {
     
     /// Konwertuje bieżące dane EditableWorkEntry na model WorkHourEntry dla API
     private func prepareEntriesForAPI() -> [APIService.WorkHourEntry] {
-        // Filtruj wpisy bez czasu rozpoczęcia lub zakończenia
+        // Filtruj wpisy bez czasu rozpoczęcia lub zakończenia i przyszłe dni
         let validEntries = weekData.filter { entry in
-            return entry.startTime != nil && entry.endTime != nil
+            return entry.startTime != nil && entry.endTime != nil && !entry.isFutureDate
         }
         
         // Mapuj EditableWorkEntry na APIService.WorkHourEntry
@@ -250,6 +307,11 @@ final class WeeklyWorkEntryViewModel: ObservableObject {
                 arr.append(.init(date: date))
             }
         }
+        
+        #if DEBUG
+        print("[WeeklyWorkEntryViewModel] Generated \(arr.count) empty days for week")
+        #endif
+        
         return arr
     }
     
@@ -258,24 +320,40 @@ final class WeeklyWorkEntryViewModel: ObservableObject {
     /// Aktualizuje godzinę rozpoczęcia dla wpisu
     func updateStartTime(at index: Int, to newTime: Date) {
         guard index < weekData.count else { return }
+        // Don't allow updates for future dates
+        if weekData[index].isFutureDate {
+            return
+        }
         weekData[index].startTime = newTime
     }
     
     /// Aktualizuje godzinę zakończenia dla wpisu
     func updateEndTime(at index: Int, to newTime: Date) {
         guard index < weekData.count else { return }
+        // Don't allow updates for future dates
+        if weekData[index].isFutureDate {
+            return
+        }
         weekData[index].endTime = newTime
     }
     
     /// Aktualizuje opis/notatki dla wpisu
     func updateDescription(at index: Int, to newDescription: String) {
         guard index < weekData.count else { return }
+        // Don't allow updates for future dates
+        if weekData[index].isFutureDate {
+            return
+        }
         weekData[index].notes = newDescription
     }
     
     /// Aktualizuje minuty przerwy dla wpisu
     func updatePauseMinutes(at index: Int, to minutes: Int) {
         guard index < weekData.count else { return }
+        // Don't allow updates for future dates
+        if weekData[index].isFutureDate {
+            return
+        }
         weekData[index].pauseMinutes = minutes
     }
 }
