@@ -1,30 +1,25 @@
-// UI/Views/Worker/WorkerWorkHoursView.swift
-// KSR Cranes App
-//
-// Created by Maksymilian Marcinowski on 14/05/2025.
-//
-
 import SwiftUI
 
+// Komponent ekranu wyświetlającego godziny pracy pracownika
 struct WorkerWorkHoursView: View {
-    @StateObject private var vm = WorkerWorkHoursViewModel()
+    @StateObject private var viewModel = WorkerWorkHoursViewModel()
 
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
                 // --- Nawigacja między tygodniami ---
                 HStack {
-                    Button { vm.previousWeek() } label: {
+                    Button { viewModel.previousWeek() } label: {
                         Image(systemName: "chevron.left")
-                            .font(.title2)
+                            .font(Font.title2)
                     }
                     Spacer()
-                    Text(DateFormatter.weekHeader.string(from: vm.weekStart))
-                        .font(.headline)
+                    Text(formatWeekHeader(viewModel.weekStart))
+                        .font(Font.headline)
                     Spacer()
-                    Button { vm.nextWeek() } label: {
+                    Button { viewModel.nextWeek() } label: {
                         Image(systemName: "chevron.right")
-                            .font(.title2)
+                            .font(Font.title2)
                     }
                 }
                 .padding()
@@ -33,27 +28,27 @@ struct WorkerWorkHoursView: View {
 
                 // --- Zawartość ---
                 Group {
-                    if vm.isLoading {
+                    if viewModel.isLoading {
                         ProgressView("Ładowanie…")
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                     }
-                    else if let err = vm.error {
+                    else if let err = viewModel.error {
                         Text(err)
-                            .foregroundColor(.red)
+                            .foregroundColor(Color.red)
                             .multilineTextAlignment(.center)
                             .padding()
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                     }
-                    else if vm.entries.isEmpty {
+                    else if viewModel.entries.isEmpty {
                         Text("Brak wpisów w tym tygodniu")
-                            .foregroundColor(.secondary)
+                            .foregroundColor(Color.secondary)
                             .padding()
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                     }
                     else {
-                        List(vm.entries) { entry in
+                        List(viewModel.entries) { entry in
                             HStack {
-                                Text(entry.workDateFormatted)
+                                Text(formatDate(entry.work_date))
                                 Spacer()
                                 Text("\(entry.startTimeFormatted ?? "-")–\(entry.endTimeFormatted ?? "-")")
                             }
@@ -61,7 +56,7 @@ struct WorkerWorkHoursView: View {
                         }
                         .listStyle(.plain)
                         .refreshable {
-                            vm.loadEntries()
+                            viewModel.loadEntries()
                         }
                     }
                 }
@@ -69,24 +64,27 @@ struct WorkerWorkHoursView: View {
                 Spacer(minLength: 0)
             }
             .navigationTitle("Godziny pracy")
-            .onAppear { vm.loadEntries() }
+            .onAppear { viewModel.loadEntries() }
         }
+    }
+    
+    // Funkcje pomocnicze do formatowania dat
+    private func formatWeekHeader(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "'Tydz.' W (dd.MM.yyyy)"
+        return formatter.string(from: date)
+    }
+    
+    private func formatDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .none
+        return formatter.string(from: date)
     }
 }
 
 struct WorkerWorkHoursView_Previews: PreviewProvider {
     static var previews: some View {
         WorkerWorkHoursView()
-            .preferredColorScheme(.light)
     }
-}
-
-// Tylko nagłówek tygodnia – resztę bierzesz z DateFormatter+ISO.swift
-private extension DateFormatter {
-    /// “Tydz. 23 (10.05.2025)”
-    static let weekHeader: DateFormatter = {
-        let df = DateFormatter()
-        df.dateFormat = "'Tydz.' W (dd.MM.yyyy)"
-        return df
-    }()
 }

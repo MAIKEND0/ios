@@ -1,13 +1,7 @@
-//
-//  WorkerWorkHoursViewModel.swift
-//  KSR Cranes App
-//
-//  Created by Maksymilian Marcinowski on 14/05/2025.
-//
-
 import Foundation
 import Combine
 
+/// ViewModel do wyświetlania i analizy godzin pracy pracownika
 final class WorkerWorkHoursViewModel: ObservableObject {
     @Published var entries: [APIService.WorkHourEntry] = []
     @Published var isLoading = false
@@ -64,5 +58,32 @@ final class WorkerWorkHoursViewModel: ObservableObject {
             byAdding: .weekOfYear, value: 1, to: weekStart
         )!
         loadEntries()
+    }
+    
+    /// Oblicza całkowitą liczbę godzin w bieżącym tygodniu
+    var totalWeeklyHours: Double {
+        entries.reduce(0) { sum, entry in
+            guard let start = entry.start_time, let end = entry.end_time else { return sum }
+            
+            let intervalInSeconds = end.timeIntervalSince(start)
+            let pauseSeconds = Double(entry.pause_minutes ?? 0) * 60
+            let hoursWorked = max(0, (intervalInSeconds - pauseSeconds) / 3600)
+            
+            return sum + hoursWorked
+        }
+    }
+    
+    /// Oblicza całkowitą liczbę godzin w bieżącym miesiącu
+    var totalMonthlyHours: Double {
+        // Prosta logika zastępcza - w rzeczywistej aplikacji
+        // należałoby pobrać dane z całego miesiąca
+        return totalWeeklyHours * 4 // Przybliżenie dla przykładu
+    }
+    
+    /// Oblicza całkowitą liczbę godzin w bieżącym roku
+    var totalYearlyHours: Double {
+        // Prosta logika zastępcza - w rzeczywistej aplikacji
+        // należałoby pobrać dane z całego roku
+        return totalWeeklyHours * 52 // Przybliżenie dla przykładu
     }
 }

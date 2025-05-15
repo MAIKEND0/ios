@@ -1,16 +1,29 @@
-//
-//  WeeklyWorkEntryViewModel.swift
-//  KSR Cranes App
-//
-//  Created by Maksymilian Marcinowski on 13/05/2025.
-//
-
 import Foundation
 import Combine
 
-/// ViewModel do obsługi tygodniowych wpisów godzin pracy.
-/// Ładuje najpierw wersje robocze, a jeśli ich brak – wpisy zatwierdzone.
-/// W razie błędu generuje pusty zestaw 7 dni od poniedziałku.
+// Rozszerzenie dla EditableWorkEntry, aby dodać właściwość dla przechowywania przerwy w minutach
+extension EditableWorkEntry {
+    /// Przechowuje minuty przerwy jako double dla obsługi suwaka
+    var pauseMinutesDouble: Double {
+        get { Double(pauseMinutes) }
+        set { pauseMinutes = Int(newValue) }
+    }
+    
+    /// Oblicza łączną liczbę godzin jako string (np. "8h 30m")
+    var formattedTotalHours: String {
+        if startTime == nil || endTime == nil {
+            return "0h 0m"
+        }
+        
+        let totalHoursValue = totalHours
+        let hours = Int(totalHoursValue)
+        let minutes = Int((totalHoursValue - Double(hours)) * 60)
+        
+        return "\(hours)h \(minutes)m"
+    }
+}
+
+/// Dostosowany ViewModel do obsługi tygodniowych wpisów godzin pracy.
 final class WeeklyWorkEntryViewModel: ObservableObject {
     // MARK: – Publikowane właściwości
     @Published var weekData: [EditableWorkEntry] = []
@@ -126,7 +139,21 @@ final class WeeklyWorkEntryViewModel: ObservableObject {
             return
         }
         
-        // Wykonaj zapytanie API z rozszerzonymi logami debugowania
+        // Walidacja dat - sprawdź, czy end_time jest późniejsze niż start_time
+        for entry in apiEntries {
+            if let start = entry.start_time, let end = entry.end_time,
+               end.compare(start) == .orderedAscending {
+                DispatchQueue.main.async {
+                    self.alertTitle = "Błąd"
+                    self.alertMessage = "Godzina zakończenia nie może być wcześniejsza niż godzina rozpoczęcia."
+                    self.showAlert = true
+                    self.isLoading = false
+                }
+                return
+            }
+        }
+        
+        // Wykonaj zapytanie API
         #if DEBUG
         print("[WeeklyWorkEntryViewModel] Wysyłanie \(apiEntries.count) wpisów do API")
         #endif
@@ -150,6 +177,10 @@ final class WeeklyWorkEntryViewModel: ObservableObject {
                     // Specjalna obsługa błędów 401
                     if case .serverError(401, _) = error {
                         self.alertMessage = "Wygasła sesja. Zaloguj się ponownie."
+                    } else if case .serverError(500, let message) = error,
+                              message.contains("Unique constraint failed") {
+                        // Specjalna obsługa błędu unikalności
+                        self.alertMessage = "Wystąpił konflikt danych. Wpis o tych parametrach już istnieje."
                     } else {
                         self.alertMessage = error.localizedDescription
                     }
@@ -166,6 +197,21 @@ final class WeeklyWorkEntryViewModel: ObservableObject {
                 #endif
             }
             .store(in: &cancellables)
+    }
+    
+    /// Przygotowuje dane do zatwierdzenia (status: submitted)
+    func submitEntries() {
+        // Tutaj możemy oznaczać wpisy jako submitted (nie draft)
+        // Najprostsze rozwiązanie: najpierw oznaczyć jako nie-draft, potem wywołać saveDraft()
+        
+        // Oznacz wszystkie wpisy jako nie-draft
+        for i in 0..<weekData.count {
+            weekData[i].isDraft = false
+            weekData[i].status = "submitted"
+        }
+        
+        // Zapisz ze zmienionym statusem
+        saveDraft()
     }
     
     /// Konwertuje bieżące dane EditableWorkEntry na model WorkHourEntry dla API
@@ -188,8 +234,8 @@ final class WeeklyWorkEntryViewModel: ObservableObject {
                 start_time: entry.startTime,
                 end_time: entry.endTime,
                 pause_minutes: entry.pauseMinutes,
-                status: "pending",
-                is_draft: true,
+                status: entry.isDraft ? "pending" : "submitted",
+                is_draft: entry.isDraft,
                 tasks: nil
             )
         }
@@ -225,5 +271,11 @@ final class WeeklyWorkEntryViewModel: ObservableObject {
     func updateDescription(at index: Int, to newDescription: String) {
         guard index < weekData.count else { return }
         weekData[index].notes = newDescription
+    }
+    
+    /// Aktualizuje minuty przerwy dla wpisu
+    func updatePauseMinutes(at index: Int, to minutes: Int) {
+        guard index < weekData.count else { return }
+        weekData[index].pauseMinutes = minutes
     }
 }

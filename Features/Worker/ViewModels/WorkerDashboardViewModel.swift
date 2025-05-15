@@ -2,23 +2,22 @@ import Foundation
 import Combine
 
 /// ViewModel dla ekranu Dashboard pracownika:
-/// – trzyma podgląd godzin (hoursViewModel)
-/// – trzyma listę zadań (tasksViewModel)
-/// – pobiera i przechowuje ogłoszenia (announcements)
+/// – przechowuje statystyki godzin (hoursViewModel)
+/// – przechowuje listę zadań (tasksViewModel)
+/// – zarządza ogłoszeniami (announcements)
 final class WorkerDashboardViewModel: ObservableObject {
-    /// tygodniowe statystyki godzin
+    // ViewModele podrzędne
     @Published var hoursViewModel = WorkerWorkHoursViewModel()
-    /// lista zadań przypisanych do pracownika
     @Published var tasksViewModel = WorkerTasksViewModel()
-    /// ogłoszenia
+    
+    // Ogłoszenia
     @Published var announcements: [Announcement] = []
-    /// flaga ładowania ogłoszeń
     @Published var isLoadingAnnouncements = false
 
     private var cancellables = Set<AnyCancellable>()
 
     init() {
-        // od razu przy starcie pobieramy ogłoszenia
+        // Przy starcie pobieramy ogłoszenia
         loadAnnouncements()
     }
 
@@ -50,7 +49,9 @@ final class WorkerDashboardViewModel: ObservableObject {
     /// Zwraca ID pierwszego zadania (np. do otworzenia WeeklyWorkEntryForm)
     func getSelectedTaskId() -> String {
         // zakładamy, że Task ma pole `task_id: Int`
-        let id = tasksViewModel.tasks.first?.task_id
-        return id.map(String.init) ?? ""
+        guard let id = tasksViewModel.tasks.first?.task_id else {
+            return ""
+        }
+        return String(id)
     }
 }

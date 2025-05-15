@@ -44,7 +44,6 @@ final class APIService {
     
     // MARK: - Token Management
     
-    /// Odświeża token z keychain
     func refreshTokenFromKeychain() {
         if let token = KeychainService.shared.getToken() {
             self.authToken = token
@@ -54,25 +53,18 @@ final class APIService {
         }
     }
     
-    /// Poprawnie formatuje i dodaje token do żądania
     private func applyAuthToken(to request: inout URLRequest) {
         if let token = authToken, !token.isEmpty {
-            // Upewnij się, że token ma prefix "Bearer " jakiego oczekuje backend
             let tokenValue = token.hasPrefix("Bearer ") ? token : "Bearer \(token)"
             request.setValue(tokenValue, forHTTPHeaderField: "Authorization")
-            
             #if DEBUG
             print("[APIService] Dodano token do żądania: \(request.url?.absoluteString ?? "")")
             #endif
         } else {
-            // Próbuj pobrać token z keychain
             refreshTokenFromKeychain()
-            
-            // Spróbuj ponownie z odświeżonym tokenem
             if let token = authToken, !token.isEmpty {
                 let tokenValue = token.hasPrefix("Bearer ") ? token : "Bearer \(token)"
                 request.setValue(tokenValue, forHTTPHeaderField: "Authorization")
-                
                 #if DEBUG
                 print("[APIService] Dodano odświeżony token do żądania")
                 #endif
@@ -98,8 +90,6 @@ final class APIService {
         var request = URLRequest(url: url)
         request.httpMethod = method
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-        
-        // Dodaj token z odpowiednią obsługą błędów
         applyAuthToken(to: &request)
         
         if method != "GET", let body = body {
@@ -107,7 +97,6 @@ final class APIService {
                 let encoder = JSONEncoder()
                 encoder.dateEncodingStrategy = .iso8601
                 request.httpBody = try encoder.encode(body)
-                
                 #if DEBUG
                 if let jsonStr = String(data: request.httpBody!, encoding: .utf8) {
                     print("[APIService] Request body: \(jsonStr)")
@@ -131,8 +120,8 @@ final class APIService {
                 
                 #if DEBUG
                 print("[APIService] Status: \(http.statusCode)")
-                if let responseStr = String(data: data, encoding: .utf8) {
-                    print("[APIService] Response: \(responseStr.prefix(200))")
+                if let respStr = String(data: data, encoding: .utf8) {
+                    print("[APIService] Response: \(respStr.prefix(200))")
                 }
                 #endif
                 
@@ -141,23 +130,17 @@ final class APIService {
                         .setFailureType(to: APIError.self)
                         .eraseToAnyPublisher()
                 } else if http.statusCode == 401 {
-                    // Specjalna obsługa błędu 401 Unauthorized - token wygasł
                     #if DEBUG
                     print("[APIService] ⚠️ 401 Unauthorized - token może być wygasły")
                     #endif
-                    
-                    // Powiadom o błędzie autoryzacji
                     DispatchQueue.main.async {
                         NotificationCenter.default.post(name: .authenticationFailure, object: nil)
                     }
-                    
                     return Fail(error: APIError.serverError(401, "Authentication expired. Please log in again."))
                         .eraseToAnyPublisher()
                 } else {
                     let raw = String(data: data, encoding: .utf8) ?? ""
-                    let msg = raw.isEmpty
-                        ? "Code \(http.statusCode)"
-                        : "\(raw.prefix(200))…"
+                    let msg = raw.isEmpty ? "Code \(http.statusCode)" : "\(raw.prefix(200))…"
                     return Fail(error: APIError.serverError(http.statusCode, msg))
                         .eraseToAnyPublisher()
                 }
@@ -167,7 +150,20 @@ final class APIService {
 
     private func jsonDecoder() -> JSONDecoder {
         let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
+        // Custom ISO8601 with fractional seconds:
+        let isoFormatter = ISO8601DateFormatter()
+        isoFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        decoder.dateDecodingStrategy = .custom { decoder in
+            let container = try decoder.singleValueContainer()
+            let dateString = try container.decode(String.self)
+            if let date = isoFormatter.date(from: dateString) {
+                return date
+            }
+            throw DecodingError.dataCorruptedError(
+                in: container,
+                debugDescription: "Nie można rozkodować daty: \(dateString)"
+            )
+        }
         return decoder
     }
 }
@@ -175,7 +171,6 @@ final class APIService {
 // MARK: – App‐only endpoints (iOS)
 
 extension APIService {
-    /// Pobiera zadania przypisane do pracownika
     func fetchTasks() -> AnyPublisher<[Task], APIError> {
         makeRequest(endpoint: "/api/app/tasks", method: "GET", body: Optional<String>.none)
             .decode(type: [Task].self, decoder: jsonDecoder())
@@ -183,23 +178,19 @@ extension APIService {
             .eraseToAnyPublisher()
     }
 
-    /// Pobiera wpisy godzin pracy (draft lub finalne) dla danego tygodnia
     func fetchWorkEntries(
         employeeId: String,
         weekStartDate: String,
         isDraft: Bool? = nil
     ) -> AnyPublisher<[WorkHourEntry], APIError> {
         var ep = "/api/app/work-entries?employee_id=\(employeeId)&selectedMonday=\(weekStartDate)"
-        if let d = isDraft {
-            ep += "&is_draft=\(d)"
-        }
+        if let d = isDraft { ep += "&is_draft=\(d)" }
         return makeRequest(endpoint: ep, method: "GET", body: Optional<String>.none)
             .decode(type: [WorkHourEntry].self, decoder: jsonDecoder())
             .mapError { ($0 as? APIError) ?? .decodingError($0) }
             .eraseToAnyPublisher()
     }
 
-    /// Upsert (draft lub finalne) wpisów godzin pracy
     func upsertWorkEntries(_ entries: [WorkHourEntry]) -> AnyPublisher<Bool, APIError> {
         let body = ["entries": entries]
         return makeRequest(endpoint: "/api/app/work-entries", method: "POST", body: body)
@@ -207,15 +198,13 @@ extension APIService {
             .eraseToAnyPublisher()
     }
 
-    /// **NOWOŚĆ** – pobiera listę ogłoszeń
     func fetchAnnouncements() -> AnyPublisher<[Announcement], APIError> {
         makeRequest(endpoint: "/api/app/announcements", method: "GET", body: Optional<String>.none)
             .decode(type: [Announcement].self, decoder: jsonDecoder())
             .mapError { ($0 as? APIError) ?? .decodingError($0) }
             .eraseToAnyPublisher()
     }
-    
-    /// Testuje połączenie z API
+
     func testConnection() -> AnyPublisher<String, APIError> {
         makeRequest(endpoint: "/api/app/tasks", method: "GET", body: Optional<String>.none)
             .map { _ in "Connection successful" }
@@ -255,7 +244,7 @@ extension APIService {
         let pause_minutes: Int?
         let status: String?
         let is_draft: Bool?
-        let tasks: Task?   // JSON pole "Tasks"
+        let tasks: Task?
 
         private enum CodingKeys: String, CodingKey {
             case entry_id, employee_id, task_id, work_date,
@@ -266,6 +255,7 @@ extension APIService {
 }
 
 // MARK: - Authentication Notification
+
 extension Notification.Name {
     static let authenticationFailure = Notification.Name("authenticationFailure")
 }

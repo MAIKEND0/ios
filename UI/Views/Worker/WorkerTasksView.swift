@@ -1,10 +1,3 @@
-//
-//  WorkerTasksView.swift
-//  KSR Cranes App
-//
-//  Created by Maksymilian Marcinowski on 14/05/2025.
-//
-
 import SwiftUI
 
 struct WorkerTasksView: View {
@@ -16,16 +9,16 @@ struct WorkerTasksView: View {
                 if viewModel.isLoading {
                     ProgressView("Ładowanie zadań…")
                 } else if let error = viewModel.error {
-                    Text(error).foregroundColor(.red)
+                    Text(error).foregroundColor(Color.red)
                 } else {
                     List(viewModel.tasks, id: \.task_id) { task in
                         NavigationLink(destination: WorkerTaskDetailView(task: task)) {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(task.title)
-                                    .font(.headline)
+                                    .font(Font.headline)
                                 Text(task.project?.title ?? "Brak projektu")
-                                    .font(.subheadline)
-                                    .foregroundColor(.secondary)
+                                    .font(Font.subheadline)
+                                    .foregroundColor(Color.secondary)
                             }
                         }
                     }
@@ -36,6 +29,8 @@ struct WorkerTasksView: View {
         }
     }
 }
+
+// Usunięta definicja WorkerTaskDetailView - już istnieje w oddzielnym pliku
 
 struct WorkerTasksView_Previews: PreviewProvider {
     static var previews: some View {

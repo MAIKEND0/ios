@@ -8,11 +8,22 @@ extension DateFormatter {
     df.locale = Locale(identifier: "en_US_POSIX")
     return df
   }()
+
   /// Format HH:mm
   static let time: DateFormatter = {
     let df = DateFormatter()
     df.dateStyle = .none
     df.timeStyle = .short
+    return df
+  }()
+
+  /// Format ISO8601 with fractional seconds: yyyy-MM-dd'T'HH:mm:ss.SSSXXXXX
+  static let iso8601WithFractions: DateFormatter = {
+    let df = DateFormatter()
+    df.calendar = Calendar(identifier: .iso8601)
+    df.locale = Locale(identifier: "en_US_POSIX")
+    df.timeZone = TimeZone(secondsFromGMT: 0)
+    df.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSXXXXX"
     return df
   }()
 }
