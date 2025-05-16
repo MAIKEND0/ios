@@ -9,10 +9,12 @@ import SwiftUI
 
 @main
 struct KSR_Cranes_AppApp: App {
+    // Użyj dedykowanego OrientationManagerDelegate
+    @UIApplicationDelegateAdaptor(OrientationManagerDelegate.self) var appDelegate
+    
     var body: some Scene {
         WindowGroup {
-           
-          SplashLoginContainerView()
+            SplashLoginContainerView()
         }
     }
 }

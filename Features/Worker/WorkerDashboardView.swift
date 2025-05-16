@@ -35,7 +35,17 @@ struct WorkerDashboardView: View {
         startPoint: .topLeading,
         endPoint: .bottomTrailing
     )
-    
+    private let gradientPurple = LinearGradient(
+        colors: [Color(hex: "ab47bc"), Color(hex: "8e24aa")],
+        startPoint: .topLeading,
+        endPoint: .bottomTrailing
+    )
+    private let gradientTeal = LinearGradient(
+        colors: [Color(hex: "26a69a"), Color(hex: "00897b")],
+        startPoint: .topLeading,
+        endPoint: .bottomTrailing
+    )
+
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -138,28 +148,42 @@ struct WorkerDashboardView: View {
             // Karta 1: Godziny w tym tygodniu
             summaryCard(
                 title: "Hours This Week",
-                value: String(format: "%.1f", viewModel.hoursViewModel.totalWeeklyHours),
+                value: String(format: "%.1f", viewModel.totalWeeklyHours),
                 background: gradientGreen
             )
             
-            // Karta 2: Godziny w tym miesiącu
+            // Karta 2: Kilometry w tym tygodniu
+            summaryCard(
+                title: "Km This Week",
+                value: String(format: "%.2f", viewModel.totalWeeklyKm),
+                background: gradientPurple
+            )
+            
+            // Karta 3: Godziny w tym miesiącu
             summaryCard(
                 title: "Hours This Month",
-                value: String(format: "%.1f", viewModel.hoursViewModel.totalMonthlyHours),
+                value: String(format: "%.1f", viewModel.totalMonthlyHours),
                 background: gradientBlue
             )
             
-            // Karta 3: Aktywne zadania
+            // Karta 4: Kilometry w tym miesiącu
+            summaryCard(
+                title: "Km This Month",
+                value: String(format: "%.2f", viewModel.totalMonthlyKm),
+                background: gradientTeal
+            )
+            
+            // Karta 5: Aktywne zadania
             summaryCard(
                 title: "Active Tasks",
                 value: "\(viewModel.tasksViewModel.tasks.count)",
                 background: gradientOrange
             )
             
-            // Karta 4: Godziny w tym roku
+            // Karta 6: Godziny w tym roku
             summaryCard(
                 title: "Hours This Year",
-                value: String(format: "%.1f", viewModel.hoursViewModel.totalYearlyHours),
+                value: String(format: "%.1f", viewModel.totalYearlyHours),
                 background: gradientPink
             )
         }
@@ -287,6 +311,7 @@ struct WorkerDashboardView: View {
         let weekNumber: Int
         let year: Int
         let hours: Double
+        let km: Double // Dodano km
         let status: EntryStatus
         
         var weekLabel: String {
@@ -309,7 +334,7 @@ struct WorkerDashboardView: View {
         }
     }
     
-    private func taskCard(task: APIService.Task) -> some View {
+    private func taskCard(task: WorkerAPIService.Task) -> some View {
         // Find entries related to this task
         let taskEntries = viewModel.hoursViewModel.entries.filter {
             $0.task_id == task.task_id
@@ -330,6 +355,12 @@ struct WorkerDashboardView: View {
             print("[WorkerDashboardView] Entry for task \(task.task_id) on \(entry.work_date): \(hours) hours")
             #endif
             return sum + hours
+        }
+        
+        // Calculate total kilometers using entries directly
+        let totalKm = taskEntries.reduce(0.0) { sum, entry in
+            guard let km = entry.km else { return sum }
+            return sum + km
         }
         
         // Get weeks statuses for the last 4 weeks
@@ -403,16 +434,31 @@ struct WorkerDashboardView: View {
             .background(colorScheme == .dark ? Color(.systemGray6).opacity(0.2) : Color(.systemGray6).opacity(0.5))
             .cornerRadius(8)
             
-            // Informacje o godzinach
+            // Informacje o godzinach i kilometrach
             HStack {
-                Text("Total Logged Hours:")
-                    .font(Font.caption)
-                    .foregroundColor(colorScheme == .dark ? .white.opacity(0.7) : Color.ksrMediumGray)
-                
-                Text("\(totalHours, specifier: "%.2f") hrs")
-                    .font(Font.caption)
-                    .fontWeight(.semibold)
-                    .foregroundColor(Color.ksrYellow)
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Text("Total Logged Hours:")
+                            .font(Font.caption)
+                            .foregroundColor(colorScheme == .dark ? .white.opacity(0.7) : Color.ksrMediumGray)
+                        
+                        Text("\(totalHours, specifier: "%.2f") hrs")
+                            .font(Font.caption)
+                            .fontWeight(.semibold)
+                            .foregroundColor(Color.ksrYellow)
+                    }
+                    HStack {
+                        Text("Total Logged Km:")
+                            .font(Font.caption)
+                            .foregroundColor(colorScheme == .dark ? .white.opacity(0.7) : Color.ksrMediumGray)
+                        
+                        Text("\(totalKm, specifier: "%.2f") km")
+                            .font(Font.caption)
+                            .fontWeight(.semibold)
+                            .foregroundColor(Color.ksrYellow)
+                    }
+                }
+                Spacer()
             }
             
             // Przyciski akcji
@@ -442,7 +488,7 @@ struct WorkerDashboardView: View {
     }
     
     // Function to determine the effective status for an entry
-    private func effectiveStatus(for entry: APIService.WorkHourEntry) -> EntryStatus {
+    private func effectiveStatus(for entry: WorkerAPIService.WorkHourEntry) -> EntryStatus {
         // Najpierw sprawdzamy confirmation_status, jeśli istnieje i nie jest "pending"
         if let confirmationStatus = entry.confirmation_status, confirmationStatus != "pending" {
             switch confirmationStatus {
@@ -477,7 +523,7 @@ struct WorkerDashboardView: View {
     }
     
     // Function to generate week statuses for a task
-    private func getWeekStatuses(for taskId: Int, entries: [APIService.WorkHourEntry], count: Int) -> [WeekStatus] {
+    private func getWeekStatuses(for taskId: Int, entries: [WorkerAPIService.WorkHourEntry], count: Int) -> [WeekStatus] {
         var statuses: [WeekStatus] = []
         let calendar = Calendar.current
         let currentDate = Date()
@@ -499,6 +545,12 @@ struct WorkerDashboardView: View {
             let interval = endTime.timeIntervalSince(startTime)
             let pauseSeconds = Double(entry.pause_minutes ?? 0) * 60
             return sum + max(0, (interval - pauseSeconds) / 3600)
+        }
+        
+        // Calculate kilometers for the current week
+        let currentWeekKm = currentWeekEntries.reduce(0.0) { sum, entry in
+            guard let km = entry.km else { return sum }
+            return sum + km
         }
         
         // Determine status for the current week
@@ -527,6 +579,7 @@ struct WorkerDashboardView: View {
             weekNumber: currentWeek,
             year: currentYear,
             hours: currentWeekHours,
+            km: currentWeekKm, // Dodano km
             status: currentWeekStatus
         ))
         
@@ -553,6 +606,18 @@ struct WorkerDashboardView: View {
                 let interval = endTime.timeIntervalSince(startTime)
                 let pauseSeconds = Double(entry.pause_minutes ?? 0) * 60
                 return sum + max(0, (interval - pauseSeconds) / 3600)
+            }
+            
+            // Calculate kilometers for the week
+            let weekKm = entries.reduce(0.0) { sum, entry in
+                guard entry.task_id == taskId,
+                      let km = entry.km,
+                      let startTime = entry.start_time,
+                      calendar.component(.weekOfYear, from: startTime) == weekNumber,
+                      calendar.component(.year, from: startTime) == year else {
+                    return sum
+                }
+                return sum + km
             }
             
             // Determine status based on entries
@@ -586,6 +651,7 @@ struct WorkerDashboardView: View {
                 weekNumber: weekNumber,
                 year: year,
                 hours: weekHours,
+                km: weekKm, // Dodano km
                 status: status
             ))
         }
@@ -602,11 +668,16 @@ struct WorkerDashboardView: View {
                 .foregroundColor(colorScheme == .dark ? .white : .primary)
                 .frame(width: 70, alignment: .leading)
             
-            // Hours
-            Text("\(weekStatus.hours, specifier: "%.2f") hrs")
-                .font(.caption)
-                .foregroundColor(Color.ksrYellow)
-                .frame(width: 80)
+            // Hours and Km
+            VStack(alignment: .leading) {
+                Text("\(weekStatus.hours, specifier: "%.2f") hrs")
+                    .font(.caption)
+                    .foregroundColor(Color.ksrYellow)
+                Text("\(weekStatus.km, specifier: "%.2f") km") // Dodano km
+                    .font(.caption)
+                    .foregroundColor(Color.ksrYellow)
+            }
+            .frame(width: 80)
             
             Spacer()
             
@@ -705,7 +776,7 @@ struct WorkerDashboardView: View {
     }
 
     @ViewBuilder
-    private func workHourCard(entry: APIService.WorkHourEntry) -> some View {
+    private func workHourCard(entry: WorkerAPIService.WorkHourEntry) -> some View {
         // Używamy obliczania godzin z WeeklyWorkEntryViewModel
         let hours = computeEntryDuration(
             start: entry.start_time,
@@ -758,6 +829,11 @@ struct WorkerDashboardView: View {
                     .font(Font.caption)
                     .foregroundColor(Color.secondary)
             }
+            
+            // Kilometry
+            Text("Kilometers: \(entry.kmFormatted)")
+                .font(Font.caption)
+                .foregroundColor(Color.secondary)
         }
         .padding()
         .background(colorScheme == .dark ? Color(.systemGray6).opacity(0.2) : Color(UIColor.secondarySystemGroupedBackground))
@@ -781,7 +857,7 @@ struct WorkerDashboardView: View {
     }
 
     @ViewBuilder
-    private func announcementCard(announcement: Announcement) -> some View {
+    private func announcementCard(announcement: WorkerAPIService.Announcement) -> some View {
         VStack(alignment: .leading, spacing: 5) {
             HStack {
                 Text(announcement.title)
@@ -826,7 +902,7 @@ struct WorkerDashboardView: View {
         .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
     }
     
-    private func priorityLabel(for priority: AnnouncementPriority) -> some View {
+    private func priorityLabel(for priority: WorkerAPIService.AnnouncementPriority) -> some View {
         let (color, text) = priorityConfig(for: priority)
         return Text(text)
             .font(Font.caption2)
@@ -837,7 +913,7 @@ struct WorkerDashboardView: View {
             .cornerRadius(4)
     }
     
-    private func priorityConfig(for priority: AnnouncementPriority) -> (Color, String) {
+    private func priorityConfig(for priority: WorkerAPIService.AnnouncementPriority) -> (Color, String) {
         switch priority {
         case .high:
             return (Color.red, "High")

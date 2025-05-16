@@ -45,11 +45,11 @@ final class AuthService {
     }
 
     /// Logowanie użytkownika
-    func login(email: String, password: String) -> AnyPublisher<AuthResponse, APIError> {
+    func login(email: String, password: String) -> AnyPublisher<AuthResponse, BaseAPIService.APIError> {
         let creds = LoginCredentials(email: email, password: password)
         let urlString = baseURL + "/api/app-login"
         guard let url = URL(string: urlString) else {
-            return Fail(error: APIError.invalidURL).eraseToAnyPublisher()
+            return Fail(error: BaseAPIService.APIError.invalidURL).eraseToAnyPublisher()
         }
 
         var req = URLRequest(url: url)
@@ -57,7 +57,7 @@ final class AuthService {
         do {
             req.httpBody = try JSONEncoder().encode(creds)
         } catch {
-            return Fail(error: APIError.decodingError(error)).eraseToAnyPublisher()
+            return Fail(error: BaseAPIService.APIError.decodingError(error)).eraseToAnyPublisher()
         }
 
         #if DEBUG
@@ -66,10 +66,10 @@ final class AuthService {
         #endif
 
         return session.dataTaskPublisher(for: req)
-            .mapError { APIError.networkError($0) }
-            .flatMap { data, resp -> AnyPublisher<Data, APIError> in
+            .mapError { BaseAPIService.APIError.networkError($0) }
+            .flatMap { data, resp -> AnyPublisher<Data, BaseAPIService.APIError> in
                 guard let http = resp as? HTTPURLResponse else {
-                    return Fail(error: APIError.invalidResponse).eraseToAnyPublisher()
+                    return Fail(error: BaseAPIService.APIError.invalidResponse).eraseToAnyPublisher()
                 }
                 #if DEBUG
                 print("[AuthService] ← Status: \(http.statusCode)")
@@ -80,21 +80,30 @@ final class AuthService {
 
                 if (200...299).contains(http.statusCode) {
                     return Just(data)
-                        .setFailureType(to: APIError.self)
+                        .setFailureType(to: BaseAPIService.APIError.self)
                         .eraseToAnyPublisher()
                 } else {
                     let raw = String(data: data, encoding: .utf8) ?? ""
                     let msg = raw.isEmpty ? "Code \(http.statusCode)" : "\(raw.prefix(200))…"
-                    return Fail(error: APIError.serverError(http.statusCode, msg))
+                    return Fail(error: BaseAPIService.APIError.serverError(http.statusCode, msg))
                         .eraseToAnyPublisher()
                 }
             }
             .decode(type: AuthResponse.self, decoder: JSONDecoder())
-            .mapError { ($0 as? APIError) ?? .decodingError($0) }
+            .mapError { ($0 as? BaseAPIService.APIError) ?? .decodingError($0) }
             .handleEvents(receiveOutput: { [weak self] auth in
                 // Store token as-is, without adding Bearer prefix
-                // The APIService will add the Bearer prefix when needed
-                APIService.shared.authToken = auth.token
+                // The appropriate APIService will add the Bearer prefix when needed
+                switch auth.role {
+                case "byggeleder":
+                    ManagerAPIService.shared.authToken = auth.token
+                case "arbejder", "chef", "system":
+                    WorkerAPIService.shared.authToken = auth.token
+                default:
+                    #if DEBUG
+                    print("[AuthService] ⚠️ Unknown role: \(auth.role)")
+                    #endif
+                }
                 self?.save(auth: auth)
                 
                 #if DEBUG
@@ -125,9 +134,9 @@ final class AuthService {
         }
         #endif
         
-        UserDefaults.standard.set(auth.employeeId,   forKey: Configuration.StorageKeys.employeeId)
-        UserDefaults.standard.set(auth.name,         forKey: Configuration.StorageKeys.employeeName)
-        UserDefaults.standard.set(auth.role,         forKey: Configuration.StorageKeys.employeeRole)
+        UserDefaults.standard.set(auth.employeeId, forKey: Configuration.StorageKeys.employeeId)
+        UserDefaults.standard.set(auth.name, forKey: Configuration.StorageKeys.employeeName)
+        UserDefaults.standard.set(auth.role, forKey: Configuration.StorageKeys.employeeRole)
     }
 
     func getSavedToken() -> String? {
@@ -146,7 +155,18 @@ final class AuthService {
 
     var isLoggedIn: Bool {
         if let token = getSavedToken() {
-            APIService.shared.authToken = APIService.shared.authToken ?? token
+            let role = getEmployeeRole()
+            switch role {
+            case "byggeleder":
+                ManagerAPIService.shared.authToken = ManagerAPIService.shared.authToken ?? token
+            case "arbejder", "chef", "system":
+                WorkerAPIService.shared.authToken = WorkerAPIService.shared.authToken ?? token
+            default:
+                #if DEBUG
+                print("[AuthService] ⚠️ Unknown role, cannot set token")
+                #endif
+                return false
+            }
             return true
         }
         return false
@@ -157,7 +177,10 @@ final class AuthService {
         print("[AuthService] Logging out user")
         #endif
         
-        APIService.shared.authToken = nil
+        // Clear tokens from both services
+        ManagerAPIService.shared.authToken = nil
+        WorkerAPIService.shared.authToken = nil
+        
         let deleteResult = KeychainService.shared.deleteToken()
         
         #if DEBUG
@@ -192,8 +215,19 @@ final class AuthService {
     
     #if DEBUG
     /// For debugging: tests the token by making a simple API call
-    func testToken() -> AnyPublisher<String, APIService.APIError> {
-        return APIService.shared.testConnection()
+    func testToken() -> AnyPublisher<String, BaseAPIService.APIError> {
+        let role = getEmployeeRole()
+        switch role {
+        case "byggeleder":
+            return ManagerAPIService.shared.testConnection()
+        case "arbejder", "chef", "system":
+            return WorkerAPIService.shared.testConnection()
+        default:
+            #if DEBUG
+            print("[AuthService] ⚠️ Unknown role, cannot test token")
+            #endif
+            return Fail(error: BaseAPIService.APIError.unknown).eraseToAnyPublisher()
+        }
     }
     #endif
 }

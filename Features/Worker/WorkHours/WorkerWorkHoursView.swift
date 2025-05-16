@@ -1,8 +1,3 @@
-//
-//  WorkerWorkHoursView.swift
-//  KSR Cranes App
-//
-
 import SwiftUI
 
 // Component displaying the worker's work hours for a selected task
@@ -188,7 +183,7 @@ struct WorkerWorkHoursView: View {
     }
 
     // Row for each work hour entry
-    private func workHourRow(entry: WorkerAPIService.WorkHourEntry) -> some View {
+    private func workHourRow(entry: APIService.WorkHourEntry) -> some View {
         let status = effectiveStatus(for: entry)
         let (statusLabel, statusColor) = statusLabel(for: status)
 
@@ -229,13 +224,6 @@ struct WorkerWorkHoursView: View {
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
-
-            // Kilometers
-            if let km = entry.km {
-                Text("Kilometers: \(km, specifier: "%.2f") km")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
         }
         .padding(.vertical, 8)
         .padding(.horizontal, 4)
@@ -245,7 +233,7 @@ struct WorkerWorkHoursView: View {
     }
 
     // Function to determine the effective status for an entry
-    private func effectiveStatus(for entry: WorkerAPIService.WorkHourEntry) -> EntryStatus {
+    private func effectiveStatus(for entry: APIService.WorkHourEntry) -> EntryStatus {
         if let confirmationStatus = entry.confirmation_status, confirmationStatus != "pending" {
             switch confirmationStatus {
             case "confirmed":

@@ -70,34 +70,63 @@ class AuthDebugger {
     
     private init() {}
     
-    /// Sprawdza czy token istnieje w pamięci
+    /// Sprawdza, czy token istnieje w pamięci
     func hasTokenInMemory() -> Bool {
-        return APIService.shared.authToken != nil
+        let role = AuthService.shared.getEmployeeRole()
+        switch role {
+        case "byggeleder":
+            return ManagerAPIService.shared.authToken != nil
+        case "arbejder", "chef", "system":
+            return WorkerAPIService.shared.authToken != nil
+        default:
+            return false
+        }
     }
     
-    /// Sprawdza czy token istnieje w keychain
+    /// Sprawdza, czy token istnieje w keychain
     func hasTokenInKeychain() -> Bool {
         return KeychainService.shared.getToken() != nil
     }
     
     /// Odświeża token z keychain do pamięci
     func refreshToken() {
-        APIService.shared.refreshTokenFromKeychain()
+        let role = AuthService.shared.getEmployeeRole()
+        switch role {
+        case "byggeleder":
+            ManagerAPIService.shared.refreshTokenFromKeychain()
+        case "arbejder", "chef", "system":
+            WorkerAPIService.shared.refreshTokenFromKeychain()
+        default:
+            print("[AuthDebugger] Brak roli użytkownika, nie można odświeżyć tokenu")
+        }
     }
     
     /// Zwraca informacje o tokenie
     func getTokenInfo() -> String {
         var info = ""
+        let role = AuthService.shared.getEmployeeRole()
         
-        if let token = APIService.shared.authToken {
+        // Informacje o tokenie w pamięci
+        let token: String?
+        switch role {
+        case "byggeleder":
+            token = ManagerAPIService.shared.authToken
+        case "arbejder", "chef", "system":
+            token = WorkerAPIService.shared.authToken
+        default:
+            token = nil
+        }
+        
+        if let token = token {
             let preview = String(token.prefix(10)) + "..."
             info += "Token w pamięci: ✅\n\(preview)\n\n"
         } else {
             info += "Token w pamięci: ❌ Brak\n\n"
         }
         
-        if let token = KeychainService.shared.getToken() {
-            let preview = String(token.prefix(10)) + "..."
+        // Informacje o tokenie w keychain
+        if let keychainToken = KeychainService.shared.getToken() {
+            let preview = String(keychainToken.prefix(10)) + "..."
             info += "Token w keychain: ✅\n\(preview)\n\n"
         } else {
             info += "Token w keychain: ❌ Brak\n\n"
@@ -106,21 +135,44 @@ class AuthDebugger {
         // Dodatkowe informacje
         info += "Zalogowany: \(AuthService.shared.isLoggedIn ? "✅" : "❌")\n"
         info += "ID pracownika: \(AuthService.shared.getEmployeeId() ?? "Brak")\n"
-        info += "Rola: \(AuthService.shared.getEmployeeRole() ?? "Brak")"
+        info += "Rola: \(role ?? "Brak")"
         
         return info
     }
     
     /// Testuje token wykonując proste zapytanie
     func testToken() {
-        guard APIService.shared.authToken != nil else {
+        let role = AuthService.shared.getEmployeeRole()
+        var hasToken = false
+        
+        switch role {
+        case "byggeleder":
+            hasToken = ManagerAPIService.shared.authToken != nil
+        case "arbejder", "chef", "system":
+            hasToken = WorkerAPIService.shared.authToken != nil
+        default:
+            hasToken = false
+        }
+        
+        guard hasToken else {
             print("[AuthDebugger] Brak tokenu do testowania")
             return
         }
         
         print("[AuthDebugger] Testowanie tokenu...")
         
-        APIService.shared.testConnection()
+        let publisher: AnyPublisher<String, BaseAPIService.APIError>
+        switch role {
+        case "byggeleder":
+            publisher = ManagerAPIService.shared.testConnection()
+        case "arbejder", "chef", "system":
+            publisher = WorkerAPIService.shared.testConnection()
+        default:
+            print("[AuthDebugger] Brak roli użytkownika, nie można testować tokenu")
+            return
+        }
+        
+        publisher
             .sink(receiveCompletion: { completion in
                 switch completion {
                 case .finished:

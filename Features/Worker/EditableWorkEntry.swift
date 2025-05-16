@@ -16,6 +16,7 @@ struct EditableWorkEntry: Identifiable {
     var notes: String
     var isDraft: Bool
     var status: String
+    var km: Double? // Dodano pole km
 
     /// Total work hours (in hours)
     var totalHours: Double {
@@ -24,8 +25,8 @@ struct EditableWorkEntry: Identifiable {
         return max(0, interval / 3600)
     }
 
-    /// Initialize from APIService.WorkHourEntry
-    init(from api: APIService.WorkHourEntry) {
+    /// Initialize from WorkerAPIService.WorkHourEntry
+    init(from api: WorkerAPIService.WorkHourEntry) {
         self.id = api.entry_id
         // Przesuń work_date z UTC do lokalnej strefy czasowej (CEST)
         let localTimeZone = TimeZone.current
@@ -36,6 +37,7 @@ struct EditableWorkEntry: Identifiable {
         self.notes = api.description ?? ""
         self.isDraft = api.is_draft ?? false // Upewnij się, że isDraft jest ustawiane poprawnie
         self.status = api.is_draft ?? false ? "draft" : (api.status ?? "pending")
+        self.km = api.km // Mapowanie km z API
     }
 
     /// Empty entry for days without data
@@ -48,5 +50,6 @@ struct EditableWorkEntry: Identifiable {
         self.notes = ""
         self.isDraft = true
         self.status = "draft"
+        self.km = nil // Domyślna wartość dla km
     }
 }

@@ -2,8 +2,8 @@ import Foundation
 import Combine
 
 final class WorkerWorkHoursViewModel: ObservableObject {
-    @Published var entries: [APIService.WorkHourEntry] = []
-    @Published var tasks: [APIService.Task] = []
+    @Published var entries: [WorkerAPIService.WorkHourEntry] = []
+    @Published var tasks: [WorkerAPIService.Task] = []
     @Published var selectedTaskId: Int = 0 // 0 indicates no task selected
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
@@ -47,7 +47,7 @@ final class WorkerWorkHoursViewModel: ObservableObject {
         isLoading = true
         errorMessage = nil
         
-        APIService.shared.fetchTasks()
+        WorkerAPIService.shared.fetchTasks()
             .receive(on: DispatchQueue.main)
             .sink { [weak self] completion in
                 self?.isLoading = false
@@ -84,7 +84,7 @@ final class WorkerWorkHoursViewModel: ObservableObject {
             self.endDate = calendar.date(byAdding: .weekOfYear, value: 1, to: self.startDate)!
         }
 
-        var allEntries: [APIService.WorkHourEntry] = []
+        var allEntries: [WorkerAPIService.WorkHourEntry] = []
         var currentDate = self.startDate
         let targetEndDate = self.endDate
         isLoading = true
@@ -97,7 +97,7 @@ final class WorkerWorkHoursViewModel: ObservableObject {
             #if DEBUG
             print("[WorkerWorkHoursViewModel] Fetching entries for week starting \(mondayStr) with employeeId \(targetEmployeeId)")
             #endif
-            APIService.shared
+            WorkerAPIService.shared
                 .fetchWorkEntries(
                     employeeId: targetEmployeeId,
                     weekStartDate: mondayStr,
@@ -115,7 +115,7 @@ final class WorkerWorkHoursViewModel: ObservableObject {
                     group.leave()
                 } receiveValue: { entries in
                     #if DEBUG
-                    print("[WorkerWorkHoursViewModel] Received \(entries.count) entries for week starting \(mondayStr): \(entries)")
+                    print("[WorkerWorkHoursViewModel] Received \(entries.count) entries for week starting \(mondayStr): \(entries.map { "entry_id=\($0.entry_id), km=\(String(describing: $0.km))" })")
                     #endif
                     allEntries.append(contentsOf: entries)
                 }
@@ -159,7 +159,7 @@ final class WorkerWorkHoursViewModel: ObservableObject {
         #endif
     }
 
-    // MARK: - Obliczenia statystyk godzin pracy
+    // MARK: - Obliczenia statystyk godzin pracy i kilometrów
 
     /// Total hours in the current week
     var totalWeeklyHours: Double {
@@ -172,6 +172,18 @@ final class WorkerWorkHoursViewModel: ObservableObject {
             let interval = end.timeIntervalSince(start)
             let pauseSeconds = Double(entry.pause_minutes ?? 0) * 60
             return sum + max(0, (interval - pauseSeconds) / 3600)
+        }
+    }
+
+    /// Total kilometers in the current week
+    var totalWeeklyKm: Double {
+        let calendar = Calendar.current
+        let currentWeek = calendar.startOfWeek(for: Date())
+        return entries.reduce(0) { sum, entry in
+            guard let km = entry.km,
+                  let start = entry.start_time,
+                  isDate(start, inSameWeekAs: currentWeek, calendar: calendar) else { return sum }
+            return sum + km
         }
     }
 
@@ -189,6 +201,18 @@ final class WorkerWorkHoursViewModel: ObservableObject {
         }
     }
 
+    /// Total kilometers in the current month
+    var totalMonthlyKm: Double {
+        let calendar = Calendar.current
+        let currentMonth = startOfMonth(for: Date(), calendar: calendar)
+        return entries.reduce(0) { sum, entry in
+            guard let km = entry.km,
+                  let start = entry.start_time,
+                  isDate(start, inSameMonthAs: currentMonth, calendar: calendar) else { return sum }
+            return sum + km
+        }
+    }
+
     /// Total hours in the current year
     var totalYearlyHours: Double {
         let calendar = Calendar.current
@@ -203,13 +227,36 @@ final class WorkerWorkHoursViewModel: ObservableObject {
         }
     }
 
+    /// Total kilometers in the current year
+    var totalYearlyKm: Double {
+        let calendar = Calendar.current
+        let currentYear = startOfYear(for: Date(), calendar: calendar)
+        return entries.reduce(0) { sum, entry in
+            guard let km = entry.km,
+                  let start = entry.start_time,
+                  isDate(start, inSameYearAs: currentYear, calendar: calendar) else { return sum }
+            return sum + km
+        }
+    }
+
     /// Total hours for the selected task within the current date range
     var totalHoursForSelectedTask: Double {
         entries.reduce(0) { sum, entry in
-            guard let start = entry.start_time, let end = entry.end_time else { return sum }
+            guard entry.task_id == selectedTaskId,
+                  let start = entry.start_time,
+                  let end = entry.end_time else { return sum }
             let interval = end.timeIntervalSince(start)
             let pauseSeconds = Double(entry.pause_minutes ?? 0) * 60
             return sum + max(0, (interval - pauseSeconds) / 3600)
+        }
+    }
+
+    /// Total kilometers for the selected task within the current date range
+    var totalKmForSelectedTask: Double {
+        entries.reduce(0) { sum, entry in
+            guard entry.task_id == selectedTaskId,
+                  let km = entry.km else { return sum }
+            return sum + km
         }
     }
 

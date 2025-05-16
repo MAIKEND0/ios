@@ -1,20 +1,11 @@
+// Features/Worker/Models/WorkHourEntry.swift
+// KSR Cranes App
 //
-//  WorkHourEntry.swift
-//  Features/Worker/Models/WorkHourEntry.swift
-//  KSR Cranes App
-//
-//  Model pojedynczego wpisu godzinowego
-//
+// Model pojedynczego wpisu godzinowego
 
 import Foundation
 
-enum EntryStatus: String, Codable {
-    case draft
-    case pending
-    case submitted
-    case confirmed
-    case rejected
-}
+
 
 struct WorkHourEntry: Identifiable, Codable {
     // Zakładamy, że backend zwraca `entry_id` jako np. Int
@@ -28,7 +19,6 @@ struct WorkHourEntry: Identifiable, Codable {
     let description: String?
     let status: EntryStatus
     let isDraft: Bool
-    let km: Double? // Pole km dodane wcześniej
 
     // Sformatowany łączny czas (godziny.minuty)
     var formattedTotalHours: String {

@@ -7,7 +7,7 @@ import Foundation
 import Combine
 
 /// ViewModel dla ekranu Dashboard pracownika:
-/// – przechowuje statystyki godzin (hoursViewModel)
+/// – przechowuje statystyki godzin i kilometrów (hoursViewModel)
 /// – przechowuje listę zadań (tasksViewModel)
 /// – zarządza ogłoszeniami (announcements)
 final class WorkerDashboardViewModel: ObservableObject {
@@ -16,7 +16,7 @@ final class WorkerDashboardViewModel: ObservableObject {
     @Published var tasksViewModel = WorkerTasksViewModel()
     
     // Ogłoszenia
-    @Published var announcements: [Announcement] = []
+    @Published var announcements: [WorkerAPIService.Announcement] = []
     @Published var isLoadingAnnouncements = false
     
     // Flaga do śledzenia, czy dane są załadowane
@@ -62,7 +62,7 @@ final class WorkerDashboardViewModel: ObservableObject {
             .store(in: &cancellables)
     }
 
-    /// Odświeża wszystkie dane: godziny, zadania i ogłoszenia
+    /// Odświeża wszystkie dane: godziny, kilometry, zadania i ogłoszenia
     func loadData() {
         isDataLoaded = false
         
@@ -102,15 +102,15 @@ final class WorkerDashboardViewModel: ObservableObject {
         let startDate = calendar.date(byAdding: .weekOfYear, value: -4, to: today) ?? today
         let endDate = calendar.date(byAdding: .weekOfYear, value: 4, to: today) ?? today
         #if DEBUG
-        print("[WorkerDashboardViewModel] Loading hours data from \(startDate) to \(endDate)")
+        print("[WorkerDashboardViewModel] Ładowanie danych godzin i kilometrów od \(startDate) do \(endDate)")
         #endif
         hoursViewModel.loadEntries(startDate: startDate, endDate: endDate, isForDashboard: true)
     }
 
-    /// Pobiera ogłoszenia z backendu przez APIService
+    /// Pobiera ogłoszenia z backendu przez WorkerAPIService
     private func loadAnnouncements() {
         isLoadingAnnouncements = true
-        APIService.shared
+        WorkerAPIService.shared
             .fetchAnnouncements()
             .receive(on: DispatchQueue.main)
             .sink { [weak self] completion in
@@ -127,25 +127,67 @@ final class WorkerDashboardViewModel: ObservableObject {
 
     /// Zwraca ID pierwszego zadania (np. do otworzenia WeeklyWorkEntryForm)
     func getSelectedTaskId() -> String {
-        // If we have a selected task, use it
+        // Jeśli wybrano zadanie, użyj go
         if selectedTaskId > 0 {
             return String(selectedTaskId)
         }
         
-        // zakładamy, że Task ma pole `task_id: Int`
+        // Zakładamy, że Task ma pole `task_id: Int`
         guard let id = tasksViewModel.tasks.first?.task_id else {
             return ""
         }
         return String(id)
     }
     
-    /// Set the selected task ID
+    /// Ustawia ID wybranego zadania
     func setSelectedTaskId(_ taskId: Int) {
         selectedTaskId = taskId
     }
     
-    // Sprawdza czy są aktywne zadania
+    // Sprawdza, czy są aktywne zadania
     var hasActiveTasks: Bool {
         return !tasksViewModel.tasks.isEmpty
+    }
+    
+    // MARK: - Statystyki godzin i kilometrów
+    
+    /// Całkowita liczba godzin w bieżącym tygodniu
+    var totalWeeklyHours: Double {
+        hoursViewModel.totalWeeklyHours
+    }
+    
+    /// Całkowita liczba kilometrów w bieżącym tygodniu
+    var totalWeeklyKm: Double {
+        hoursViewModel.totalWeeklyKm
+    }
+    
+    /// Całkowita liczba godzin w bieżącym miesiącu
+    var totalMonthlyHours: Double {
+        hoursViewModel.totalMonthlyHours
+    }
+    
+    /// Całkowita liczba kilometrów w bieżącym miesiącu
+    var totalMonthlyKm: Double {
+        hoursViewModel.totalMonthlyKm
+    }
+    
+    /// Całkowita liczba godzin w bieżącym roku
+    var totalYearlyHours: Double {
+        hoursViewModel.totalYearlyHours
+    }
+    
+    /// Całkowita liczba kilometrów w bieżącym roku
+    var totalYearlyKm: Double {
+        hoursViewModel.totalYearlyKm
+    }
+    
+    /// Całkowita liczba godzin dla wybranego zadania w bieżącym zakresie dat
+    var totalHoursForSelectedTask: Double {
+        hoursViewModel.totalHoursForSelectedTask
+    }
+    
+    /// Całkowita liczba kilometrów dla wybranego zadania w bieżącym zakresie dat
+    var totalKmForSelectedTask: Double {
+        hoursViewModel.totalKmForSelectedTask
     }
 }

@@ -1,10 +1,13 @@
-// Features/Worker/WorkerTasksViewModel.swift
+//
+//  WorkerTasksViewModel.swift
+//  KSR Cranes App
+//
 
 import Foundation
 import Combine
 
 final class WorkerTasksViewModel: ObservableObject {
-    @Published var tasks: [APIService.Task] = []
+    @Published var tasks: [WorkerAPIService.Task] = []
     @Published var isLoading = false
     @Published var error: String?
     @Published var lastLoadTime: Date?
@@ -27,7 +30,7 @@ final class WorkerTasksViewModel: ObservableObject {
         isLoading = true
         error = nil
 
-        APIService.shared.fetchTasks()
+        WorkerAPIService.shared.fetchTasks()
             .receive(on: DispatchQueue.main)
             .sink { [weak self] completion in
                 guard let self = self else { return }

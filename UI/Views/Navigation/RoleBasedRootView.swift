@@ -42,21 +42,25 @@ struct WorkerMainView: View {
 // Manager's main view
 struct ManagerMainView: View {
     var body: some View {
-        // Replace with actual manager UI when implemented
         TabView {
-            Text("Manager Dashboard")
+            ManagerDashboardView()
                 .tabItem {
                     Label("Dashboard", systemImage: "house.fill")
                 }
             
-            Text("Projects")
+            ManagerProjectsView()
                 .tabItem {
                     Label("Projects", systemImage: "folder.fill")
                 }
             
-            Text("Workers")
+            ManagerWorkersView()
                 .tabItem {
                     Label("Workers", systemImage: "person.3.fill")
+                }
+            
+            TimesheetReportsView()
+                .tabItem {
+                    Label("Timesheets", systemImage: "doc.text.fill")
                 }
             
             ProfileView()

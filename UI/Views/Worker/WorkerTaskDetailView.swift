@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct WorkerTaskDetailView: View {
-    let task: APIService.Task
+    let task: WorkerAPIService.Task
 
     var body: some View {
         Form {
@@ -33,7 +33,7 @@ struct WorkerTaskDetailView: View {
 
 struct WorkerTaskDetailView_Previews: PreviewProvider {
     static var previews: some View {
-        let example = APIService.Task(
+        let example = WorkerAPIService.Task(
             task_id: 1,
             title: "Przykładowe zadanie",
             description: "Opis",

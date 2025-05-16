@@ -2,14 +2,15 @@
 //  WorkHoursViewModel.swift
 //  KSR Cranes App
 //
-//  Logika dla ekrenu WorkHoursView
+//  Logika dla ekranu WorkHoursView
+//
 
 import Foundation
 import Combine
 
 final class WorkHoursViewModel: ObservableObject {
-    // Teraz używamy tego samego modelu, który zwraca APIService
-    @Published var workHourEntries: [APIService.WorkHourEntry] = []
+    // Teraz używamy modelu zwracanego przez WorkerAPIService
+    @Published var workHourEntries: [WorkerAPIService.WorkHourEntry] = []
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
 
@@ -21,7 +22,7 @@ final class WorkHoursViewModel: ObservableObject {
         isLoading = true
         errorMessage = nil
 
-        APIService.shared
+        WorkerAPIService.shared
             .fetchWorkEntries(
                 employeeId: employeeId,
                 weekStartDate: mondayStr
@@ -35,7 +36,7 @@ final class WorkHoursViewModel: ObservableObject {
                     self.workHourEntries = []
                 }
             } receiveValue: { [weak self] entries in
-                // entries ma teraz typ [APIService.WorkHourEntry], więc to przejdzie
+                // entries ma teraz typ [WorkerAPIService.WorkHourEntry]
                 self?.workHourEntries = entries
             }
             .store(in: &cancellables)

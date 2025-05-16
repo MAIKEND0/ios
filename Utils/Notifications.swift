@@ -13,6 +13,6 @@ extension Notification.Name {
     /// Powiadomienie wysyłane, gdy wpisy godzin pracy zostaną zaktualizowane
     static let workEntriesUpdated = Notification.Name("workEntriesUpdated")
     
-    /// Powiadomienie wysyłane, gdy uwierzytelnianie nie powiedzie się (używane w APIService)
+    /// Powiadomienie wysyłane, gdy uwierzytelnianie nie powiedzie się (używane w serwisach API)
     static let authenticationFailure = Notification.Name("authenticationFailure")
 }

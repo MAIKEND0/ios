@@ -35,7 +35,16 @@ extension EditableWorkEntry {
     }
 }
 
-/// ViewModel for handling weekly work entry forms
+/// Struktura dla skopiowanego wpisu
+struct CopiedEntry {
+    let startTime: Date?
+    let endTime: Date?
+    let pauseMinutes: Int
+    let notes: String
+    let km: Double? // Obsługa km
+}
+
+/// ViewModel dla formularza tygodniowych wpisów pracy
 final class WeeklyWorkEntryViewModel: ObservableObject {
     // MARK: - Published Properties
     @Published var weekData: [EditableWorkEntry] = []
@@ -45,6 +54,11 @@ final class WeeklyWorkEntryViewModel: ObservableObject {
     @Published var alertMessage = ""
     @Published var isConfirmingSubmission = false
     @Published var anyDrafts = true
+    
+    // Przechowuje skopiowany wpis
+    private var copiedEntry: CopiedEntry?
+    // Przechowuje km dla wpisów, aby zachować wartości po reloadzie z API
+    private var kmCache: [Int: Double?] = [:]
 
     // MARK: - Initializer Parameters
     private let employeeId: String
@@ -55,7 +69,7 @@ final class WeeklyWorkEntryViewModel: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
     private let calendar = Calendar.current
 
-    /// Initializes the ViewModel with employee ID, task ID, and the Monday of the selected week
+    /// Inicjalizuje ViewModel z ID pracownika, ID zadania i poniedziałkiem wybranego tygodnia
     init(employeeId: String, taskId: String, selectedMonday: Date) {
         self.employeeId = employeeId
         self.taskId = taskId
@@ -67,23 +81,128 @@ final class WeeklyWorkEntryViewModel: ObservableObject {
         loadWeekDataFromAPI()
     }
 
-    /// Loads data from the API:
-    /// 1) fetchWorkEntries(isDraft: true) for the specific taskId
-    /// 2) If empty array → fetchWorkEntries(isDraft: false) for the specific taskId
-    /// 3) If still empty or error → keep generated empty week data
+    /// Kopiuje dane z określonego wpisu
+    func copyEntry(from index: Int) {
+        guard index < weekData.count else { return }
+        guard weekData[index].startTime != nil, weekData[index].endTime != nil else {
+            #if DEBUG
+            print("[WeeklyWorkEntryViewModel] Cannot copy empty entry at index \(index)")
+            #endif
+            return
+        }
+        
+        copiedEntry = CopiedEntry(
+            startTime: weekData[index].startTime,
+            endTime: weekData[index].endTime,
+            pauseMinutes: weekData[index].pauseMinutes,
+            notes: weekData[index].notes,
+            km: weekData[index].km // Kopiowanie km
+        )
+        #if DEBUG
+        print("[WeeklyWorkEntryViewModel] Copied entry from index \(index): startTime=\(String(describing: copiedEntry?.startTime)), endTime=\(String(describing: copiedEntry?.endTime)), pauseMinutes=\(copiedEntry?.pauseMinutes ?? 0), notes=\(copiedEntry?.notes ?? ""), km=\(String(describing: copiedEntry?.km))")
+        #endif
+    }
+    
+    /// Wkleja dane do określonego wpisu
+    func pasteEntry(to index: Int) {
+        guard index < weekData.count else { return }
+        guard !weekData[index].isFutureDate else {
+            #if DEBUG
+            print("[WeeklyWorkEntryViewModel] Cannot paste to future date at index \(index)")
+            #endif
+            return
+        }
+        guard let sourceEntry = copiedEntry else {
+            #if DEBUG
+            print("[WeeklyWorkEntryViewModel] No copied entry available to paste")
+            #endif
+            return
+        }
+        
+        weekData[index].startTime = sourceEntry.startTime
+        weekData[index].endTime = sourceEntry.endTime
+        weekData[index].pauseMinutes = sourceEntry.pauseMinutes
+        weekData[index].notes = sourceEntry.notes
+        weekData[index].km = sourceEntry.km // Wklejanie km
+        
+        // Zapisz km w cache
+        kmCache[weekData[index].id] = sourceEntry.km
+        
+        #if DEBUG
+        print("[WeeklyWorkEntryViewModel] Pasted entry to index \(index): startTime=\(String(describing: sourceEntry.startTime)), endTime=\(String(describing: sourceEntry.endTime)), pauseMinutes=\(sourceEntry.pauseMinutes), notes=\(sourceEntry.notes), km=\(String(describing: sourceEntry.km))")
+        #endif
+    }
+    
+    /// Czyści dane dla określonego dnia
+    func clearDay(at index: Int) {
+        guard index < weekData.count else { return }
+        guard !weekData[index].isFutureDate else {
+            #if DEBUG
+            print("[WeeklyWorkEntryViewModel] Cannot clear future date at index \(index)")
+            #endif
+            return
+        }
+        guard weekData[index].status != "submitted" && weekData[index].status != "confirmed" else {
+            #if DEBUG
+            print("[WeeklyWorkEntryViewModel] Cannot clear submitted or confirmed entry at index \(index)")
+            #endif
+            return
+        }
+        
+        weekData[index].startTime = nil
+        weekData[index].endTime = nil
+        weekData[index].pauseMinutes = 0
+        weekData[index].notes = ""
+        weekData[index].km = nil // Czyszczenie km
+        weekData[index].isDraft = true
+        weekData[index].status = "draft"
+        
+        // Usuń km z cache
+        kmCache.removeValue(forKey: weekData[index].id)
+        
+        #if DEBUG
+        print("[WeeklyWorkEntryViewModel] Cleared entry at index \(index)")
+        #endif
+    }
+    
+    /// Czyści wszystkie szkice wpisów
+    func clearAllDrafts() {
+        for i in 0..<weekData.count {
+            if !weekData[i].isFutureDate && weekData[i].isDraft {
+                weekData[i].startTime = nil
+                weekData[i].endTime = nil
+                weekData[i].pauseMinutes = 0
+                weekData[i].notes = ""
+                weekData[i].km = nil // Czyszczenie km
+                weekData[i].status = "draft"
+                // Usuń km z cache
+                kmCache.removeValue(forKey: weekData[i].id)
+            }
+        }
+        anyDrafts = false
+        
+        #if DEBUG
+        print("[WeeklyWorkEntryViewModel] Cleared all draft entries")
+        #endif
+    }
+
+    /// Ładuje dane z API:
+    /// 1) fetchWorkEntries(isDraft: true) dla określonego taskId
+    /// 2) Jeśli tablica pusta → fetchWorkEntries(isDraft: false) dla określonego taskId
+    /// 3) Jeśli nadal pusta lub błąd → zachowaj wygenerowane puste dane tygodnia
     func loadWeekDataFromAPI() {
         isLoading = true
         let mondayStr = DateFormatter.isoDate.string(from: selectedMonday)
         let previousMonday = calendar.date(byAdding: .day, value: -7, to: selectedMonday)!
         let previousMondayStr = DateFormatter.isoDate.string(from: previousMonday)
 
-        if APIService.shared.authToken == nil {
-            APIService.shared.refreshTokenFromKeychain()
+        if WorkerAPIService.shared.authToken == nil {
+            WorkerAPIService.shared.refreshTokenFromKeychain()
         }
 
         Publishers.Zip(
-            APIService.shared.fetchWorkEntries(employeeId: employeeId, weekStartDate: previousMondayStr, isDraft: true),
-            APIService.shared.fetchWorkEntries(employeeId: employeeId, weekStartDate: mondayStr, isDraft: true)
+            WorkerAPIService.shared.fetchWorkEntries(employeeId: employeeId, weekStartDate: previousMondayStr, isDraft: true),
+            WorkerAPIService.shared.fetchWorkEntries(employeeId: employeeId, weekStartDate: mondayStr, isDraft: true)
         )
         .map { (previousDrafts, currentDrafts) -> [EditableWorkEntry] in
             let allDrafts = (previousDrafts + currentDrafts).filter { $0.task_id == Int(self.taskId) ?? 0 }
@@ -91,15 +210,15 @@ final class WeeklyWorkEntryViewModel: ObservableObject {
                 return EditableWorkEntry(from: apiEntry)
             }
         }
-        .flatMap { draftModels -> AnyPublisher<[EditableWorkEntry], APIService.APIError> in
+        .flatMap { draftModels -> AnyPublisher<[EditableWorkEntry], WorkerAPIService.APIError> in
             if !draftModels.isEmpty {
                 return Just(draftModels)
-                    .setFailureType(to: APIService.APIError.self)
+                    .setFailureType(to: WorkerAPIService.APIError.self)
                     .eraseToAnyPublisher()
             } else {
                 return Publishers.Zip(
-                    APIService.shared.fetchWorkEntries(employeeId: self.employeeId, weekStartDate: previousMondayStr, isDraft: false),
-                    APIService.shared.fetchWorkEntries(employeeId: self.employeeId, weekStartDate: mondayStr, isDraft: false)
+                    WorkerAPIService.shared.fetchWorkEntries(employeeId: self.employeeId, weekStartDate: previousMondayStr, isDraft: false),
+                    WorkerAPIService.shared.fetchWorkEntries(employeeId: self.employeeId, weekStartDate: mondayStr, isDraft: false)
                 )
                 .map { (previousNonDrafts, currentNonDrafts) -> [EditableWorkEntry] in
                     let allNonDrafts = (previousNonDrafts + currentNonDrafts).filter { $0.task_id == Int(self.taskId) ?? 0 }
@@ -115,9 +234,19 @@ final class WeeklyWorkEntryViewModel: ObservableObject {
             let calendar = Calendar.current
             for apiEntry in entries {
                 if let index = result.firstIndex(where: { calendar.isDate($0.date, inSameDayAs: apiEntry.date) }) {
-                    result[index] = apiEntry
+                    // Przywróć km z cache, jeśli dostępne
+                    var updatedEntry = apiEntry
+                    if let cachedKm = self.kmCache[apiEntry.id] {
+                        updatedEntry.km = cachedKm
+                    }
+                    result[index] = updatedEntry
                 } else {
-                    result.append(apiEntry)
+                    // Przywróć km z cache dla nowych wpisów
+                    var updatedEntry = apiEntry
+                    if let cachedKm = self.kmCache[apiEntry.id] {
+                        updatedEntry.km = cachedKm
+                    }
+                    result.append(updatedEntry)
                 }
             }
             return result
@@ -144,19 +273,19 @@ final class WeeklyWorkEntryViewModel: ObservableObject {
             #if DEBUG
             print("[WeeklyWorkEntryViewModel] Loaded \(entries.count) entries into weekData for taskId: \(self.taskId)")
             for (index, entry) in entries.enumerated() {
-                print("[WeeklyWorkEntryViewModel] Entry \(index): id=\(entry.id), date=\(entry.date), startTime=\(String(describing: entry.startTime)), endTime=\(String(describing: entry.endTime)), pauseMinutes=\(entry.pauseMinutes), status=\(entry.status)")
+                print("[WeeklyWorkEntryViewModel] Entry \(index): id=\(entry.id), date=\(entry.date), startTime=\(String(describing: entry.startTime)), endTime=\(String(describing: entry.endTime)), pauseMinutes=\(entry.pauseMinutes), km=\(String(describing: entry.km)), status=\(entry.status)")
             }
             #endif
         }
         .store(in: &cancellables)
     }
     
-    /// Saves the current entries as a draft
+    /// Zapisuje bieżące wpisy jako szkic
     func saveDraft() {
         isLoading = true
         
-        if APIService.shared.authToken == nil {
-            APIService.shared.refreshTokenFromKeychain()
+        if WorkerAPIService.shared.authToken == nil {
+            WorkerAPIService.shared.refreshTokenFromKeychain()
         }
         
         let futureDates = weekData.filter { entry in
@@ -182,11 +311,16 @@ final class WeeklyWorkEntryViewModel: ObservableObject {
         #if DEBUG
         print("[WeeklyWorkEntryViewModel] weekData before prepareEntriesForAPI: \(weekData.count) entries")
         for (index, entry) in weekData.enumerated() {
-            print("[WeeklyWorkEntryViewModel] weekData entry \(index): date=\(entry.date), pauseMinutes=\(entry.pauseMinutes), id=\(entry.id)")
+            print("[WeeklyWorkEntryViewModel] weekData entry \(index): date=\(entry.date), pauseMinutes=\(entry.pauseMinutes), km=\(String(describing: entry.km)), id=\(entry.id)")
         }
         #endif
         
         let apiEntries = prepareEntriesForAPI(asDraft: true)
+        
+        // Zapisz km w cache przed zapisem
+        for entry in validEntries {
+            kmCache[entry.id] = entry.km
+        }
         
         if apiEntries.isEmpty {
             DispatchQueue.main.async {
@@ -215,7 +349,7 @@ final class WeeklyWorkEntryViewModel: ObservableObject {
         print("[WeeklyWorkEntryViewModel] Sending \(apiEntries.count) entries as draft for taskId: \(taskId)")
         #endif
         
-        APIService.shared.upsertWorkEntries(apiEntries)
+        WorkerAPIService.shared.upsertWorkEntries(apiEntries)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] completion in
                 guard let self = self else { return }
@@ -261,7 +395,7 @@ final class WeeklyWorkEntryViewModel: ObservableObject {
             .store(in: &cancellables)
     }
     
-    /// Prepares data for submission (status: submitted) and sends an email to the supervisor
+    /// Przygotowuje dane do przesłania (status: submitted) i wysyła e-mail do supervisora
     func submitEntries() {
         isLoading = true
         
@@ -317,7 +451,7 @@ final class WeeklyWorkEntryViewModel: ObservableObject {
         print("[WeeklyWorkEntryViewModel] Sending \(apiEntries.count) entries for submission for taskId: \(taskId)")
         #endif
         
-        APIService.shared.upsertWorkEntries(apiEntries)
+        WorkerAPIService.shared.upsertWorkEntries(apiEntries)
             .receive(on: DispatchQueue.main)
             .sink { [weak self] completion in
                 guard let self = self else { return }
@@ -371,8 +505,8 @@ final class WeeklyWorkEntryViewModel: ObservableObject {
             .store(in: &cancellables)
     }
     
-    /// Converts current EditableWorkEntry data to WorkHourEntry model for API
-    private func prepareEntriesForAPI(asDraft: Bool = true) -> [APIService.WorkHourEntry] {
+    /// Konwertuje bieżące dane EditableWorkEntry na model WorkHourEntry dla API
+    private func prepareEntriesForAPI(asDraft: Bool = true) -> [WorkerAPIService.WorkHourEntry] {
         var localCalendar = Calendar.current
         localCalendar.timeZone = TimeZone.current // Ustaw kalendarz na lokalną strefę czasową (CEST)
         
@@ -383,7 +517,7 @@ final class WeeklyWorkEntryViewModel: ObservableObject {
         #if DEBUG
         print("[WeeklyWorkEntryViewModel] Valid entries for API: \(validEntries.count)")
         for (index, entry) in validEntries.enumerated() {
-            print("[WeeklyWorkEntryViewModel] Valid entry \(index): date=\(entry.date), pauseMinutes=\(entry.pauseMinutes), id=\(entry.id)")
+            print("[WeeklyWorkEntryViewModel] Valid entry \(index): date=\(entry.date), pauseMinutes=\(entry.pauseMinutes), km=\(String(describing: entry.km)), id=\(entry.id)")
         }
         #endif
         
@@ -399,17 +533,18 @@ final class WeeklyWorkEntryViewModel: ObservableObject {
         
         #if DEBUG
         for (date, entries) in groupedEntries {
-            print("[WeeklyWorkEntryViewModel] Grouped entries for date \(date): \(entries.count) entries, pauseMinutes: \(entries.map { $0.pauseMinutes })")
+            print("[WeeklyWorkEntryViewModel] Grouped entries for date \(date): \(entries.count) entries, pauseMinutes: \(entries.map { $0.pauseMinutes }), km: \(entries.map { String(describing: $0.km) })")
         }
         #endif
         
-        return groupedEntries.map { (localWorkDate, entries) -> APIService.WorkHourEntry in
+        return groupedEntries.map { (localWorkDate, entries) -> WorkerAPIService.WorkHourEntry in
             let firstEntry = entries.first!
             var earliestStartTime = firstEntry.startTime!
             var latestEndTime = firstEntry.endTime!
-            var totalPauseMinutes = firstEntry.pauseMinutes // Używamy pauseMinutes z pierwszego wpisu
-            var combinedDescription = firstEntry.notes
+            let totalPauseMinutes = entries.reduce(0) { $0 + $1.pauseMinutes }
+            var combinedDescription = entries.map { $0.notes }.filter { !$0.isEmpty }.joined(separator: "; ")
             var existingEntryId: Int = 0
+            var totalKm: Double? = entries.first?.km // Bierz km z pierwszego wpisu, bez sumowania
             
             for entry in entries {
                 if entry.id != 0 && entry.id != Int(localWorkDate.timeIntervalSince1970) {
@@ -425,13 +560,10 @@ final class WeeklyWorkEntryViewModel: ObservableObject {
                 if let endTime = entry.endTime, endTime > latestEndTime {
                     latestEndTime = endTime
                 }
-                if !entry.notes.isEmpty {
-                    combinedDescription += (combinedDescription.isEmpty ? "" : "; ") + entry.notes
-                }
             }
             
             #if DEBUG
-            print("[WeeklyWorkEntryViewModel] Prepared entry for date \(localWorkDate): pauseMinutes=\(totalPauseMinutes), startTime=\(earliestStartTime), endTime=\(latestEndTime)")
+            print("[WeeklyWorkEntryViewModel] Prepared entry for date \(localWorkDate): pauseMinutes=\(totalPauseMinutes), startTime=\(earliestStartTime), endTime=\(latestEndTime), km=\(String(describing: totalKm))")
             #endif
             
             // Formatuj localWorkDate jako ciąg yyyy-MM-dd
@@ -449,7 +581,7 @@ final class WeeklyWorkEntryViewModel: ObservableObject {
                 fatalError("Nie udało się sparsować daty: \(formattedDate)")
             }
             
-            return APIService.WorkHourEntry(
+            return WorkerAPIService.WorkHourEntry(
                 entry_id: existingEntryId != 0 ? existingEntryId : 0,
                 employee_id: Int(employeeId) ?? 0,
                 task_id: Int(taskId) ?? 0,
@@ -461,12 +593,18 @@ final class WeeklyWorkEntryViewModel: ObservableObject {
                 confirmation_status: "pending",
                 is_draft: asDraft,
                 description: combinedDescription.isEmpty ? nil : combinedDescription,
-                tasks: nil
+                tasks: nil,
+                km: totalKm,
+                confirmed_by: nil,
+                confirmed_at: nil,
+                isActive: nil,
+                rejection_reason: nil,
+                timesheetId: nil
             )
         }
     }
     
-    /// Generates an empty array of 7 entries, starting from the selected Monday
+    /// Generuje pustą tablicę 7 wpisów, zaczynając od wybranego poniedziałku
     private func generateEmptyWeekData() -> [EditableWorkEntry] {
         var arr: [EditableWorkEntry] = []
         var localCalendar = Calendar.current
@@ -495,6 +633,10 @@ final class WeeklyWorkEntryViewModel: ObservableObject {
         guard index < weekData.count else { return }
         if !weekData[index].isFutureDate {
             weekData[index].startTime = newTime
+            // Zapisz km w cache, jeśli istnieje
+            if let km = weekData[index].km {
+                kmCache[weekData[index].id] = km
+            }
         }
     }
     
@@ -502,6 +644,10 @@ final class WeeklyWorkEntryViewModel: ObservableObject {
         guard index < weekData.count else { return }
         if !weekData[index].isFutureDate {
             weekData[index].endTime = newTime
+            // Zapisz km w cache, jeśli istnieje
+            if let km = weekData[index].km {
+                kmCache[weekData[index].id] = km
+            }
         }
     }
     
@@ -509,6 +655,10 @@ final class WeeklyWorkEntryViewModel: ObservableObject {
         guard index < weekData.count else { return }
         if !weekData[index].isFutureDate {
             weekData[index].notes = newDescription
+            // Zapisz km w cache, jeśli istnieje
+            if let km = weekData[index].km {
+                kmCache[weekData[index].id] = km
+            }
         }
     }
     
@@ -516,6 +666,19 @@ final class WeeklyWorkEntryViewModel: ObservableObject {
         guard index < weekData.count else { return }
         if !weekData[index].isFutureDate {
             weekData[index].pauseMinutes = minutes
+            // Zapisz km w cache, jeśli istnieje
+            if let km = weekData[index].km {
+                kmCache[weekData[index].id] = km
+            }
+        }
+    }
+    
+    func updateKm(at index: Int, to km: Double?) {
+        guard index < weekData.count else { return }
+        if !weekData[index].isFutureDate {
+            weekData[index].km = km
+            // Zapisz km w cache
+            kmCache[weekData[index].id] = km
         }
     }
 }
