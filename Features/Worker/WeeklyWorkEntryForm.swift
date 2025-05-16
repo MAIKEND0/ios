@@ -7,6 +7,8 @@ struct WeeklyWorkEntryForm: View {
     @State private var selectedDayIndex: Int = 0
     @State private var selectedOutOfWeekIndex: Int?
     @State private var showingCalendarView = false
+    @State private var hasCopiedEntry: Bool = false // Śledzi, czy istnieją skopiowane dane
+    @State private var showClearDraftAlert: Bool = false // Śledzi alert dla Clear Draft
     
     // Filter weekData to only include entries for the current week
     private var filteredWeekData: [EditableWorkEntry] {
@@ -115,6 +117,16 @@ struct WeeklyWorkEntryForm: View {
                     message: Text(vm.alertMessage),
                     dismissButton: .default(Text("OK"))
                 )
+            }
+            .alert("Clear All Drafts?", isPresented: $showClearDraftAlert) {
+                Button("Cancel", role: .cancel) { }
+                Button("Clear", role: .destructive) {
+                    withAnimation {
+                        vm.clearAllDrafts()
+                    }
+                }
+            } message: {
+                Text("This will clear all draft entries for this week. This action cannot be undone.")
             }
             .overlay {
                 if vm.isLoading {
@@ -260,6 +272,57 @@ struct WeeklyWorkEntryForm: View {
                 .font(.title3)
                 .fontWeight(.bold)
                 .foregroundColor(colorScheme == .dark ? .white : Color.ksrDarkGray)
+            
+            // Przyciski Copy, Paste i Clear Day
+            if !entry.isFutureDate {
+                HStack(spacing: 12) {
+                    Button(action: {
+                        withAnimation {
+                            vm.copyEntry(from: index)
+                            hasCopiedEntry = true
+                        }
+                    }) {
+                        Text("Copy")
+                            .font(.subheadline)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .background(Color.ksrYellow.opacity(0.2))
+                            .foregroundColor(Color.ksrYellow)
+                            .cornerRadius(8)
+                    }
+                    .disabled(entry.startTime == nil || entry.endTime == nil || entry.status == "submitted" || entry.status == "confirmed")
+                    
+                    Button(action: {
+                        withAnimation {
+                            vm.pasteEntry(to: index)
+                        }
+                    }) {
+                        Text("Paste")
+                            .font(.subheadline)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .background(hasCopiedEntry ? Color.ksrYellow.opacity(0.2) : Color.gray.opacity(0.2))
+                            .foregroundColor(hasCopiedEntry ? Color.ksrYellow : Color.gray)
+                            .cornerRadius(8)
+                    }
+                    .disabled(!hasCopiedEntry || entry.status == "submitted" || entry.status == "confirmed")
+                    
+                    Button(action: {
+                        withAnimation {
+                            vm.clearDay(at: index)
+                        }
+                    }) {
+                        Text("Clear Day")
+                            .font(.subheadline)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 8)
+                            .background(Color.red.opacity(0.2))
+                            .foregroundColor(.red)
+                            .cornerRadius(8)
+                    }
+                    .disabled(entry.status == "submitted" || entry.status == "confirmed")
+                }
+            }
             
             HStack {
                 Text(entry.isDraft == true ? "Draft" : "Status: \(entry.status.capitalized)")
@@ -546,6 +609,17 @@ struct WeeklyWorkEntryForm: View {
     
     private var bottomActionBar: some View {
         HStack(spacing: 12) {
+            Button("Clear Draft") {
+                showClearDraftAlert = true
+            }
+            .frame(maxWidth: .infinity)
+            .padding()
+            .background(Color.red.opacity(0.2))
+            .foregroundColor(.red)
+            .font(.headline)
+            .cornerRadius(10)
+            .disabled(vm.isLoading || !vm.anyDrafts)
+            
             Button("Save Draft") {
                 vm.saveDraft()
             }

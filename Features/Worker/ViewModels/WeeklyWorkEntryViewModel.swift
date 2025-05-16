@@ -45,6 +45,9 @@ final class WeeklyWorkEntryViewModel: ObservableObject {
     @Published var alertMessage = ""
     @Published var isConfirmingSubmission = false
     @Published var anyDrafts = true
+    
+    // Przechowuje skopiowany wpis
+    private var copiedEntry: EditableWorkEntry?
 
     // MARK: - Initializer Parameters
     private let employeeId: String
@@ -65,6 +68,94 @@ final class WeeklyWorkEntryViewModel: ObservableObject {
         self.selectedMonday = localCalendar.startOfDay(for: selectedMonday)
         self.weekData = generateEmptyWeekData()
         loadWeekDataFromAPI()
+    }
+
+    /// Copies data from the specified entry
+    func copyEntry(from index: Int) {
+        guard index < weekData.count else { return }
+        guard weekData[index].startTime != nil, weekData[index].endTime != nil else {
+            #if DEBUG
+            print("[WeeklyWorkEntryViewModel] Cannot copy empty entry at index \(index)")
+            #endif
+            return
+        }
+        
+        copiedEntry = weekData[index]
+        #if DEBUG
+        print("[WeeklyWorkEntryViewModel] Copied entry from index \(index): startTime=\(String(describing: copiedEntry?.startTime)), endTime=\(String(describing: copiedEntry?.endTime)), pauseMinutes=\(copiedEntry?.pauseMinutes ?? 0), notes=\(copiedEntry?.notes ?? "")")
+        #endif
+    }
+    
+    /// Pastes data to the specified entry
+    func pasteEntry(to index: Int) {
+        guard index < weekData.count else { return }
+        guard !weekData[index].isFutureDate else {
+            #if DEBUG
+            print("[WeeklyWorkEntryViewModel] Cannot paste to future date at index \(index)")
+            #endif
+            return
+        }
+        guard let sourceEntry = copiedEntry else {
+            #if DEBUG
+            print("[WeeklyWorkEntryViewModel] No copied entry available to paste")
+            #endif
+            return
+        }
+        
+        weekData[index].startTime = sourceEntry.startTime
+        weekData[index].endTime = sourceEntry.endTime
+        weekData[index].pauseMinutes = sourceEntry.pauseMinutes
+        weekData[index].notes = sourceEntry.notes
+        
+        #if DEBUG
+        print("[WeeklyWorkEntryViewModel] Pasted entry to index \(index): startTime=\(String(describing: sourceEntry.startTime)), endTime=\(String(describing: sourceEntry.endTime)), pauseMinutes=\(sourceEntry.pauseMinutes), notes=\(sourceEntry.notes)")
+        #endif
+    }
+    
+    /// Clears data for the specified day
+    func clearDay(at index: Int) {
+        guard index < weekData.count else { return }
+        guard !weekData[index].isFutureDate else {
+            #if DEBUG
+            print("[WeeklyWorkEntryViewModel] Cannot clear future date at index \(index)")
+            #endif
+            return
+        }
+        guard weekData[index].status != "submitted" && weekData[index].status != "confirmed" else {
+            #if DEBUG
+            print("[WeeklyWorkEntryViewModel] Cannot clear submitted or confirmed entry at index \(index)")
+            #endif
+            return
+        }
+        
+        weekData[index].startTime = nil
+        weekData[index].endTime = nil
+        weekData[index].pauseMinutes = 0
+        weekData[index].notes = ""
+        weekData[index].isDraft = true
+        weekData[index].status = "draft"
+        
+        #if DEBUG
+        print("[WeeklyWorkEntryViewModel] Cleared entry at index \(index)")
+        #endif
+    }
+    
+    /// Clears all draft entries
+    func clearAllDrafts() {
+        for i in 0..<weekData.count {
+            if !weekData[i].isFutureDate && weekData[i].isDraft {
+                weekData[i].startTime = nil
+                weekData[i].endTime = nil
+                weekData[i].pauseMinutes = 0
+                weekData[i].notes = ""
+                weekData[i].status = "draft"
+            }
+        }
+        anyDrafts = false
+        
+        #if DEBUG
+        print("[WeeklyWorkEntryViewModel] Cleared all draft entries")
+        #endif
     }
 
     /// Loads data from the API:
@@ -407,7 +498,7 @@ final class WeeklyWorkEntryViewModel: ObservableObject {
             let firstEntry = entries.first!
             var earliestStartTime = firstEntry.startTime!
             var latestEndTime = firstEntry.endTime!
-            var totalPauseMinutes = firstEntry.pauseMinutes // Używamy pauseMinutes z pierwszego wpisu
+            let totalPauseMinutes = firstEntry.pauseMinutes // Zmieniono z 'var' na 'let'
             var combinedDescription = firstEntry.notes
             var existingEntryId: Int = 0
             
