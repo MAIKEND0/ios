@@ -7,6 +7,7 @@ extension WorkHourEntry {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
         formatter.timeStyle = .none
+        formatter.timeZone = TimeZone.current // Użyj lokalnej strefy czasowej
         return formatter.string(from: date)
     }
     
@@ -15,6 +16,7 @@ extension WorkHourEntry {
         let formatter = DateFormatter()
         formatter.dateStyle = .none
         formatter.timeStyle = .short
+        formatter.timeZone = TimeZone.current // Użyj lokalnej strefy czasowej
         return formatter.string(from: time)
     }
     
@@ -23,6 +25,7 @@ extension WorkHourEntry {
         let formatter = DateFormatter()
         formatter.dateStyle = .none
         formatter.timeStyle = .short
+        formatter.timeZone = TimeZone.current // Użyj lokalnej strefy czasowej
         return formatter.string(from: time)
     }
     
@@ -31,6 +34,7 @@ extension WorkHourEntry {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
         formatter.timeStyle = .none
+        formatter.timeZone = TimeZone.current // Użyj lokalnej strefy czasowej
         return formatter.string(from: Date())
     }
     
@@ -38,6 +42,7 @@ extension WorkHourEntry {
         let formatter = DateFormatter()
         formatter.dateStyle = .none
         formatter.timeStyle = .short
+        formatter.timeZone = TimeZone.current // Użyj lokalnej strefy czasowej
         return formatter.string(from: Date())
     }
     
@@ -45,6 +50,7 @@ extension WorkHourEntry {
         let formatter = DateFormatter()
         formatter.dateStyle = .none
         formatter.timeStyle = .short
+        formatter.timeZone = TimeZone.current // Użyj lokalnej strefy czasowej
         return formatter.string(from: Date())
     }
 }
@@ -55,6 +61,7 @@ extension APIService.WorkHourEntry {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
         formatter.timeStyle = .none
+        formatter.timeZone = TimeZone.current // Użyj lokalnej strefy czasowej
         return formatter.string(from: work_date)
     }
     
@@ -63,6 +70,7 @@ extension APIService.WorkHourEntry {
         let formatter = DateFormatter()
         formatter.dateStyle = .none
         formatter.timeStyle = .short
+        formatter.timeZone = TimeZone.current // Użyj lokalnej strefy czasowej
         return formatter.string(from: time)
     }
     
@@ -71,6 +79,7 @@ extension APIService.WorkHourEntry {
         let formatter = DateFormatter()
         formatter.dateStyle = .none
         formatter.timeStyle = .short
+        formatter.timeZone = TimeZone.current // Użyj lokalnej strefy czasowej
         return formatter.string(from: time)
     }
 }

@@ -1,3 +1,8 @@
+//
+//  WorkerDashboardView.swift
+//  KSR Cranes App
+//
+
 import SwiftUI
 
 struct WorkerDashboardView: View {
@@ -97,8 +102,11 @@ struct WorkerDashboardView: View {
                 viewModel.loadData()
             }
             // Add timer to periodically refresh data
-            .onReceive(Timer.publish(every: 30, on: .main, in: .common).autoconnect()) { _ in
-                // Refresh data every 30 seconds
+            .onReceive(Timer.publish(every: 300, on: .main, in: .common).autoconnect()) { _ in
+                // Refresh data every 5 minutes
+                #if DEBUG
+                print("[WorkerDashboardView] Timer triggered refresh, current entries: \(viewModel.hoursViewModel.entries.count)")
+                #endif
                 viewModel.loadData()
             }
             .sheet(isPresented: $showWorkHoursForm) {
@@ -110,6 +118,9 @@ struct WorkerDashboardView: View {
             }
             // Add refreshable modifier to allow pull-to-refresh
             .refreshable {
+                #if DEBUG
+                print("[WorkerDashboardView] Pull-to-refresh triggered, current entries: \(viewModel.hoursViewModel.entries.count)")
+                #endif
                 await withCheckedContinuation { continuation in
                     viewModel.loadData()
                     // Delay slightly to make refresh feel natural
@@ -304,12 +315,21 @@ struct WorkerDashboardView: View {
             $0.task_id == task.task_id
         }
         
+        // Log entries for debugging
+        #if DEBUG
+        print("[WorkerDashboardView] Task \(task.title) (ID: \(task.task_id)) has \(taskEntries.count) entries: \(taskEntries)")
+        #endif
+        
         // Calculate total hours using entries directly
         let totalHours = taskEntries.reduce(0.0) { sum, entry in
             guard let start = entry.start_time, let end = entry.end_time else { return sum }
             let interval = end.timeIntervalSince(start)
             let pauseSeconds = Double(entry.pause_minutes ?? 0) * 60
-            return sum + max(0, (interval - pauseSeconds) / 3600)
+            let hours = max(0, (interval - pauseSeconds) / 3600)
+            #if DEBUG
+            print("[WorkerDashboardView] Entry for task \(task.task_id) on \(entry.work_date): \(hours) hours")
+            #endif
+            return sum + hours
         }
         
         // Get weeks statuses for the last 4 weeks

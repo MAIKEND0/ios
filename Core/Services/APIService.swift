@@ -90,6 +90,7 @@ final class APIService {
         var request = URLRequest(url: url)
         request.httpMethod = method
         request.addValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("no-cache", forHTTPHeaderField: "Cache-Control") // Dodaj nagłówek
         applyAuthToken(to: &request)
         
         if method != "GET", let body = body {
@@ -201,6 +202,11 @@ extension APIService {
     /// - Parameter entries: Tablica wpisów do zapisania
     /// - Returns: Publisher z odpowiedzią lub błędem
     func upsertWorkEntries(_ entries: [WorkHourEntry]) -> AnyPublisher<WorkEntryResponse, APIError> {
+        #if DEBUG
+        for (index, entry) in entries.enumerated() {
+            print("[APIService] Upsert entry \(index): pause_minutes=\(entry.pause_minutes ?? 0), work_date=\(entry.work_date)")
+        }
+        #endif
         let body = ["entries": entries]
         return makeRequest(endpoint: "/api/app/work-entries", method: "POST", body: body)
             .decode(type: WorkEntryResponse.self, decoder: jsonDecoder())

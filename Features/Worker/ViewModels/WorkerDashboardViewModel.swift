@@ -1,3 +1,8 @@
+//
+//  WorkerDashboardViewModel.swift
+//  KSR Cranes App
+//
+
 import Foundation
 import Combine
 
@@ -66,6 +71,9 @@ final class WorkerDashboardViewModel: ObservableObject {
         print("[WorkerDashboardViewModel] Rozpoczęcie ładowania danych...")
         #endif
         
+        // Resetuj wpisy godzin przed ponownym ładowaniem
+        hoursViewModel.resetEntries()
+        
         // Ustaw timeout na załadowanie danych
         DispatchQueue.main.asyncAfter(deadline: .now() + 10) { [weak self] in
             if !(self?.isDataLoaded ?? true) {
@@ -88,11 +96,15 @@ final class WorkerDashboardViewModel: ObservableObject {
     }
 
     private func loadHoursData() {
-        // Pobieraj dane dla ostatnich 4 tygodni
+        // Pobieraj dane dla 4 tygodni wstecz i 4 tygodni w przyszłość
         let calendar = Calendar.current
-        let endDate = Date()
-        let startDate = calendar.date(byAdding: .weekOfYear, value: -4, to: endDate) ?? endDate
-        hoursViewModel.loadEntries(startDate: startDate, endDate: endDate)
+        let today = Date()
+        let startDate = calendar.date(byAdding: .weekOfYear, value: -4, to: today) ?? today
+        let endDate = calendar.date(byAdding: .weekOfYear, value: 4, to: today) ?? today
+        #if DEBUG
+        print("[WorkerDashboardViewModel] Loading hours data from \(startDate) to \(endDate)")
+        #endif
+        hoursViewModel.loadEntries(startDate: startDate, endDate: endDate, isForDashboard: true)
     }
 
     /// Pobiera ogłoszenia z backendu przez APIService

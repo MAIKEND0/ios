@@ -8,7 +8,7 @@ import Foundation
 /// Lekki, mutowalny model wpisu godzin pracy do UI
 struct EditableWorkEntry: Identifiable {
     let id: Int
-    let date: Date
+    var date: Date
 
     var startTime: Date?
     var endTime: Date?
@@ -17,34 +17,36 @@ struct EditableWorkEntry: Identifiable {
     var isDraft: Bool
     var status: String
 
-    /// Całkowite godziny pracy (hours)
+    /// Total work hours (in hours)
     var totalHours: Double {
         guard let s = startTime, let e = endTime else { return 0 }
         let interval = e.timeIntervalSince(s) - Double(pauseMinutes) * 60
         return max(0, interval / 3600)
     }
 
-    /// Inicjalizacja z APIService.WorkHourEntry
+    /// Initialize from APIService.WorkHourEntry
     init(from api: APIService.WorkHourEntry) {
         self.id = api.entry_id
-        self.date = api.work_date
+        // Przesuń work_date z UTC do lokalnej strefy czasowej (CEST)
+        let localTimeZone = TimeZone.current
+        self.date = api.work_date.addingTimeInterval(Double(localTimeZone.secondsFromGMT(for: api.work_date)))
         self.startTime = api.start_time
         self.endTime = api.end_time
         self.pauseMinutes = api.pause_minutes ?? 0
-        self.notes = api.description ?? "" // Poprawne mapowanie pola description
-        self.isDraft = api.is_draft ?? true
-        self.status = api.status ?? "pending"
+        self.notes = api.description ?? ""
+        self.isDraft = api.is_draft ?? false // Upewnij się, że isDraft jest ustawiane poprawnie
+        self.status = api.is_draft ?? false ? "draft" : (api.status ?? "pending")
     }
 
-    /// Pusty wpis dla dni bez danych
+    /// Empty entry for days without data
     init(date: Date) {
-        self.id = Int(date.timeIntervalSince1970) // Tymczasowy ID oparty na czasie
+        self.id = Int(date.timeIntervalSince1970)
         self.date = date
         self.startTime = nil
         self.endTime = nil
         self.pauseMinutes = 0
         self.notes = ""
         self.isDraft = true
-        self.status = "pending"
+        self.status = "draft"
     }
 }
