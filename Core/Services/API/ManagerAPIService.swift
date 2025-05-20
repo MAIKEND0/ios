@@ -1,15 +1,7 @@
-//
-//  ManagerAPIService.swift
-//  KSR Cranes App
-//
-//  Created by Maksymilian Marcinowski on 16/05/2025.
-//
-
 import Foundation
 import Combine
-import SwiftUI // Dla typu Color
+import SwiftUI
 
-// Pomocnicza struktura AnyEncodable do obsługi dynamicznych typów
 struct AnyEncodable: Encodable {
     private let value: Encodable
     
@@ -34,7 +26,6 @@ final class ManagerAPIService: BaseAPIService {
         let signatureUrl: String
     }
 
-    /// Saves signature to S3 and returns signatureId
     func saveSignature(_ signatureImage: UIImage) -> AnyPublisher<SignatureResponse, APIError> {
         guard let imageData = signatureImage.pngData(),
               let base64String = imageData.base64EncodedString().addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else {
@@ -56,7 +47,6 @@ final class ManagerAPIService: BaseAPIService {
             .eraseToAnyPublisher()
     }
 
-    /// Pobiera zadania, w których użytkownik jest supervisorem
     func fetchSupervisorTasks(supervisorId: Int) -> AnyPublisher<[Task], APIError> {
         let mondayStr = DateFormatter.isoDate.string(from: Calendar.current.startOfWeek(for: Date()))
         
@@ -65,7 +55,8 @@ final class ManagerAPIService: BaseAPIService {
                 entries.compactMap { $0.tasks }
             }
 
-        let tasksPublisher = makeRequest(endpoint: "/api/app/tasks", method: "GET", body: Optional<String>.none)
+        let endpoint = "/api/app/tasks?cacheBust=\(Int(Date().timeIntervalSince1970))"
+        let tasksPublisher = makeRequest(endpoint: endpoint, method: "GET", body: Optional<String>.none)
             .decode(type: [Task].self, decoder: jsonDecoder())
             .mapError { error -> APIError in
                 if let apiError = error as? APIError {
@@ -91,9 +82,8 @@ final class ManagerAPIService: BaseAPIService {
             .eraseToAnyPublisher()
     }
 
-    /// Pobiera wpisy godzin pracy do zatwierdzenia przez supervisora
     func fetchPendingWorkEntriesForManager(weekStartDate: String, isDraft: Bool? = nil) -> AnyPublisher<[WorkHourEntry], APIError> {
-        var ep = "/api/app/supervisor?selectedMonday=\(weekStartDate)"
+        var ep = "/api/app/supervisor?selectedMonday=\(weekStartDate)&cacheBust=\(Int(Date().timeIntervalSince1970))"
         if let d = isDraft { ep += "&is_draft=\(d)" }
         return makeRequest(endpoint: ep, method: "GET", body: Optional<String>.none)
             .tryMap { data in
@@ -113,10 +103,34 @@ final class ManagerAPIService: BaseAPIService {
             .mapError { ($0 as? APIError) ?? .decodingError($0) }
             .eraseToAnyPublisher()
     }
+    
+    func fetchAllPendingWorkEntriesForManager(isDraft: Bool? = nil) -> AnyPublisher<[WorkHourEntry], APIError> {
+        var ep = "/api/app/supervisor?allPending=true&cacheBust=\(Int(Date().timeIntervalSince1970))"
+        if let d = isDraft { ep += "&is_draft=\(d)" }
+        return makeRequest(endpoint: ep, method: "GET", body: Optional<String>.none)
+            .tryMap { data in
+                do {
+                    let entries = try self.jsonDecoder().decode([WorkHourEntry].self, from: data)
+                    #if DEBUG
+                    print("[ManagerAPIService] Fetched all pending entries: \(entries.count)")
+                    #endif
+                    return entries
+                } catch {
+                    #if DEBUG
+                    if let responseString = String(data: data, encoding: .utf8) {
+                        print("[ManagerAPIService] Failed to decode WorkHourEntry for all pending: \(error)")
+                        print("[ManagerAPIService] Raw response: \(responseString.prefix(1000))")
+                    }
+                    #endif
+                    throw error
+                }
+            }
+            .mapError { ($0 as? APIError) ?? .decodingError($0) }
+            .eraseToAnyPublisher()
+    }
 
-    /// Pobiera pracowników przypisanych do zadań supervisora
     func fetchAssignedWorkers(supervisorId: Int) -> AnyPublisher<[Worker], APIError> {
-        let endpoint = "/api/app/supervisor/workers?supervisorId=\(supervisorId)"
+        let endpoint = "/api/app/supervisor/workers?supervisorId=\(supervisorId)&cacheBust=\(Int(Date().timeIntervalSince1970))"
         return makeRequest(endpoint: endpoint, method: "GET", body: Optional<String>.none)
             .decode(type: [Worker].self, decoder: jsonDecoder())
             .mapError { error in
@@ -134,9 +148,8 @@ final class ManagerAPIService: BaseAPIService {
             .eraseToAnyPublisher()
     }
 
-    /// Pobiera projekty powiązane z zadaniami supervisora
     func fetchProjects(supervisorId: Int) -> AnyPublisher<[Project], APIError> {
-        let endpoint = "/api/app/projects?supervisorId=\(supervisorId)"
+        let endpoint = "/api/app/projects?supervisorId=\(supervisorId)&cacheBust=\(Int(Date().timeIntervalSince1970))"
         return makeRequest(endpoint: endpoint, method: "GET", body: Optional<String>.none)
             .decode(type: [Project].self, decoder: jsonDecoder())
             .mapError { ($0 as? APIError) ?? .decodingError($0) }
@@ -149,9 +162,8 @@ final class ManagerAPIService: BaseAPIService {
             .eraseToAnyPublisher()
     }
 
-    /// Pobiera podpisane timesheets dla supervisora
     func fetchTimesheets(supervisorId: Int) -> AnyPublisher<[Timesheet], APIError> {
-        let endpoint = "/api/app/timesheets?supervisorId=\(supervisorId)"
+        let endpoint = "/api/app/timesheets?supervisorId=\(supervisorId)&cacheBust=\(Int(Date().timeIntervalSince1970))"
         return makeRequest(endpoint: endpoint, method: "GET", body: Optional<String>.none)
             .decode(type: [Timesheet].self, decoder: jsonDecoder())
             .mapError { error in
@@ -169,7 +181,6 @@ final class ManagerAPIService: BaseAPIService {
             .eraseToAnyPublisher()
     }
 
-    /// Aktualizuje status wpisu godzin pracy (np. confirmed, rejected)
     func updateWorkEntryStatus(entry: WorkHourEntry, confirmationStatus: String, rejectionReason: String? = nil) -> AnyPublisher<WorkEntryResponse, APIError> {
         let updateRequest = UpdateWorkEntryRequest(
             entry_id: entry.entry_id,
@@ -195,7 +206,6 @@ final class ManagerAPIService: BaseAPIService {
             .eraseToAnyPublisher()
     }
 
-    /// Zatwierdza wiele wpisów godzin pracy bez generowania PDF
     func approveEntriesWithoutPDF(entries: [UpdateWorkEntryRequest]) -> AnyPublisher<WorkEntryResponse, APIError> {
         let body: [String: AnyEncodable] = [
             "entries": AnyEncodable(entries),
@@ -214,13 +224,12 @@ final class ManagerAPIService: BaseAPIService {
             .eraseToAnyPublisher()
     }
     
-    /// Uploads a timesheet PDF directly to S3
     func uploadPDF(pdfData: Data, employeeId: Int, taskId: Int, weekNumber: Int, year: Int, entryIds: [Int]) -> AnyPublisher<TimesheetUploadResponse, APIError> {
         guard let url = URL(string: baseURL + "/api/app/upload-timesheet") else {
-            return Fail(error: APIError.invalidURL).eraseToAnyPublisher()
+            return Fail(outputType: TimesheetUploadResponse.self, failure: APIError.invalidURL)
+                .eraseToAnyPublisher()
         }
         
-        // Create form data
         let boundary = "Boundary-\(UUID().uuidString)"
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
@@ -229,14 +238,12 @@ final class ManagerAPIService: BaseAPIService {
         
         var body = Data()
         
-        // Add PDF data
         body.append("--\(boundary)\r\n".data(using: .utf8)!)
         body.append("Content-Disposition: form-data; name=\"pdf\"; filename=\"timesheet.pdf\"\r\n".data(using: .utf8)!)
         body.append("Content-Type: application/pdf\r\n\r\n".data(using: .utf8)!)
         body.append(pdfData)
         body.append("\r\n".data(using: .utf8)!)
         
-        // Add other fields
         let addField = { (name: String, value: String) in
             body.append("--\(boundary)\r\n".data(using: .utf8)!)
             body.append("Content-Disposition: form-data; name=\"\(name)\"\r\n\r\n".data(using: .utf8)!)
@@ -249,13 +256,11 @@ final class ManagerAPIService: BaseAPIService {
         addField("weekNumber", "\(weekNumber)")
         addField("year", "\(year)")
         
-        // Convert entry IDs to JSON
         if let entriesData = try? JSONEncoder().encode(entryIds),
            let entriesString = String(data: entriesData, encoding: .utf8) {
             addField("entries", entriesString)
         }
         
-        // Add closing boundary
         body.append("--\(boundary)--\r\n".data(using: .utf8)!)
         
         request.httpBody = body
@@ -268,7 +273,8 @@ final class ManagerAPIService: BaseAPIService {
             .mapError { APIError.networkError($0) }
             .flatMap { data, response -> AnyPublisher<TimesheetUploadResponse, APIError> in
                 guard let httpResponse = response as? HTTPURLResponse else {
-                    return Fail(error: APIError.invalidResponse).eraseToAnyPublisher()
+                    return Fail(outputType: TimesheetUploadResponse.self, failure: APIError.invalidResponse)
+                        .eraseToAnyPublisher()
                 }
                 
                 #if DEBUG
@@ -285,25 +291,23 @@ final class ManagerAPIService: BaseAPIService {
                         .eraseToAnyPublisher()
                 } else {
                     let errorMessage = String(data: data, encoding: .utf8) ?? "Unknown error"
-                    return Fail(error: APIError.serverError(httpResponse.statusCode, errorMessage))
+                    return Fail(outputType: TimesheetUploadResponse.self, failure: APIError.serverError(httpResponse.statusCode, errorMessage))
                         .eraseToAnyPublisher()
                 }
             }
             .eraseToAnyPublisher()
     }
 
-    /// Testuje połączenie z API
     func testConnection() -> AnyPublisher<String, APIError> {
-        makeRequest(endpoint: "/api/app/tasks", method: "GET", body: Optional<String>.none)
+        let endpoint = "/api/app/tasks?cacheBust=\(Int(Date().timeIntervalSince1970))"
+        return makeRequest(endpoint: endpoint, method: "GET", body: Optional<String>.none)
             .map { _ in "Connection successful" }
             .eraseToAnyPublisher()
     }
 }
 
-// MARK: – Modele dla endpointów
-
 extension ManagerAPIService {
-    struct Task: Codable, Identifiable {
+    struct Task: Codable, Identifiable, Equatable {
         let id = UUID()
         let task_id: Int
         let title: String
@@ -319,17 +323,22 @@ extension ManagerAPIService {
             return isoFormatter.date(from: deadline)
         }
 
-        struct Project: Codable {
-            let project_id: Int
-            let title: String
+        private enum CodingKeys: String, CodingKey {
+            case task_id, title, description, deadline, supervisor_id
+            case project = "Projects" // Mapowanie klucza JSON "Projects" na właściwość "project"
         }
 
-        private enum CodingKeys: String, CodingKey {
-            case task_id, title, description, deadline, project = "Projects", supervisor_id
+        static func == (lhs: Task, rhs: Task) -> Bool {
+            return lhs.task_id == rhs.task_id &&
+                   lhs.title == rhs.title &&
+                   lhs.description == rhs.description &&
+                   lhs.deadline == rhs.deadline &&
+                   lhs.project == rhs.project &&
+                   lhs.supervisor_id == rhs.supervisor_id
         }
     }
 
-    struct WorkHourEntry: Codable, Identifiable {
+    struct WorkHourEntry: Codable, Identifiable, Equatable {
         let id = UUID()
         let entry_id: Int
         let employee_id: Int
@@ -347,7 +356,7 @@ extension ManagerAPIService {
         let rejection_reason: String?
         let km: Double?
 
-        struct Employee: Codable {
+        struct Employee: Codable, Equatable {
             let name: String
         }
 
@@ -385,6 +394,10 @@ extension ManagerAPIService {
             } else {
                 km = try container.decodeIfPresent(Double.self, forKey: .km)
             }
+            
+            #if DEBUG
+            print("[ManagerAPIService] Decoded WorkHourEntry: entry_id=\(entry_id), task_id=\(task_id), tasks=\(String(describing: tasks?.title)), project=\(String(describing: tasks?.project?.title)), customer=\(String(describing: tasks?.project?.customer?.name))")
+            #endif
         }
 
         init(
@@ -420,6 +433,24 @@ extension ManagerAPIService {
             self.rejection_reason = rejection_reason
             self.km = km
         }
+
+        static func == (lhs: WorkHourEntry, rhs: WorkHourEntry) -> Bool {
+            return lhs.entry_id == rhs.entry_id &&
+                   lhs.employee_id == rhs.employee_id &&
+                   lhs.task_id == rhs.task_id &&
+                   lhs.work_date == rhs.work_date &&
+                   lhs.start_time == rhs.start_time &&
+                   lhs.end_time == rhs.end_time &&
+                   lhs.pause_minutes == rhs.pause_minutes &&
+                   lhs.status == rhs.status &&
+                   lhs.confirmation_status == rhs.confirmation_status &&
+                   lhs.is_draft == rhs.is_draft &&
+                   lhs.description == rhs.description &&
+                   lhs.tasks == rhs.tasks &&
+                   lhs.employees == rhs.employees &&
+                   lhs.rejection_reason == rhs.rejection_reason &&
+                   lhs.km == rhs.km
+        }
     }
     
     struct Worker: Codable, Identifiable {
@@ -435,7 +466,13 @@ extension ManagerAPIService {
         }
     }
     
-    struct Project: Codable, Identifiable {
+    enum ProjectStatus: String, Codable {
+        case aktiv
+        case afsluttet
+        case afventer
+    }
+    
+    struct Project: Codable, Identifiable, Equatable {
         let id: UUID
         let project_id: Int
         let title: String
@@ -448,11 +485,20 @@ extension ManagerAPIService {
         let status: ProjectStatus?
         var tasks: [Task]
         var assignedWorkersCount: Int
-        
-        enum ProjectStatus: String, Codable {
-            case aktiv
-            case afsluttet
-            case afventer
+        let customer: Customer?
+
+        struct Customer: Codable, Equatable {
+            let customer_id: Int
+            let name: String
+
+            private enum CodingKeys: String, CodingKey {
+                case customer_id, name
+            }
+        }
+
+        private enum CodingKeys: String, CodingKey {
+            case project_id, title, description, start_date, end_date, street, city, zip, status
+            case customer = "Customers", tasks, assignedWorkersCount
         }
         
         var fullAddress: String? {
@@ -469,10 +515,6 @@ extension ManagerAPIService {
             }
         }
         
-        private enum CodingKeys: String, CodingKey {
-            case project_id, title, description, start_date, end_date, street, city, zip, status
-        }
-        
         init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: CodingKeys.self)
             self.id = UUID()
@@ -485,11 +527,15 @@ extension ManagerAPIService {
             self.city = try container.decodeIfPresent(String.self, forKey: .city)
             self.zip = try container.decodeIfPresent(String.self, forKey: .zip)
             self.status = try container.decodeIfPresent(ProjectStatus.self, forKey: .status)
-            self.tasks = []
-            self.assignedWorkersCount = 0
+            self.customer = try container.decodeIfPresent(Customer.self, forKey: .customer)
+            #if DEBUG
+            print("[ManagerAPIService] Decoded project: \(project_id), customer: \(String(describing: customer?.name))")
+            #endif
+            self.tasks = try container.decodeIfPresent([Task].self, forKey: .tasks) ?? []
+            self.assignedWorkersCount = try container.decodeIfPresent(Int.self, forKey: .assignedWorkersCount) ?? 0
         }
         
-        init(id: UUID, project_id: Int, title: String, description: String?, start_date: Date?, end_date: Date?, street: String?, city: String?, zip: String?, status: ProjectStatus?, tasks: [Task], assignedWorkersCount: Int) {
+        init(id: UUID, project_id: Int, title: String, description: String?, start_date: Date?, end_date: Date?, street: String?, city: String?, zip: String?, status: ProjectStatus?, tasks: [Task], assignedWorkersCount: Int, customer: Customer?) {
             self.id = id
             self.project_id = project_id
             self.title = title
@@ -502,6 +548,23 @@ extension ManagerAPIService {
             self.status = status
             self.tasks = tasks
             self.assignedWorkersCount = assignedWorkersCount
+            self.customer = customer
+        }
+        
+        static func == (lhs: Project, rhs: Project) -> Bool {
+            return lhs.id == rhs.id &&
+                   lhs.project_id == rhs.project_id &&
+                   lhs.title == rhs.title &&
+                   lhs.description == rhs.description &&
+                   lhs.start_date == rhs.start_date &&
+                   lhs.end_date == rhs.end_date &&
+                   lhs.street == rhs.street &&
+                   lhs.city == rhs.city &&
+                   lhs.zip == rhs.zip &&
+                   lhs.status == rhs.status &&
+                   lhs.tasks == rhs.tasks &&
+                   lhs.assignedWorkersCount == rhs.assignedWorkersCount &&
+                   lhs.customer == rhs.customer
         }
     }
     
@@ -523,14 +586,14 @@ extension ManagerAPIService {
     struct Timesheet: Codable, Identifiable {
         let id: Int
         let task_id: Int
-        let employee_id: Int? // Dodano dla grupowania po pracowniku
+        let employee_id: Int?
         let weekNumber: Int
         let year: Int
         let timesheetUrl: String
         let created_at: Date
         let updated_at: Date?
-        let Tasks: Task? // Relacja z zadaniem
-        let Employees: WorkHourEntry.Employee? // Relacja z pracownikiem
+        let Tasks: Task?
+        let Employees: WorkHourEntry.Employee?
 
         private enum CodingKeys: String, CodingKey {
             case id, task_id, employee_id, weekNumber, year, timesheetUrl, created_at, updated_at, Tasks, Employees

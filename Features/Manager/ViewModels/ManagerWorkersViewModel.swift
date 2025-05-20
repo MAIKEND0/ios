@@ -53,7 +53,7 @@ final class ManagerWorkersViewModel: ObservableObject {
         ManagerAPIService.shared
             .fetchAssignedWorkers(supervisorId: supervisorId)
             .receive(on: DispatchQueue.main)
-            .sink { [weak self] completion in
+            .sink { [weak self] (completion: Subscribers.Completion<BaseAPIService.APIError>) in
                 guard let self = self else { return }
                 self.isLoading = false
                 if case .failure(let error) = completion {
@@ -65,7 +65,7 @@ final class ManagerWorkersViewModel: ObservableObject {
                     print("[ManagerWorkersViewModel] Failed to load workers: \(error.localizedDescription)")
                     #endif
                 }
-            } receiveValue: { [weak self] workers in
+            } receiveValue: { [weak self] (workers: [ManagerAPIService.Worker]) in
                 guard let self = self else { return }
                 self.workers = workers
                 #if DEBUG

@@ -1,3 +1,4 @@
+
 //
 //  ManagerProjectsViewModel.swift
 //  KSR Cranes App
@@ -113,9 +114,8 @@ final class ManagerProjectsViewModel: ObservableObject {
                         zip: nil,
                         status: nil,
                         tasks: [task],
-                        assignedWorkersCount:
-
- Set(workerIds).count
+                        assignedWorkersCount: Set(workerIds).count,
+                        customer: nil // Added customer parameter
                     )
                 }
             }

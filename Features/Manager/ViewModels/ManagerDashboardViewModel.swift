@@ -1,10 +1,3 @@
-//
-//  ManagerDashboardViewModel.swift
-//  KSR Cranes App
-//
-//  Created by Maksymilian Marcinowski on 16/05/2025.
-//
-
 import Foundation
 import Combine
 import SwiftUI
@@ -13,6 +6,7 @@ import PDFKit
 class ManagerDashboardViewModel: ObservableObject {
     @Published var supervisorTasks: [ManagerAPIService.Task] = []
     @Published var pendingEntriesByTask: [TaskWeekEntry] = []
+    @Published var allPendingEntriesByTask: [TaskWeekEntry] = []
     @Published var selectedMonday: Date = Calendar.current.date(from: Calendar.current.dateComponents([.yearForWeekOfYear, .weekOfYear], from: Date()))!
     @Published var pendingHoursCount: Int = 0
     @Published var activeWorkersCount: Int = 0
@@ -21,6 +15,7 @@ class ManagerDashboardViewModel: ObservableObject {
     @Published var showAlert: Bool = false
     @Published var alertTitle: String = ""
     @Published var alertMessage: String = ""
+    @Published var showAllPendingEntries: Bool = true
 
     private var isProcessingApproval: Bool = false
     private var isViewActive: Bool = true
@@ -28,7 +23,7 @@ class ManagerDashboardViewModel: ObservableObject {
     private let managerService = ManagerAPIService.shared
     private var cancellables = Set<AnyCancellable>()
 
-    struct TaskWeekEntry: Identifiable {
+    struct TaskWeekEntry: Identifiable, Equatable {
         let id: String
         let taskId: Int
         let weekNumber: Int
@@ -50,6 +45,17 @@ class ManagerDashboardViewModel: ObservableObject {
                 guard let start = entry.start_time, let end = entry.end_time else { return false }
                 return start < end && entry.confirmation_status != "confirmed"
             }
+        }
+
+        static func == (lhs: TaskWeekEntry, rhs: TaskWeekEntry) -> Bool {
+            return lhs.id == rhs.id &&
+                   lhs.taskId == rhs.taskId &&
+                   lhs.weekNumber == rhs.weekNumber &&
+                   lhs.year == rhs.year &&
+                   lhs.taskTitle == rhs.taskTitle &&
+                   lhs.entries == rhs.entries &&
+                   lhs.totalKm == rhs.totalKm &&
+                   lhs.canBeConfirmed == rhs.canBeConfirmed
         }
     }
 
@@ -76,9 +82,10 @@ class ManagerDashboardViewModel: ObservableObject {
         formatter.dateFormat = "yyyy-MM-dd"
         let weekStartStr = formatter.string(from: selectedMonday)
 
-        Publishers.Zip(
+        Publishers.Zip3(
             managerService.fetchSupervisorTasks(supervisorId: 0),
-            managerService.fetchPendingWorkEntriesForManager(weekStartDate: weekStartStr)
+            managerService.fetchPendingWorkEntriesForManager(weekStartDate: weekStartStr),
+            managerService.fetchAllPendingWorkEntriesForManager()
         )
         .receive(on: DispatchQueue.main)
         .sink(receiveCompletion: { [weak self] completionStatus in
@@ -89,12 +96,14 @@ class ManagerDashboardViewModel: ObservableObject {
                 self.alertTitle = "Error"
                 self.alertMessage = error.localizedDescription
             }
-        }, receiveValue: { [weak self] tasks, entries in
+        }, receiveValue: { [weak self] tasks, weekEntries, allEntries in
             guard let self = self, self.isViewActive else { return }
+            
             self.supervisorTasks = tasks
-            let pendingEntries = entries.filter { $0.confirmation_status != "confirmed" }
-            let grouped = Dictionary(grouping: pendingEntries) { $0.task_id }
-            self.pendingEntriesByTask = grouped.map { taskId, entries in
+            
+            let pendingWeekEntries = weekEntries.filter { $0.confirmation_status != "confirmed" }
+            let weekGrouped = Dictionary(grouping: pendingWeekEntries) { $0.task_id }
+            self.pendingEntriesByTask = weekGrouped.map { taskId, entries in
                 let taskTitle = entries.first?.tasks?.title ?? "Task ID: \(taskId)"
                 let weekNumber = Calendar.current.component(.weekOfYear, from: self.selectedMonday)
                 let year = Calendar.current.component(.year, from: self.selectedMonday)
@@ -110,6 +119,55 @@ class ManagerDashboardViewModel: ObservableObject {
                     totalKm: totalKm
                 )
             }.sorted { $0.taskId < $1.taskId }
+            
+            let pendingAllEntries = allEntries.filter { $0.confirmation_status != "confirmed" }
+            let allGrouped = Dictionary(grouping: pendingAllEntries) { $0.task_id }
+            
+            var allTaskWeekEntries: [TaskWeekEntry] = []
+            
+            for (taskId, taskEntries) in allGrouped {
+                let entriesByWeek = Dictionary(grouping: taskEntries) { entry in
+                    let calendar = Calendar.current
+                    let weekNumber = calendar.component(.weekOfYear, from: entry.work_date)
+                    let year = calendar.component(.year, from: entry.work_date)
+                    return "\(year)-\(weekNumber)"
+                }
+                
+                for (yearWeekKey, weekEntries) in entriesByWeek {
+                    let components = yearWeekKey.split(separator: "-")
+                    if components.count == 2,
+                       let year = Int(components[0]),
+                       let weekNumber = Int(components[1]) {
+                        
+                        let taskTitle = weekEntries.first?.tasks?.title ?? "Task ID: \(taskId)"
+                        let totalKm = weekEntries.reduce(0.0) { sum, entry in
+                            sum + (entry.km ?? 0.0)
+                        }
+                        
+                        let taskWeekEntry = TaskWeekEntry(
+                            taskId: taskId,
+                            weekNumber: weekNumber,
+                            year: year,
+                            taskTitle: taskTitle,
+                            entries: weekEntries,
+                            totalKm: totalKm
+                        )
+                        
+                        allTaskWeekEntries.append(taskWeekEntry)
+                    }
+                }
+            }
+            
+            self.allPendingEntriesByTask = allTaskWeekEntries.sorted {
+                if $0.year != $1.year {
+                    return $0.year > $1.year
+                } else if $0.weekNumber != $1.weekNumber {
+                    return $0.weekNumber > $1.weekNumber
+                } else {
+                    return $0.taskId < $1.taskId
+                }
+            }
+            
             self.updateSummaryStats()
             self.isLoading = false
         })
@@ -203,6 +261,7 @@ class ManagerDashboardViewModel: ObservableObject {
                     self?.loadData()
                 }, receiveValue: { [weak self] response in
                     self?.pendingEntriesByTask.removeAll { $0.id == taskWeek.id }
+                    self?.allPendingEntriesByTask.removeAll { $0.id == taskWeek.id }
                     self?.updateSummaryStats()
                     
                     #if DEBUG
@@ -235,7 +294,7 @@ class ManagerDashboardViewModel: ObservableObject {
     }
 
     func generateTimesheetPDF(taskWeek: TaskWeekEntry, signatureImage: UIImage) -> Data? {
-        let pageWidth: CGFloat = 595 // A4 in points
+        let pageWidth: CGFloat = 595
         let pageHeight: CGFloat = 842
         let margin: CGFloat = 40
         let renderer = UIGraphicsPDFRenderer(bounds: CGRect(x: 0, y: 0, width: pageWidth, height: pageHeight))
@@ -283,33 +342,58 @@ class ManagerDashboardViewModel: ObservableObject {
                 .foregroundColor: darkTextColor,
                 .underlineStyle: NSUnderlineStyle.single.rawValue
             ]
-            let detailsTitle = NSAttributedString(string: "Timesheet Details", attributes: sectionTitleAttributes)
-            detailsTitle.draw(in: CGRect(x: margin, y: yPosition, width: pageWidth - 2*margin, height: 15))
-            yPosition += 20
-            
             let detailsAttributes: [NSAttributedString.Key: Any] = [
                 .font: UIFont.systemFont(ofSize: 12),
                 .foregroundColor: darkTextColor
             ]
             
+            let leftColumnWidth = (pageWidth - 3 * margin) / 2
+            let rightColumnX = margin + leftColumnWidth + margin
+            
+            // Employee Details (Left Column)
+            let employeeTitle = NSAttributedString(string: "Employee Details", attributes: sectionTitleAttributes)
+            employeeTitle.draw(in: CGRect(x: margin, y: yPosition, width: leftColumnWidth, height: 15))
+            
             let employeeName = taskWeek.entries.first?.employees?.name ?? "Unknown"
             let employeeId = taskWeek.entries.first?.employee_id ?? 0
-            let taskTitle = taskWeek.taskTitle
-            let taskId = taskWeek.taskId
-            let projectTitle = taskWeek.entries.first?.tasks?.project?.title ?? "Unknown"
+            let weekNumber = taskWeek.weekNumber
+            let year = taskWeek.year
             
-            let details = [
-                "Employee: \(employeeName) (ID: \(employeeId))",
-                "Task: \(taskTitle) (ID: \(taskId))",
-                "Project: \(projectTitle)",
-                "Week: \(taskWeek.weekNumber), \(String(taskWeek.year))" // Poprawka formatowania roku
+            let employeeDetails = [
+                "Employee: \(employeeName)",
+                "ID: \(employeeId)",
+                "Week: \(weekNumber), \(year)"
             ]
             
-            for (index, detail) in details.enumerated() {
+            for (index, detail) in employeeDetails.enumerated() {
                 let detailText = NSAttributedString(string: detail, attributes: detailsAttributes)
-                detailText.draw(in: CGRect(x: margin, y: yPosition + CGFloat(index * 20), width: pageWidth - 2*margin, height: 20))
+                detailText.draw(in: CGRect(x: margin, y: yPosition + 20 + CGFloat(index * 20), width: leftColumnWidth, height: 20))
             }
-            yPosition += CGFloat(details.count * 20) + 20
+            
+            // Project Details (Right Column)
+            let projectTitle = NSAttributedString(string: "Project Details", attributes: sectionTitleAttributes)
+            projectTitle.draw(in: CGRect(x: rightColumnX, y: yPosition, width: leftColumnWidth, height: 15))
+            
+            let taskTitle = taskWeek.taskTitle
+            let taskId = taskWeek.taskId
+            let projectTitleText = taskWeek.entries.first?.tasks?.project?.title ?? "Unknown"
+            let customerName = taskWeek.entries.first?.tasks?.project?.customer?.name ?? "Unknown"
+            let projectAddress = taskWeek.entries.first?.tasks?.project?.fullAddress ?? "Unknown"
+            
+            let projectDetails = [
+                "Task: \(taskTitle)",
+                "Task ID: \(taskId)",
+                "Project: \(projectTitleText)",
+                "Customer: \(customerName)",
+                "Address: \(projectAddress)"
+            ]
+            
+            for (index, detail) in projectDetails.enumerated() {
+                let detailText = NSAttributedString(string: detail, attributes: detailsAttributes)
+                detailText.draw(in: CGRect(x: rightColumnX, y: yPosition + 20 + CGFloat(index * 20), width: leftColumnWidth, height: 20))
+            }
+            
+            yPosition += 20 + max(CGFloat(employeeDetails.count), CGFloat(projectDetails.count)) * 20 + 20
             
             let hoursTitle = NSAttributedString(string: "Work Hours", attributes: sectionTitleAttributes)
             hoursTitle.draw(in: CGRect(x: margin, y: yPosition, width: pageWidth - 2*margin, height: 15))
@@ -446,30 +530,26 @@ class ManagerDashboardViewModel: ObservableObject {
             signatureImage.draw(in: CGRect(x: margin, y: yPosition, width: 120, height: 40))
             yPosition += 60
             
-            let companyTitle = NSAttributedString(string: "Company Details", attributes: sectionTitleAttributes)
-            companyTitle.draw(in: CGRect(x: margin, y: yPosition, width: pageWidth - 2*margin, height: 15))
-            yPosition += 20
-            
+            // Footer with Company Details
+            let footerY = pageHeight - margin - 100
             let companyDetails = [
                 "KSR Cranes",
-                "Eskebuen 49",
-                "2620 Albertslund, Danmark",
-                "+4523262064",
+                "Eskebuen 49, 2620 Albertslund, Danmark",
+                "Phone: +4523262064",
                 "CVR: 39095939"
             ]
             
             for (index, detail) in companyDetails.enumerated() {
                 let detailText = NSAttributedString(string: detail, attributes: detailsAttributes)
-                detailText.draw(in: CGRect(x: margin, y: yPosition + CGFloat(index * 20), width: pageWidth - 2*margin, height: 20))
+                detailText.draw(in: CGRect(x: margin, y: footerY + CGFloat(index * 15), width: pageWidth - 2*margin, height: 15))
             }
-            yPosition += CGFloat(companyDetails.count * 20) + 20
             
             let thankYouAttributes: [NSAttributedString.Key: Any] = [
                 .font: UIFont.italicSystemFont(ofSize: 11),
                 .foregroundColor: UIColor.darkGray
             ]
             let thankYou = NSAttributedString(string: "Thank you for your cooperation.", attributes: thankYouAttributes)
-            thankYou.draw(in: CGRect(x: margin, y: yPosition, width: pageWidth - 2*margin, height: 15))
+            thankYou.draw(in: CGRect(x: margin, y: footerY + CGFloat(companyDetails.count * 15) + 5, width: pageWidth - 2*margin, height: 15))
             
             #if DEBUG
             print("[ManagerDashboardViewModel] PDF generated with data size: \(renderer.pdfData { _ in }.count) bytes")
@@ -497,13 +577,15 @@ class ManagerDashboardViewModel: ObservableObject {
     }
 
     private func updateSummaryStats() {
-        pendingHoursCount = pendingEntriesByTask.reduce(0) { count, taskWeek in
+        let entriesList = showAllPendingEntries ? allPendingEntriesByTask : pendingEntriesByTask
+        
+        pendingHoursCount = entriesList.reduce(0) { count, taskWeek in
             count + taskWeek.entries.count
         }
 
-        activeWorkersCount = Set(pendingEntriesByTask.flatMap { $0.entries }.map { $0.employee_id }).count
+        activeWorkersCount = Set(entriesList.flatMap { $0.entries }.map { $0.employee_id }).count
 
-        totalApprovedHours = pendingEntriesByTask.reduce(0.0) { sum, taskWeek in
+        totalApprovedHours = entriesList.reduce(0.0) { sum, taskWeek in
             sum + taskWeek.entries.reduce(0.0) { innerSum, entry in
                 guard let start = entry.start_time, let end = entry.end_time else { return innerSum }
                 let interval = end.timeIntervalSince(start)

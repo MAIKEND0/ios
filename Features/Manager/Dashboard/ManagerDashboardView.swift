@@ -23,21 +23,12 @@ struct ManagerDashboardView: View {
     @State private var signatureImage: UIImage?
     @Environment(\.colorScheme) private var colorScheme
     @FocusState private var isRejectionReasonFocused: Bool
+    @State private var isPulsing = false
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
-                    // Sekcja 1: Karty podsumowania
-                    ManagerDashboardSections.SummaryCardsSection(viewModel: viewModel)
-
-                    // Sekcja 2: Selektor tygodnia
-                    ManagerDashboardSections.WeekSelectorSection(viewModel: viewModel)
-
-                    // Sekcja 3: Zadania
-                    ManagerDashboardSections.TasksSection(viewModel: viewModel)
-
-                    // Sekcja 4: Godziny do zatwierdzenia
                     ManagerDashboardSections.PendingTasksSection(
                         viewModel: viewModel,
                         onSelectTaskWeek: { taskWeek in
@@ -49,6 +40,34 @@ struct ManagerDashboardView: View {
                             showRejectionReasonModal = true
                         }
                     )
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.green.opacity(isPulsing ? 0.5 : 0.2))
+                            .shadow(color: isPulsing ? Color.green.opacity(0.6) : .clear, radius: isPulsing ? 8 : 0)
+                            .scaleEffect(isPulsing ? 1.05 : 1.0)
+                            .animation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true), value: isPulsing)
+                    )
+                    .onAppear {
+                        updatePulsingState()
+                    }
+                    .onChange(of: viewModel.allPendingEntriesByTask) { _, newValue in
+                        updatePulsingState()
+                        #if DEBUG
+                        print("[ManagerDashboardView] allPendingEntriesByTask changed, count: \(newValue.count), isPulsing: \(isPulsing)")
+                        #endif
+                    }
+                    .onReceive(viewModel.$isLoading) { isLoading in
+                        if !isLoading {
+                            updatePulsingState()
+                            #if DEBUG
+                            print("[ManagerDashboardView] isLoading changed to false, entries count: \(viewModel.allPendingEntriesByTask.count), isPulsing: \(isPulsing)")
+                            #endif
+                        }
+                    }
+
+                    ManagerDashboardSections.SummaryCardsSection(viewModel: viewModel)
+                    ManagerDashboardSections.WeekSelectorSection(viewModel: viewModel)
+                    ManagerDashboardSections.TasksSection(viewModel: viewModel)
                 }
                 .padding(.horizontal)
                 .padding(.vertical, 8)
@@ -79,6 +98,9 @@ struct ManagerDashboardView: View {
             .onAppear {
                 viewModel.viewAppeared()
                 hasAppeared = true
+                #if DEBUG
+                print("[ManagerDashboardView] View appeared, initial entries count: \(viewModel.allPendingEntriesByTask.count)")
+                #endif
             }
             .onDisappear {
                 viewModel.viewDisappeared()
@@ -183,6 +205,16 @@ struct ManagerDashboardView: View {
                     isRejectionReasonFocused = true
                 }
             }
+        }
+    }
+    
+    private func updatePulsingState() {
+        let shouldPulse = !viewModel.allPendingEntriesByTask.isEmpty
+        if isPulsing != shouldPulse {
+            isPulsing = shouldPulse
+            #if DEBUG
+            print("[ManagerDashboardView] Updated isPulsing to \(isPulsing), entries count: \(viewModel.allPendingEntriesByTask.count)")
+            #endif
         }
     }
 }
