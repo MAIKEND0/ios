@@ -354,4 +354,140 @@ struct ManagerDashboardSections {
             )
         }
     }
+    
+    // MARK: - Karta zadania
+    struct TaskCard: View {
+        let task: ManagerAPIService.Task
+        let pendingEntriesByTask: [ManagerDashboardViewModel.TaskWeekEntry]
+        @Environment(\.colorScheme) private var colorScheme
+        @State private var showWorkPlanCreator: Bool = false
+        
+        var body: some View {
+            VStack(alignment: .leading, spacing: 0) {
+                // Nagłówek z ikonką
+                HStack(spacing: 12) {
+                    Image(systemName: "briefcase.fill")
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundColor(Color.ksrYellow)
+                        .frame(width: 30, height: 30)
+                        .background(Color.ksrYellow.opacity(0.2))
+                        .cornerRadius(8)
+                    
+                    Text(task.title)
+                        .font(.headline)
+                        .foregroundColor(colorScheme == .dark ? .white : Color.ksrDarkGray)
+                    
+                    Spacer()
+                    
+                    let pendingEntries = pendingEntriesByTask
+                        .filter { $0.taskId == task.task_id }
+                        .flatMap { $0.entries }
+                        .count
+                    
+                    HStack(spacing: 4) {
+                        Text("\(pendingEntries) pending")
+                            .font(.caption)
+                            .foregroundColor(pendingEntries > 0 ? Color.ksrYellow : .gray)
+                        
+                        Image(systemName: pendingEntries > 0 ? "exclamationmark.circle.fill" : "checkmark.circle.fill")
+                            .foregroundColor(pendingEntries > 0 ? Color.ksrYellow : .green)
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                
+                Divider()
+                    .padding(.leading, 58)
+                
+                // Informacje o zadaniu
+                VStack(alignment: .leading, spacing: 8) {
+                    if let description = task.description, !description.isEmpty {
+                        Text(description)
+                            .font(.subheadline)
+                            .foregroundColor(colorScheme == .dark ? .white.opacity(0.7) : Color.ksrMediumGray)
+                            .lineLimit(2)
+                    }
+                    
+                    HStack {
+                        if let project = task.project {
+                            HStack(spacing: 4) {
+                                Image(systemName: "building.2.fill")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                Text("Project: \(project.title)")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                        
+                        Spacer()
+                        
+                        if let deadline = task.deadlineDate {
+                            HStack(spacing: 4) {
+                                Image(systemName: "calendar")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                Text(deadline, style: .date)
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                    }
+                    
+                    let taskEntries = pendingEntriesByTask
+                        .filter { $0.taskId == task.task_id }
+                        .flatMap { $0.entries }
+                    let totalHours = taskEntries.reduce(0.0) { sum, entry in
+                        guard let start = entry.start_time, let end = entry.end_time else { return sum }
+                        let interval = end.timeIntervalSince(start)
+                        let pauseSeconds = Double(entry.pause_minutes ?? 0) * 60
+                        return sum + max(0, (interval - pauseSeconds) / 3600)
+                    }
+                    
+                    HStack(spacing: 4) {
+                        Image(systemName: "clock")
+                            .font(.caption)
+                            .foregroundColor(Color.ksrYellow)
+                        Text("Total Pending Hours: \(totalHours, specifier: "%.2f")h")
+                            .font(.caption)
+                            .foregroundColor(Color.ksrYellow)
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                
+                // Przycisk Create Work Plan
+                HStack {
+                    Spacer()
+                    Button(action: {
+                        showWorkPlanCreator = true
+                    }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "calendar.badge.plus")
+                                .foregroundColor(Color.ksrYellow)
+                            Text("Create Work Plan")
+                                .font(.caption)
+                                .foregroundColor(Color.ksrYellow)
+                        }
+                        .padding(.vertical, 8)
+                        .padding(.horizontal, 12)
+                        .background(Color.black.opacity(0.5))
+                        .cornerRadius(8)
+                    }
+                    .padding(.trailing, 16)
+                    .padding(.bottom, 8)
+                }
+            }
+            .background(colorScheme == .dark ? Color(.systemGray6).opacity(0.2) : Color(.secondarySystemBackground))
+            .cornerRadius(12)
+            .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.3 : 0.05), radius: 2, x: 0, y: 1)
+            .sheet(isPresented: $showWorkPlanCreator) {
+                WorkPlanCreatorView(
+                    task: task,
+                    viewModel: CreateWorkPlanViewModel(),
+                    isPresented: $showWorkPlanCreator
+                )
+            }
+        }
+    }
 }

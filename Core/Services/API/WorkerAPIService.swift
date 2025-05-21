@@ -182,7 +182,14 @@ extension WorkerAPIService {
             confirmed_at = try container.decodeIfPresent(Date.self, forKey: .confirmed_at)
             isActive = try container.decodeIfPresent(Bool.self, forKey: .isActive)
             rejection_reason = try container.decodeIfPresent(String.self, forKey: .rejection_reason)
-            timesheetId = try container.decodeIfPresent(String.self, forKey: .timesheetId)
+            // Obsługa timesheetId jako String lub Int
+            if let timesheetIdString = try? container.decodeIfPresent(String.self, forKey: .timesheetId) {
+                timesheetId = timesheetIdString
+            } else if let timesheetIdInt = try? container.decodeIfPresent(Int.self, forKey: .timesheetId) {
+                timesheetId = String(timesheetIdInt)
+            } else {
+                timesheetId = nil
+            }
         }
 
         // Inicjalizacja ręczna dla tworzenia wpisów

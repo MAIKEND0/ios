@@ -13,6 +13,16 @@
 		1B3600D62DDA3B1500943E5B /* OrientationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B3600D52DDA3B0C00943E5B /* OrientationManager.swift */; };
 		1B3600D82DDA563800943E5B /* TimesheetReportsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B3600D72DDA563700943E5B /* TimesheetReportsView.swift */; };
 		1B3600DA2DDA56E700943E5B /* TimesheetReportsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B3600D92DDA56E500943E5B /* TimesheetReportsViewModel.swift */; };
+		1B45147E2DDC58180020443F /* WorkPlanAPIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B45147D2DDC58150020443F /* WorkPlanAPIService.swift */; };
+		1B4514802DDC588D0020443F /* CreateWorkPlanViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B45147F2DDC58860020443F /* CreateWorkPlanViewModel.swift */; };
+		1B4514862DDC5A0D0020443F /* ManagerWorkPlansView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B4514852DDC5A070020443F /* ManagerWorkPlansView.swift */; };
+		1B4514882DDC5A290020443F /* ManagerWorkPlansViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B4514872DDC5A1A0020443F /* ManagerWorkPlansViewModel.swift */; };
+		1B45148A2DDC5A3B0020443F /* EditWorkPlanView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B4514892DDC5A350020443F /* EditWorkPlanView.swift */; };
+		1B45148C2DDC5A470020443F /* EditWorkPlanViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B45148B2DDC5A440020443F /* EditWorkPlanViewModel.swift */; };
+		1B45148E2DDC5AF90020443F /* ManagerMainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B45148D2DDC5AF40020443F /* ManagerMainTabView.swift */; };
+		1B4514902DDC5D230020443F /* WorkPlanComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B45148F2DDC5D1D0020443F /* WorkPlanComponents.swift */; };
+		1B4514972DDC8E410020443F /* WorkPlanCreatorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B4514962DDC8E3F0020443F /* WorkPlanCreatorView.swift */; };
+		1B4514992DDDA5880020443F /* WorkPlanPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B4514982DDDA57E0020443F /* WorkPlanPreviewView.swift */; };
 		1B63CC4D2DD85FFB005F598D /* ManagerWorkersView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B63CC4A2DD85FE3005F598D /* ManagerWorkersView.swift */; };
 		1B63CC512DD8602A005F598D /* ManagerWorkersViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B63CC502DD86022005F598D /* ManagerWorkersViewModel.swift */; };
 		1B63CC542DD8620D005F598D /* ManagerProjectsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B63CC532DD8620B005F598D /* ManagerProjectsView.swift */; };
@@ -86,6 +96,16 @@
 		1B3600D52DDA3B0C00943E5B /* OrientationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrientationManager.swift; sourceTree = "<group>"; };
 		1B3600D72DDA563700943E5B /* TimesheetReportsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimesheetReportsView.swift; sourceTree = "<group>"; };
 		1B3600D92DDA56E500943E5B /* TimesheetReportsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimesheetReportsViewModel.swift; sourceTree = "<group>"; };
+		1B45147D2DDC58150020443F /* WorkPlanAPIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkPlanAPIService.swift; sourceTree = "<group>"; };
+		1B45147F2DDC58860020443F /* CreateWorkPlanViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateWorkPlanViewModel.swift; sourceTree = "<group>"; };
+		1B4514852DDC5A070020443F /* ManagerWorkPlansView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManagerWorkPlansView.swift; sourceTree = "<group>"; };
+		1B4514872DDC5A1A0020443F /* ManagerWorkPlansViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManagerWorkPlansViewModel.swift; sourceTree = "<group>"; };
+		1B4514892DDC5A350020443F /* EditWorkPlanView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditWorkPlanView.swift; sourceTree = "<group>"; };
+		1B45148B2DDC5A440020443F /* EditWorkPlanViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditWorkPlanViewModel.swift; sourceTree = "<group>"; };
+		1B45148D2DDC5AF40020443F /* ManagerMainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManagerMainTabView.swift; sourceTree = "<group>"; };
+		1B45148F2DDC5D1D0020443F /* WorkPlanComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkPlanComponents.swift; sourceTree = "<group>"; };
+		1B4514962DDC8E3F0020443F /* WorkPlanCreatorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkPlanCreatorView.swift; sourceTree = "<group>"; };
+		1B4514982DDDA57E0020443F /* WorkPlanPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkPlanPreviewView.swift; sourceTree = "<group>"; };
 		1B63CC4A2DD85FE3005F598D /* ManagerWorkersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManagerWorkersView.swift; sourceTree = "<group>"; };
 		1B63CC502DD86022005F598D /* ManagerWorkersViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManagerWorkersViewModel.swift; sourceTree = "<group>"; };
 		1B63CC532DD8620B005F598D /* ManagerProjectsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManagerProjectsView.swift; sourceTree = "<group>"; };
@@ -181,6 +201,18 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		1B4514822DDC58A60020443F /* Workplan */ = {
+			isa = PBXGroup;
+			children = (
+				1B4514982DDDA57E0020443F /* WorkPlanPreviewView.swift */,
+				1B4514962DDC8E3F0020443F /* WorkPlanCreatorView.swift */,
+				1B45148F2DDC5D1D0020443F /* WorkPlanComponents.swift */,
+				1B4514892DDC5A350020443F /* EditWorkPlanView.swift */,
+				1B4514852DDC5A070020443F /* ManagerWorkPlansView.swift */,
+			);
+			path = Workplan;
+			sourceTree = "<group>";
+		};
 		1B63CC4F2DD86017005F598D /* Workers */ = {
 			isa = PBXGroup;
 			children = (
@@ -218,6 +250,7 @@
 		1B6FB0052DD79D7F007B2C9E /* Manager */ = {
 			isa = PBXGroup;
 			children = (
+				1B4514822DDC58A60020443F /* Workplan */,
 				1B63CC732DD91D1D005F598D /* WeekDetailView.swift */,
 				1B63CC6E2DD91D00005F598D /* ManagerDashboardSections.swift */,
 				1B63CC6C2DD91CE3005F598D /* ManagerDashboardComponents.swift */,
@@ -242,6 +275,9 @@
 		1B6FB0092DD79DE8007B2C9E /* ViewModels */ = {
 			isa = PBXGroup;
 			children = (
+				1B45148B2DDC5A440020443F /* EditWorkPlanViewModel.swift */,
+				1B4514872DDC5A1A0020443F /* ManagerWorkPlansViewModel.swift */,
+				1B45147F2DDC58860020443F /* CreateWorkPlanViewModel.swift */,
 				1B3600D92DDA56E500943E5B /* TimesheetReportsViewModel.swift */,
 				1B63CC552DD86237005F598D /* ManagerProjectsViewModel.swift */,
 				1B63CC502DD86022005F598D /* ManagerWorkersViewModel.swift */,
@@ -253,6 +289,7 @@
 		1B6FB0112DD7ADC3007B2C9E /* API */ = {
 			isa = PBXGroup;
 			children = (
+				1B45147D2DDC58150020443F /* WorkPlanAPIService.swift */,
 				1B6FB00D2DD7A817007B2C9E /* BaseAPIService.swift */,
 				1B6FB00F2DD7A849007B2C9E /* ManagerAPIService.swift */,
 				1B71EFCC2DD3351B00731223 /* WorkerAPIService.swift */,
@@ -486,6 +523,7 @@
 		1B71EFBF2DD3286C00731223 /* Navigation */ = {
 			isa = PBXGroup;
 			children = (
+				1B45148D2DDC5AF40020443F /* ManagerMainTabView.swift */,
 				1B71EFEE2DD363F600731223 /* RoleBasedRootView.swift */,
 				1B71EFBD2DD325A700731223 /* MainTabView.swift */,
 			);
@@ -537,9 +575,9 @@
 		1B71F0302DD4A4A600731223 /* ViewModels */ = {
 			isa = PBXGroup;
 			children = (
-				1B71F0392DD4B53700731223 /* WorkerDashboardViewModel.swift */,
 				1B71EFC32DD3307300731223 /* WeeklyWorkEntryViewModel.swift */,
 				1B71F0202DD4972000731223 /* WorkerWorkHoursViewModel.swift */,
+				1B71F0392DD4B53700731223 /* WorkerDashboardViewModel.swift */,
 				1B71F01D2DD496FD00731223 /* WorkerTasksViewModel.swift */,
 				1B71F0312DD4A4B400731223 /* WorkHoursViewModeltemp.swift */,
 			);
@@ -712,12 +750,16 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				1B4514992DDDA5880020443F /* WorkPlanPreviewView.swift in Sources */,
 				1B71EFC92DD3318F00731223 /* Announcement.swift in Sources */,
 				1B71EFBE2DD325AB00731223 /* MainTabView.swift in Sources */,
 				1B71EFB32DD3182200731223 /* WorkerWorkHoursView.swift in Sources */,
 				1B71EFD12DD33C9E00731223 /* Configuration.swift in Sources */,
 				1B63CC6F2DD91D02005F598D /* ManagerDashboardSections.swift in Sources */,
+				1B45148E2DDC5AF90020443F /* ManagerMainTabView.swift in Sources */,
 				1B71F0322DD4A4BB00731223 /* WorkHoursViewModeltemp.swift in Sources */,
+				1B4514902DDC5D230020443F /* WorkPlanComponents.swift in Sources */,
+				1B4514882DDC5A290020443F /* ManagerWorkPlansViewModel.swift in Sources */,
 				1B3600C42DD9CD4500943E5B /* PDFViewer.swift in Sources */,
 				1B71F01E2DD496FF00731223 /* WorkerTasksViewModel.swift in Sources */,
 				1B71EFCD2DD3351E00731223 /* WorkerAPIService.swift in Sources */,
@@ -731,6 +773,7 @@
 				1B63CC742DD91D20005F598D /* WeekDetailView.swift in Sources */,
 				1B3600D22DDA3A8000943E5B /* AppDelegate.swift in Sources */,
 				1B63CC562DD86240005F598D /* ManagerProjectsViewModel.swift in Sources */,
+				1B4514972DDC8E410020443F /* WorkPlanCreatorView.swift in Sources */,
 				1B71F03C2DD4BA2F00731223 /* WeeklyWorkEntryForm.swift in Sources */,
 				1B63CC542DD8620D005F598D /* ManagerProjectsView.swift in Sources */,
 				1B3600D42DDA3AF900943E5B /* SignatureModalViewController.swift in Sources */,
@@ -743,6 +786,7 @@
 				1B71EFEB2DD3624500731223 /* ProfileView.swift in Sources */,
 				1B71F0172DD4952100731223 /* WorkerTaskDetailView.swift in Sources */,
 				1B71F0212DD4972200731223 /* WorkerWorkHoursViewModel.swift in Sources */,
+				1B4514862DDC5A0D0020443F /* ManagerWorkPlansView.swift in Sources */,
 				1B71EFE82DD3617200731223 /* LoginView.swift in Sources */,
 				1B71F02F2DD4A49100731223 /* WorkHourEntry.swift in Sources */,
 				1B71F0352DD4AA0C00731223 /* DateFormatter+ISO.swift in Sources */,
@@ -753,8 +797,10 @@
 				1B71EFCF2DD3355400731223 /* AuthService.swift in Sources */,
 				1B71F00D2DD46AEC00731223 /* UIApplication+Extensions.swift in Sources */,
 				1B71EFED2DD3636000731223 /* LoginViewModel.swift in Sources */,
+				1B45148C2DDC5A470020443F /* EditWorkPlanViewModel.swift in Sources */,
 				1B71F0142DD494F400731223 /* WorkerTasksView.swift in Sources */,
 				1B63CC5B2DD865D2005F598D /* SignatureModalView.swift in Sources */,
+				1B45148A2DDC5A3B0020443F /* EditWorkPlanView.swift in Sources */,
 				1B63CC512DD8602A005F598D /* ManagerWorkersViewModel.swift in Sources */,
 				1B71F0482DD4C44900731223 /* AuthenticationHandler.swift in Sources */,
 				1B71F0382DD4B29A00731223 /* WorkerDashboardView.swift in Sources */,
@@ -762,6 +808,8 @@
 				1B63CC6D2DD91CE7005F598D /* ManagerDashboardComponents.swift in Sources */,
 				1B71F0452DD4C41400731223 /* AuthDebugger.swift in Sources */,
 				1B71F03E2DD4BBC400731223 /* Calendar+Extensions.swift in Sources */,
+				1B45147E2DDC58180020443F /* WorkPlanAPIService.swift in Sources */,
+				1B4514802DDC588D0020443F /* CreateWorkPlanViewModel.swift in Sources */,
 				1B71EFC42DD3307700731223 /* WeeklyWorkEntryViewModel.swift in Sources */,
 				1B71EFF32DD3A06800731223 /* APIError.swift in Sources */,
 				1B6FB00E2DD7A81C007B2C9E /* BaseAPIService.swift in Sources */,
