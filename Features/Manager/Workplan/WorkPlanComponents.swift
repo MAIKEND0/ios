@@ -2,6 +2,7 @@ import SwiftUI
 
 protocol WeekSelectorViewModel: ObservableObject {
     var weekRangeText: String { get }
+    var selectedMonday: Date { get }
     func changeWeek(by offset: Int)
 }
 
@@ -72,7 +73,6 @@ extension WorkPlanAssignment {
     }
 }
 
-// Reszta pliku pozostaje bez zmian
 struct DailyHours: Identifiable, Equatable {
     let id: UUID = UUID()
     var isActive: Bool
@@ -89,12 +89,14 @@ struct DailyHours: Identifiable, Equatable {
 struct WorkPlanWeekSelector<VM: WeekSelectorViewModel>: View {
     @ObservedObject var viewModel: VM
     @Environment(\.colorScheme) private var colorScheme
+    let isWeekInFuture: Bool
     
-    let weekRangeText: String
-    
-    init(viewModel: VM, weekRangeText: String) {
-        self.viewModel = viewModel
-        self.weekRangeText = weekRangeText
+    // Obliczamy weekNumber i year z viewModel.selectedMonday
+    private var weekNumber: Int {
+        Calendar.current.component(.weekOfYear, from: viewModel.selectedMonday)
+    }
+    private var year: Int {
+        Calendar.current.component(.yearForWeekOfYear, from: viewModel.selectedMonday)
     }
     
     var body: some View {
@@ -103,22 +105,41 @@ struct WorkPlanWeekSelector<VM: WeekSelectorViewModel>: View {
                 .font(.subheadline)
                 .fontWeight(.bold)
                 .foregroundColor(.primary)
-            HStack {
-                Button(action: {
-                    viewModel.changeWeek(by: -1)
-                }) {
-                    Image(systemName: "chevron.left")
-                        .foregroundColor(Color.ksrYellow)
-                }
-                Text(weekRangeText)
-                    .font(.headline)
+            
+            VStack(spacing: 4) {
+                // Numer tygodnia i rok
+                Text("Week \(weekNumber), \(year)")
+                    .font(.title2)
+                    .fontWeight(.bold)
                     .foregroundColor(.primary)
-                    .frame(maxWidth: .infinity)
-                Button(action: {
-                    viewModel.changeWeek(by: 1)
-                }) {
-                    Image(systemName: "chevron.right")
-                        .foregroundColor(Color.ksrYellow)
+                
+                // Zakres dat z przyciskami nawigacji
+                HStack {
+                    Button(action: {
+                        viewModel.changeWeek(by: -1)
+                    }) {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 20, weight: .bold))
+                            .foregroundColor(isWeekInFuture ? Color.ksrYellow : Color.gray)
+                            .padding(8)
+                            .background(Circle().fill((isWeekInFuture ? Color.ksrYellow : Color.gray).opacity(0.2)))
+                    }
+                    .disabled(!isWeekInFuture)
+                    
+                    Text(viewModel.weekRangeText)
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .frame(maxWidth: .infinity)
+                    
+                    Button(action: {
+                        viewModel.changeWeek(by: 1)
+                    }) {
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 20, weight: .bold))
+                            .foregroundColor(Color.ksrYellow)
+                            .padding(8)
+                            .background(Circle().fill(Color.ksrYellow.opacity(0.2)))
+                    }
                 }
             }
             .padding()
@@ -127,7 +148,7 @@ struct WorkPlanWeekSelector<VM: WeekSelectorViewModel>: View {
             .gesture(
                 DragGesture()
                     .onEnded { value in
-                        if value.translation.width > 50 {
+                        if value.translation.width > 50 && isWeekInFuture {
                             viewModel.changeWeek(by: -1)
                         } else if value.translation.width < -50 {
                             viewModel.changeWeek(by: 1)

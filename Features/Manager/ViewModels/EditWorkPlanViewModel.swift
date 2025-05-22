@@ -31,6 +31,13 @@ class EditWorkPlanViewModel: ObservableObject, WeekSelectorViewModel, WorkPlanVi
         updateWeekRangeText()
     }
     
+    func isWeekInFuture() -> Bool {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        let selectedWeekStart = calendar.startOfDay(for: selectedMonday)
+        return selectedWeekStart >= today
+    }
+    
     func initializeWithWorkPlan(_ workPlan: WorkPlanAPIService.WorkPlan) {
         self.taskId = workPlan.task_id
         self.workPlanId = workPlan.work_plan_id

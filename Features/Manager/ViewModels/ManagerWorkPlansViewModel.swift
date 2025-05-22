@@ -3,6 +3,7 @@
 //  KSR Cranes App
 //
 //  Updated by Maksymilian Marcinowski on 21/05/2025.
+//  Added isWeekInFuture on 22/05/2025.
 //
 
 import Foundation
@@ -85,6 +86,10 @@ final class ManagerWorkPlansViewModel: ObservableObject, WeekSelectorViewModel {
         return selectedWeek.formattedRange
     }
     
+    var selectedMonday: Date {
+        return selectedWeek.startDate
+    }
+    
     var filteredWorkPlans: [WorkPlanAPIService.WorkPlan] {
         workPlans.filter { plan in
             let matchesSearch = searchQuery.isEmpty || plan.task_title.lowercased().contains(searchQuery.lowercased())
@@ -96,6 +101,13 @@ final class ManagerWorkPlansViewModel: ObservableObject, WeekSelectorViewModel {
     init() {
         self.selectedWeek = WeekSelection.current()
         loadData()
+    }
+    
+    func isWeekInFuture() -> Bool {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        let selectedWeekStart = calendar.startOfDay(for: selectedWeek.startDate)
+        return selectedWeekStart >= today
     }
     
     func changeWeek(by offset: Int) {
@@ -136,7 +148,7 @@ final class ManagerWorkPlansViewModel: ObservableObject, WeekSelectorViewModel {
         loadData()
     }
     
-    func loadData() {
+    func loadData(fetchAll: Bool = false) {
         guard lastLoadTime == nil || Date().timeIntervalSince(lastLoadTime!) > 5 else {
             #if DEBUG
             print("[ManagerWorkPlansViewModel] Skipped data load due to recent refresh")
@@ -145,27 +157,49 @@ final class ManagerWorkPlansViewModel: ObservableObject, WeekSelectorViewModel {
         }
         lastLoadTime = Date()
         
-        isLoading = true
         let supervisorId = Int(AuthService.shared.getEmployeeId() ?? "0") ?? 0
+        print("[ManagerWorkPlansViewModel] Loading work plans for supervisorId: \(supervisorId), week: \(selectedWeek.weekNumber), year: \(selectedWeek.year), fetchAll: \(fetchAll)")
+        
+        isLoading = true
         workPlanService.fetchWorkPlans(
             supervisorId: supervisorId,
-            weekNumber: selectedWeek.weekNumber,
-            year: selectedWeek.year
+            weekNumber: fetchAll ? nil : selectedWeek.weekNumber,
+            year: fetchAll ? nil : selectedWeek.year
         )
         .receive(on: DispatchQueue.main)
         .sink(receiveCompletion: { [weak self] completion in
-            self?.isLoading = false
+            guard let self = self else { return }
+            self.isLoading = false
             if case .failure(let error) = completion {
-                self?.showAlert = true
-                self?.alertTitle = "Error"
-                self?.alertMessage = error.localizedDescription
+                self.showAlert = true
+                self.alertTitle = "Error"
+                self.alertMessage = error.localizedDescription
+                print("[ManagerWorkPlansViewModel] Error: \(error.localizedDescription)")
+                if case .decodingError(let generalDecodingError) = error {
+                    print("[ManagerWorkPlansViewModel] General decoding error: \(generalDecodingError)")
+                    if let concreteDecodingError = generalDecodingError as? Swift.DecodingError {
+                        print("[ManagerWorkPlansViewModel] Detailed Swift decoding error: \(concreteDecodingError)")
+                        switch concreteDecodingError {
+                        case .typeMismatch(let type, let context):
+                            print("[ManagerWorkPlansViewModel] Type mismatch: \(type), context: \(context.debugDescription), codingPath: \(context.codingPath.map { $0.stringValue }.joined(separator: "."))")
+                        case .valueNotFound(let type, let context):
+                            print("[ManagerWorkPlansViewModel] Value not found: \(type), context: \(context.debugDescription), codingPath: \(context.codingPath.map { $0.stringValue }.joined(separator: "."))")
+                        case .keyNotFound(let key, let context):
+                            print("[ManagerWorkPlansViewModel] Key not found: \(key.stringValue), context: \(context.debugDescription), codingPath: \(context.codingPath.map { $0.stringValue }.joined(separator: "."))")
+                        case .dataCorrupted(let context):
+                            print("[ManagerWorkPlansViewModel] Data corrupted: context: \(context.debugDescription), codingPath: \(context.codingPath.map { $0.stringValue }.joined(separator: "."))")
+                        @unknown default:
+                            print("[ManagerWorkPlansViewModel] Unknown decoding error")
+                        }
+                    } else {
+                        print("[ManagerWorkPlansViewModel] Wrapped error is not a Swift.DecodingError: \(generalDecodingError)")
+                    }
+                }
             }
         }, receiveValue: { [weak self] plans in
+            print("[ManagerWorkPlansViewModel] Fetched \(plans.count) work plans: \(plans.map { "\($0.task_title) (\($0.status))" })")
             self?.workPlans = plans
             self?.isLoading = false
-            #if DEBUG
-            print("[ManagerWorkPlansViewModel] Loaded \(plans.count) work plans")
-            #endif
         })
         .store(in: &cancellables)
     }

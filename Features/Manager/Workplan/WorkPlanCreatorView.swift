@@ -4,6 +4,7 @@
 //
 //  Created by Maksymilian Marcinowski on 20/05/2025.
 //  Updated with enhanced UI/UX and bug fixes on 21/05/2025.
+//  Added past week restriction and improved week selector on 22/05/2025.
 //
 
 import SwiftUI
@@ -80,31 +81,9 @@ struct WorkPlanCreatorView: View {
     }
 
     var weekSelectorSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Select Week")
-                .font(.subheadline)
-                .fontWeight(.bold)
-                .foregroundColor(.primary)
-            HStack {
-                Button(action: { viewModel.changeWeek(by: -1) }) {
-                    Image(systemName: "chevron.left")
-                        .foregroundColor(Color.ksrYellow)
-                }
-                Text(viewModel.weekRangeText)
-                    .font(.headline)
-                    .foregroundColor(.primary)
-                    .frame(maxWidth: .infinity)
-                    .onTapGesture { showDatePicker = true }
-                Button(action: { viewModel.changeWeek(by: 1) }) {
-                    Image(systemName: "chevron.right")
-                        .foregroundColor(Color.ksrYellow)
-                }
-            }
-            .padding()
-            .background(colorScheme == .dark ? Color(.systemGray6).opacity(0.2) : Color(.secondarySystemBackground))
-            .cornerRadius(12)
-        }
-        .padding(.horizontal)
+        WorkPlanWeekSelector(viewModel: viewModel, isWeekInFuture: viewModel.isWeekInFuture())
+            .padding(.horizontal)
+            .onTapGesture { showDatePicker = true }
     }
 
     var taskDetailsSection: some View {
@@ -136,7 +115,7 @@ struct WorkPlanCreatorView: View {
             } else if viewModel.employees.isEmpty {
                 Text("No employees assigned to this task")
                     .font(.subheadline)
-                    .foregroundColor(.gray)
+                .foregroundColor(.gray)
             } else {
                 ScrollView(.horizontal, showsIndicators: false) {
                     LazyHStack(spacing: 12) {
@@ -167,7 +146,7 @@ struct WorkPlanCreatorView: View {
             if viewModel.assignments.isEmpty {
                 Text("No employees selected")
                     .font(.caption)
-                    .foregroundColor(.gray)
+                .foregroundColor(.gray)
             } else {
                 ForEach(Array(viewModel.assignments.enumerated()), id: \.offset) { index, _ in
                     WorkPlanAssignmentRow(
@@ -227,7 +206,7 @@ struct WorkPlanCreatorView: View {
             if let file = selectedFile {
                 Text("Selected: \(file.lastPathComponent)")
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                .foregroundColor(.secondary)
             }
         }
         .padding(.horizontal)
@@ -324,6 +303,7 @@ struct WorkPlanCreatorView: View {
         DatePicker(
             "Select Week",
             selection: $viewModel.selectedMonday,
+            in: Calendar.current.startOfDay(for: Date())..., // Ograniczenie do przyszłych dat
             displayedComponents: [.date]
         )
         .datePickerStyle(.graphical)
@@ -368,6 +348,11 @@ struct WorkPlanCreatorView: View {
         }
         if !viewModel.assignments.contains(where: { $0.dailyHours.contains(where: { $0.isActive }) }) {
             validationMessage = "At least one active schedule is required."
+            showValidationAlert = true
+            return false
+        }
+        if !viewModel.isWeekInFuture() {
+            validationMessage = "Cannot create a work plan for a past week."
             showValidationAlert = true
             return false
         }

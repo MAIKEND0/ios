@@ -24,35 +24,52 @@ class CreateWorkPlanViewModel: ObservableObject, WeekSelectorViewModel, WorkPlan
     init() {
         let calendar = Calendar.current
         let today = Date()
-        self.selectedMonday = calendar.startOfWeek(for: today)
+        // Domyślnie ustawiamy przyszły tydzień
+        let nextWeek = calendar.date(byAdding: .weekOfYear, value: 1, to: calendar.startOfWeek(for: today))!
+        self.selectedMonday = nextWeek
         updateWeekRangeText()
+    }
+    
+    func isWeekInFuture() -> Bool {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        let selectedWeekStart = calendar.startOfDay(for: selectedMonday)
+        return selectedWeekStart >= today
     }
     
     func changeWeek(by offset: Int) {
         if let newMonday = Calendar.current.date(byAdding: .weekOfYear, value: offset, to: selectedMonday) {
-            selectedMonday = newMonday
-            updateWeekRangeText()
-            assignments = assignments.map {
-                WorkPlanAssignment(
-                    employee_id: $0.employee_id,
-                    availableEmployees: $0.availableEmployees,
-                    weekStart: selectedMonday,
-                    dailyHours: $0.dailyHours,
-                    notes: $0.notes
-                )
+            let calendar = Calendar.current
+            let today = calendar.startOfDay(for: Date())
+            let newWeekStart = calendar.startOfDay(for: newMonday)
+            
+            // Zezwalamy tylko na przyszłe lub bieżące tygodnie
+            if newWeekStart >= today {
+                selectedMonday = newMonday
+                updateWeekRangeText()
+                assignments = assignments.map {
+                    WorkPlanAssignment(
+                        employee_id: $0.employee_id,
+                        availableEmployees: $0.availableEmployees,
+                        weekStart: selectedMonday,
+                        dailyHours: $0.dailyHours,
+                        notes: $0.notes
+                    )
+                }
+            } else {
+                showAlert = true
+                alertTitle = "Invalid Week"
+                alertMessage = "Cannot select a week in the past."
             }
         }
     }
     
     func updateWeekRangeText() {
         let calendar = Calendar.current
-        let components = calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: selectedMonday)
-        let weekNumber = components.weekOfYear ?? 0
-        let year = components.yearForWeekOfYear ?? 0
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
         let endOfWeek = calendar.date(byAdding: .day, value: 6, to: selectedMonday)!
-        weekRangeText = "Week \(weekNumber), \(year): \(formatter.string(from: selectedMonday)) - \(formatter.string(from: endOfWeek))"
+        weekRangeText = "\(formatter.string(from: selectedMonday)) - \(formatter.string(from: endOfWeek))"
     }
     
     func loadEmployees(for taskId: Int) {
@@ -117,10 +134,22 @@ class CreateWorkPlanViewModel: ObservableObject, WeekSelectorViewModel, WorkPlan
     }
     
     func saveDraft() {
+        if !isWeekInFuture() {
+            showAlert = true
+            alertTitle = "Invalid Week"
+            alertMessage = "Cannot create a work plan for a past week."
+            return
+        }
         savePlan(status: "DRAFT")
     }
     
     func publish() {
+        if !isWeekInFuture() {
+            showAlert = true
+            alertTitle = "Invalid Week"
+            alertMessage = "Cannot publish a work plan for a past week."
+            return
+        }
         savePlan(status: "PUBLISHED")
     }
     

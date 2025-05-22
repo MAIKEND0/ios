@@ -1,10 +1,3 @@
-//
-//  ManagerDashboardView.swift
-//  KSR Cranes App
-//
-//  Created by Maksymilian Marcinowski on 16/05/2025.
-//
-
 import SwiftUI
 import PDFKit
 
@@ -40,6 +33,7 @@ struct ManagerDashboardView: View {
                             showRejectionReasonModal = true
                         }
                     )
+                    .frame(maxWidth: .infinity)
                     .background(
                         RoundedRectangle(cornerRadius: 12)
                             .fill(Color.green.opacity(isPulsing ? 0.5 : 0.2))
@@ -66,12 +60,48 @@ struct ManagerDashboardView: View {
                     }
 
                     ManagerDashboardSections.SummaryCardsSection(viewModel: viewModel)
+                        .frame(maxWidth: .infinity)
+                    
+                    // Kafelek Work Plans
+                    NavigationLink(destination: ManagerWorkPlansView()) {
+                        HStack {
+                            Image(systemName: "calendar.badge.clock")
+                                .font(.system(size: 18, weight: .bold))
+                                .foregroundColor(Color.white)
+                                .frame(width: 36, height: 36)
+                                .background(Color.white.opacity(0.2))
+                                .clipShape(Circle())
+                            
+                            Text("Work Plans")
+                                .font(.title3)
+                                .fontWeight(.bold)
+                                .foregroundColor(Color.white)
+                            
+                            Spacer()
+                            
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundColor(Color.white)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.vertical, 12)
+                        .padding(.horizontal, 14)
+                        .background(DashboardStyles.gradientBlue)
+                        .cornerRadius(10)
+                        .shadow(color: Color.black.opacity(0.1), radius: 3, x: 0, y: 2)
+                    }
+                    .frame(maxWidth: .infinity)
+
                     ManagerDashboardSections.WeekSelectorSection(viewModel: viewModel)
+                        .frame(maxWidth: .infinity)
+
                     ManagerDashboardSections.TasksSection(viewModel: viewModel)
+                        .frame(maxWidth: .infinity)
                 }
-                .padding(.horizontal)
+                .padding(.horizontal, 16) // Spójny padding dla całego VStack
                 .padding(.vertical, 8)
             }
+            .clipped() // Zapobiega wyjeżdżaniu poza ekran
             .background(colorScheme == .dark ? Color.black : Color(.systemBackground))
             .navigationTitle("Manager Dashboard")
             .navigationBarTitleDisplayMode(.inline)

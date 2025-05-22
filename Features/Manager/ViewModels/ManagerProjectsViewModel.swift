@@ -1,9 +1,9 @@
-
 //
 //  ManagerProjectsViewModel.swift
 //  KSR Cranes App
 //
 //  Created by Maksymilian Marcinowski on 17/05/2025.
+//  Fixed unused 'self' warning on 22/05/2025.
 //
 
 import Foundation
@@ -115,7 +115,7 @@ final class ManagerProjectsViewModel: ObservableObject {
                         status: nil,
                         tasks: [task],
                         assignedWorkersCount: Set(workerIds).count,
-                        customer: nil // Added customer parameter
+                        customer: nil
                     )
                 }
             }
@@ -123,15 +123,13 @@ final class ManagerProjectsViewModel: ObservableObject {
             // Pobierz pełne dane projektów
             ManagerAPIService.shared.fetchProjects(supervisorId: supervisorId)
                 .receive(on: DispatchQueue.main)
-                .sink { [weak self] completion in
-                    guard let self else { return }
+                .sink { completion in
                     if case .failure(let error) = completion {
                         #if DEBUG
                         print("[ManagerProjectsViewModel] Failed to load full project data: \(error.localizedDescription)")
                         #endif
                     }
-                } receiveValue: { [weak self] fullProjects in
-                    guard let self else { return }
+                } receiveValue: { fullProjects in
                     self.projects = fullProjects.map { fullProject in
                         var project = fullProject
                         if let existing = projectsDict[fullProject.project_id] {

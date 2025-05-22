@@ -4,6 +4,7 @@
 //
 //  Created by Maksymilian Marcinowski on 20/05/2025.
 //  Updated with enhanced UI/UX and bug fixes on 21/05/2025.
+//  Updated week selector on 22/05/2025.
 //
 
 import SwiftUI
@@ -68,7 +69,7 @@ struct EditWorkPlanView: View {
     }
 
     private var weekSelectorSection: some View {
-        WorkPlanWeekSelector(viewModel: viewModel, weekRangeText: viewModel.weekRangeText)
+        WorkPlanWeekSelector(viewModel: viewModel, isWeekInFuture: viewModel.isWeekInFuture())
             .padding(.horizontal)
             .onTapGesture { showDatePicker = true }
     }
@@ -97,7 +98,7 @@ struct EditWorkPlanView: View {
             } else if viewModel.employees.isEmpty {
                 Text("No employees assigned to this task")
                     .font(.subheadline)
-                    .foregroundColor(.gray)
+                .foregroundColor(.gray)
             } else {
                 ScrollView(.horizontal, showsIndicators: false) {
                     LazyHStack(spacing: 12) {
@@ -127,8 +128,8 @@ struct EditWorkPlanView: View {
                 .foregroundColor(.primary)
             if viewModel.assignments.isEmpty {
                 Text("No employees selected")
-                    .font(.caption)
-                    .foregroundColor(.gray)
+                .font(.caption)
+                .foregroundColor(.gray)
             } else {
                 ForEach(Array(viewModel.assignments.enumerated()), id: \.offset) { index, _ in
                     WorkPlanAssignmentRow(

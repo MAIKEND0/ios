@@ -1,3 +1,10 @@
+//
+//  WorkPlanAPIService.swift
+//  KSR Cranes App
+//
+//  Updated by Maksymilian Marcinowski on 21/05/2025.
+//
+
 import Foundation
 import Combine
 import SwiftUI
@@ -40,7 +47,7 @@ final class WorkPlanAPIService: BaseAPIService {
 
 extension WorkPlanAPIService {
     struct WorkPlan: Codable, Identifiable {
-        let id: Int // Added id property
+        let id: Int
         let work_plan_id: Int
         let task_id: Int
         let task_title: String
@@ -60,7 +67,7 @@ extension WorkPlanAPIService {
         init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: CodingKeys.self)
             work_plan_id = try container.decode(Int.self, forKey: .work_plan_id)
-            id = work_plan_id // Setting id based on work_plan_id
+            id = work_plan_id
             task_id = try container.decode(Int.self, forKey: .task_id)
             task_title = try container.decode(String.self, forKey: .task_title)
             weekNumber = try container.decode(Int.self, forKey: .weekNumber)
@@ -70,10 +77,9 @@ extension WorkPlanAPIService {
             description = try container.decodeIfPresent(String.self, forKey: .description)
             additional_info = try container.decodeIfPresent(String.self, forKey: .additional_info)
             attachment_url = try container.decodeIfPresent(String.self, forKey: .attachment_url)
-            assignments = try container.decode([WorkPlanAssignment].self, forKey: .assignments)
+            assignments = try container.decodeIfPresent([WorkPlanAssignment].self, forKey: .assignments) ?? []
         }
         
-        // Added custom initializer for creating WorkPlan instances with all parameters
         init(
             id: Int,
             work_plan_id: Int,
@@ -119,7 +125,7 @@ extension WorkPlanAPIService {
     }
 
     struct WorkPlanAssignment: Codable, Identifiable {
-        let id: Int // Added id property
+        let id: Int
         let assignment_id: Int
         let employee_id: Int
         let work_date: Date
@@ -134,9 +140,28 @@ extension WorkPlanAPIService {
         init(from decoder: Decoder) throws {
             let container = try decoder.container(keyedBy: CodingKeys.self)
             assignment_id = try container.decode(Int.self, forKey: .assignment_id)
-            id = assignment_id // Setting id based on assignment_id
+            id = assignment_id
             employee_id = try container.decode(Int.self, forKey: .employee_id)
-            work_date = try container.decode(Date.self, forKey: .work_date)
+            
+            // Niestandardowe dekodowanie work_date
+            let dateString = try container.decode(String.self, forKey: .work_date)
+            let isoFormatter = ISO8601DateFormatter()
+            isoFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            let simpleFormatter = DateFormatter()
+            simpleFormatter.dateFormat = "yyyy-MM-dd"
+            
+            if let date = isoFormatter.date(from: dateString) {
+                work_date = date
+            } else if let date = simpleFormatter.date(from: dateString) {
+                work_date = date
+            } else {
+                throw DecodingError.dataCorruptedError(
+                    forKey: .work_date,
+                    in: container,
+                    debugDescription: "Nie można rozkodować daty: \(dateString)"
+                )
+            }
+            
             start_time = try container.decodeIfPresent(String.self, forKey: .start_time)
             end_time = try container.decodeIfPresent(String.self, forKey: .end_time)
             notes = try container.decodeIfPresent(String.self, forKey: .notes)
@@ -146,7 +171,11 @@ extension WorkPlanAPIService {
             var container = encoder.container(keyedBy: CodingKeys.self)
             try container.encode(assignment_id, forKey: .assignment_id)
             try container.encode(employee_id, forKey: .employee_id)
-            try container.encode(work_date, forKey: .work_date)
+            
+            let formatter = DateFormatter()
+            formatter.dateFormat = "yyyy-MM-dd"
+            try container.encode(formatter.string(from: work_date), forKey: .work_date)
+            
             try container.encodeIfPresent(start_time, forKey: .start_time)
             try container.encodeIfPresent(end_time, forKey: .end_time)
             try container.encodeIfPresent(notes, forKey: .notes)
@@ -184,7 +213,6 @@ extension WorkPlanAPIService {
     }
 }
 
-// Extension for WorkPlanRequest to properly handle optional fields
 extension WorkPlanAPIService.WorkPlanRequest {
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
@@ -193,7 +221,6 @@ extension WorkPlanAPIService.WorkPlanRequest {
         try container.encode(year, forKey: .year)
         try container.encode(status, forKey: .status)
         
-        // Only include description and additional_info if not empty
         if let desc = description, !desc.isEmpty {
             try container.encode(desc, forKey: .description)
         }
@@ -211,19 +238,16 @@ extension WorkPlanAPIService.WorkPlanRequest {
     }
 }
 
-// This extension must be at file scope (outside other extensions)
 extension WorkPlanAPIService.WorkPlanAssignmentRequest {
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(employee_id, forKey: .employee_id)
         
-        // Format date as ISO date string (YYYY-MM-DD)
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd"
         let dateString = dateFormatter.string(from: work_date)
         try container.encode(dateString, forKey: .work_date)
         
-        // Make sure these are not modified
         try container.encodeIfPresent(start_time, forKey: .start_time)
         try container.encodeIfPresent(end_time, forKey: .end_time)
         try container.encodeIfPresent(notes, forKey: .notes)

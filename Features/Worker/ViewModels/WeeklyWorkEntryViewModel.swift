@@ -1,8 +1,3 @@
-//
-//  WeeklyWorkEntryViewModel.swift
-//  KSR Cranes App
-//
-
 import Foundation
 import Combine
 import SwiftUI
@@ -542,9 +537,9 @@ final class WeeklyWorkEntryViewModel: ObservableObject {
             var earliestStartTime = firstEntry.startTime!
             var latestEndTime = firstEntry.endTime!
             let totalPauseMinutes = entries.reduce(0) { $0 + $1.pauseMinutes }
-            var combinedDescription = entries.map { $0.notes }.filter { !$0.isEmpty }.joined(separator: "; ")
+            let combinedDescription = entries.map { $0.notes }.filter { !$0.isEmpty }.joined(separator: "; ")
             var existingEntryId: Int = 0
-            var totalKm: Double? = entries.first?.km // Bierz km z pierwszego wpisu, bez sumowania
+            let totalKm: Double? = entries.first?.km // Bierz km z pierwszego wpisu, bez sumowania
             
             for entry in entries {
                 if entry.id != 0 && entry.id != Int(localWorkDate.timeIntervalSince1970) {
