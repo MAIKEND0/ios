@@ -5,6 +5,7 @@
 //  Created by Maksymilian Marcinowski on 20/05/2025.
 //  Updated with enhanced UI/UX and bug fixes on 21/05/2025.
 //  Added past week restriction and improved week selector on 22/05/2025.
+//  Fixed array subscript crash and toggle employee selection on 22/05/2025.
 //
 
 import SwiftUI
@@ -68,7 +69,17 @@ struct WorkPlanCreatorView: View {
             }
             .sheet(isPresented: $showPreview) { previewSheet }
             .sheet(isPresented: $showDatePicker) { datePickerSheet }
+            .toast($viewModel.toast) // NOWY: Toast notifications
             .onTapGesture { dismissKeyboard() }
+            // NOWE: Smart closing po pokazaniu toast sukcesu
+            .onChange(of: viewModel.toast) { _, newToast in
+                if let toast = newToast, toast.type == .success {
+                    // Zamknij sheet po pokazaniu toast sukcesu (z opóźnieniem)
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                        isPresented = false
+                    }
+                }
+            }
         }
     }
 
@@ -117,21 +128,26 @@ struct WorkPlanCreatorView: View {
                     .font(.subheadline)
                 .foregroundColor(.gray)
             } else {
+                // POPRAWKA: Wyśrodkowane cards z odpowiednimi paddingami
                 ScrollView(.horizontal, showsIndicators: false) {
-                    LazyHStack(spacing: 12) {
+                    LazyHStack(spacing: 16) { // Zwiększono spacing z 12 na 16
                         ForEach(filteredEmployees) { employee in
                             EmployeeCard(
                                 employee: employee,
                                 isSelected: viewModel.assignments.contains { $0.employee_id == employee.employee_id }
                             )
                             .onTapGesture {
-                                withAnimation(.easeInOut) {
+                                print("[WorkPlanCreatorView] Tapped employee: \(employee.name), ID: \(employee.employee_id)")
+                                withAnimation(.easeInOut(duration: 0.3)) {
                                     toggleEmployeeSelection(employee)
                                 }
                             }
                         }
                     }
+                    .padding(.horizontal, 20) // Dodano padding żeby cards nie były obcięte
+                    .padding(.vertical, 8) // Dodano padding na górze i dole dla shadow
                 }
+                .frame(height: 160) // Ustaw stałą wysokość żeby pomieścić cards + shadow
             }
         }
         .padding(.horizontal)
@@ -148,14 +164,25 @@ struct WorkPlanCreatorView: View {
                     .font(.caption)
                 .foregroundColor(.gray)
             } else {
-                ForEach(Array(viewModel.assignments.enumerated()), id: \.offset) { index, _ in
+                // POPRAWKA: Używamy ID zamiast indeksu dla bezpiecznego bindingu
+                ForEach(viewModel.assignments, id: \.id) { assignment in
                     WorkPlanAssignmentRow(
                         assignment: Binding(
-                            get: { viewModel.assignments[index] },
-                            set: { viewModel.assignments[index] = $0 }
+                            get: {
+                                // Znajdź assignment po ID zamiast używać indeksu
+                                return viewModel.assignments.first { $0.id == assignment.id } ?? assignment
+                            },
+                            set: { newValue in
+                                // Znajdź indeks po ID i bezpiecznie zaktualizuj
+                                if let index = viewModel.assignments.firstIndex(where: { $0.id == assignment.id }) {
+                                    viewModel.assignments[index] = newValue
+                                } else {
+                                    print("[WorkPlanCreatorView] ⚠️ Could not find assignment with ID: \(assignment.id)")
+                                }
+                            }
                         ),
-                        onCopyToOthers: { assignment in
-                            viewModel.copyHoursToOtherEmployees(from: assignment)
+                        onCopyToOthers: { sourceAssignment in
+                            viewModel.copyHoursToOtherEmployees(from: sourceAssignment)
                         }
                     )
                 }
@@ -218,7 +245,7 @@ struct WorkPlanCreatorView: View {
             Button("Save Draft") {
                 if validateAssignments() {
                     viewModel.saveDraft()
-                    isPresented = false
+                    // NIE zamykaj od razu - poczekaj na toast
                 }
             }
             .foregroundColor(Color.ksrYellow)
@@ -226,7 +253,7 @@ struct WorkPlanCreatorView: View {
             Button("Publish") {
                 if validateAssignments() {
                     viewModel.publish()
-                    isPresented = false
+                    // NIE zamykaj od razu - poczekaj na toast
                 }
             }
             .foregroundColor(.green)
@@ -323,17 +350,39 @@ struct WorkPlanCreatorView: View {
     }
 
     func toggleEmployeeSelection(_ employee: ManagerAPIService.Worker) {
-        if let index = viewModel.assignments.firstIndex(where: { $0.employee_id == employee.employee_id }) {
-            viewModel.assignments.remove(at: index)
+        print("[WorkPlanCreatorView] toggleEmployeeSelection called for: \(employee.name), ID: \(employee.employee_id)")
+        print("[WorkPlanCreatorView] Current assignments count: \(viewModel.assignments.count)")
+        
+        // Sprawdź czy pracownik już jest w assignments
+        if let existingIndex = viewModel.assignments.firstIndex(where: { $0.employee_id == employee.employee_id }) {
+            print("[WorkPlanCreatorView] Employee found at index \(existingIndex), removing...")
+            
+            // POPRAWKA: Bezpieczne usuwanie z sprawdzeniem zakresu
+            if existingIndex < viewModel.assignments.count {
+                viewModel.assignments.remove(at: existingIndex)
+                print("[WorkPlanCreatorView] Employee removed. New count: \(viewModel.assignments.count)")
+            } else {
+                print("[WorkPlanCreatorView] ⚠️ Index out of range: \(existingIndex) >= \(viewModel.assignments.count)")
+            }
         } else {
-            viewModel.assignments.append(WorkPlanAssignment(
+            print("[WorkPlanCreatorView] Employee not found, adding new assignment...")
+            
+            // Dodaj nowego pracownika
+            let newAssignment = WorkPlanAssignment(
                 employee_id: employee.employee_id,
                 availableEmployees: viewModel.employees,
                 weekStart: viewModel.selectedMonday,
-                dailyHours: Array(repeating: DailyHours(isActive: false, start_time: Date(), end_time: Date()), count: 7),
+                dailyHours: Array(repeating: DailyHours(), count: 7), // ✅ Bez parametrów = domyślne 7-15
                 notes: ""
-            ))
+            )
+            
+            viewModel.assignments.append(newAssignment)
+            print("[WorkPlanCreatorView] Employee added. New count: \(viewModel.assignments.count)")
         }
+        
+        // Debug: Pokaż wszystkie assignment IDs
+        let assignmentIDs = viewModel.assignments.map { $0.employee_id }
+        print("[WorkPlanCreatorView] Current assignment employee IDs: \(assignmentIDs)")
     }
 
     func dismissKeyboard() {

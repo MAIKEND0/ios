@@ -24,6 +24,7 @@ struct ManagerDashboardView: View {
                 VStack(alignment: .leading, spacing: 24) {
                     ManagerDashboardSections.PendingTasksSection(
                         viewModel: viewModel,
+                        isPulsing: isPulsing,
                         onSelectTaskWeek: { taskWeek in
                             selectedTaskWeek = taskWeek
                             showSignatureModal = true
@@ -33,31 +34,6 @@ struct ManagerDashboardView: View {
                             showRejectionReasonModal = true
                         }
                     )
-                    .frame(maxWidth: .infinity)
-                    .background(
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(Color.green.opacity(isPulsing ? 0.5 : 0.2))
-                            .shadow(color: isPulsing ? Color.green.opacity(0.6) : .clear, radius: isPulsing ? 8 : 0)
-                            .scaleEffect(isPulsing ? 1.05 : 1.0)
-                            .animation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true), value: isPulsing)
-                    )
-                    .onAppear {
-                        updatePulsingState()
-                    }
-                    .onChange(of: viewModel.allPendingEntriesByTask) { _, newValue in
-                        updatePulsingState()
-                        #if DEBUG
-                        print("[ManagerDashboardView] allPendingEntriesByTask changed, count: \(newValue.count), isPulsing: \(isPulsing)")
-                        #endif
-                    }
-                    .onReceive(viewModel.$isLoading) { isLoading in
-                        if !isLoading {
-                            updatePulsingState()
-                            #if DEBUG
-                            print("[ManagerDashboardView] isLoading changed to false, entries count: \(viewModel.allPendingEntriesByTask.count), isPulsing: \(isPulsing)")
-                            #endif
-                        }
-                    }
 
                     ManagerDashboardSections.SummaryCardsSection(viewModel: viewModel)
                         .frame(maxWidth: .infinity)
@@ -98,10 +74,10 @@ struct ManagerDashboardView: View {
                     ManagerDashboardSections.TasksSection(viewModel: viewModel)
                         .frame(maxWidth: .infinity)
                 }
-                .padding(.horizontal, 16) // Spójny padding dla całego VStack
+                .padding(.horizontal, 16)
                 .padding(.vertical, 8)
             }
-            .clipped() // Zapobiega wyjeżdżaniu poza ekran
+            .clipped()
             .background(colorScheme == .dark ? Color.black : Color(.systemBackground))
             .navigationTitle("Manager Dashboard")
             .navigationBarTitleDisplayMode(.inline)
@@ -128,6 +104,7 @@ struct ManagerDashboardView: View {
             .onAppear {
                 viewModel.viewAppeared()
                 hasAppeared = true
+                updatePulsingState()
                 #if DEBUG
                 print("[ManagerDashboardView] View appeared, initial entries count: \(viewModel.allPendingEntriesByTask.count)")
                 #endif
@@ -138,6 +115,20 @@ struct ManagerDashboardView: View {
             .onChange(of: hasAppeared) { newValue, _ in
                 if newValue {
                     viewModel.loadData()
+                }
+            }
+            .onChange(of: viewModel.allPendingEntriesByTask) { _, _ in
+                updatePulsingState()
+                #if DEBUG
+                print("[ManagerDashboardView] allPendingEntriesByTask changed, count: \(viewModel.allPendingEntriesByTask.count), isPulsing: \(isPulsing)")
+                #endif
+            }
+            .onReceive(viewModel.$isLoading) { isLoading in
+                if !isLoading {
+                    updatePulsingState()
+                    #if DEBUG
+                    print("[ManagerDashboardView] isLoading changed to false, entries count: \(viewModel.allPendingEntriesByTask.count), isPulsing: \(isPulsing)")
+                    #endif
                 }
             }
             .refreshable {
@@ -241,7 +232,9 @@ struct ManagerDashboardView: View {
     private func updatePulsingState() {
         let shouldPulse = !viewModel.allPendingEntriesByTask.isEmpty
         if isPulsing != shouldPulse {
-            isPulsing = shouldPulse
+            withAnimation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true)) {
+                isPulsing = shouldPulse
+            }
             #if DEBUG
             print("[ManagerDashboardView] Updated isPulsing to \(isPulsing), entries count: \(viewModel.allPendingEntriesByTask.count)")
             #endif

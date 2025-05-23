@@ -23,6 +23,8 @@
 		1B4514902DDC5D230020443F /* WorkPlanComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B45148F2DDC5D1D0020443F /* WorkPlanComponents.swift */; };
 		1B4514972DDC8E410020443F /* WorkPlanCreatorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B4514962DDC8E3F0020443F /* WorkPlanCreatorView.swift */; };
 		1B4514992DDDA5880020443F /* WorkPlanPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B4514982DDDA57E0020443F /* WorkPlanPreviewView.swift */; };
+		1B4514A92DDF373B0020443F /* WeekUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B4514A82DDF372F0020443F /* WeekUtils.swift */; };
+		1B4514AB2DDF83260020443F /* ToastView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B4514AA2DDF83240020443F /* ToastView.swift */; };
 		1B63CC4D2DD85FFB005F598D /* ManagerWorkersView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B63CC4A2DD85FE3005F598D /* ManagerWorkersView.swift */; };
 		1B63CC512DD8602A005F598D /* ManagerWorkersViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B63CC502DD86022005F598D /* ManagerWorkersViewModel.swift */; };
 		1B63CC542DD8620D005F598D /* ManagerProjectsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B63CC532DD8620B005F598D /* ManagerProjectsView.swift */; };
@@ -106,6 +108,8 @@
 		1B45148F2DDC5D1D0020443F /* WorkPlanComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkPlanComponents.swift; sourceTree = "<group>"; };
 		1B4514962DDC8E3F0020443F /* WorkPlanCreatorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkPlanCreatorView.swift; sourceTree = "<group>"; };
 		1B4514982DDDA57E0020443F /* WorkPlanPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkPlanPreviewView.swift; sourceTree = "<group>"; };
+		1B4514A82DDF372F0020443F /* WeekUtils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeekUtils.swift; sourceTree = "<group>"; };
+		1B4514AA2DDF83240020443F /* ToastView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastView.swift; sourceTree = "<group>"; };
 		1B63CC4A2DD85FE3005F598D /* ManagerWorkersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManagerWorkersView.swift; sourceTree = "<group>"; };
 		1B63CC502DD86022005F598D /* ManagerWorkersViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManagerWorkersViewModel.swift; sourceTree = "<group>"; };
 		1B63CC532DD8620B005F598D /* ManagerProjectsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManagerProjectsView.swift; sourceTree = "<group>"; };
@@ -204,6 +208,7 @@
 		1B4514822DDC58A60020443F /* Workplan */ = {
 			isa = PBXGroup;
 			children = (
+				1B4514AA2DDF83240020443F /* ToastView.swift */,
 				1B4514982DDDA57E0020443F /* WorkPlanPreviewView.swift */,
 				1B4514962DDC8E3F0020443F /* WorkPlanCreatorView.swift */,
 				1B45148F2DDC5D1D0020443F /* WorkPlanComponents.swift */,
@@ -587,6 +592,7 @@
 		1B71F0332DD4A4D900731223 /* Utils */ = {
 			isa = PBXGroup;
 			children = (
+				1B4514A82DDF372F0020443F /* WeekUtils.swift */,
 				1B3600D52DDA3B0C00943E5B /* OrientationManager.swift */,
 				1B3600D12DDA3A7F00943E5B /* AppDelegate.swift */,
 				1B3600C32DD9CD4000943E5B /* PDFViewer.swift */,
@@ -759,6 +765,7 @@
 				1B45148E2DDC5AF90020443F /* ManagerMainTabView.swift in Sources */,
 				1B71F0322DD4A4BB00731223 /* WorkHoursViewModeltemp.swift in Sources */,
 				1B4514902DDC5D230020443F /* WorkPlanComponents.swift in Sources */,
+				1B4514AB2DDF83260020443F /* ToastView.swift in Sources */,
 				1B4514882DDC5A290020443F /* ManagerWorkPlansViewModel.swift in Sources */,
 				1B3600C42DD9CD4500943E5B /* PDFViewer.swift in Sources */,
 				1B71F01E2DD496FF00731223 /* WorkerTasksViewModel.swift in Sources */,
@@ -811,6 +818,7 @@
 				1B45147E2DDC58180020443F /* WorkPlanAPIService.swift in Sources */,
 				1B4514802DDC588D0020443F /* CreateWorkPlanViewModel.swift in Sources */,
 				1B71EFC42DD3307700731223 /* WeeklyWorkEntryViewModel.swift in Sources */,
+				1B4514A92DDF373B0020443F /* WeekUtils.swift in Sources */,
 				1B71EFF32DD3A06800731223 /* APIError.swift in Sources */,
 				1B6FB00E2DD7A81C007B2C9E /* BaseAPIService.swift in Sources */,
 			);
@@ -983,6 +991,7 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -1012,6 +1021,7 @@
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

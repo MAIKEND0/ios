@@ -2,7 +2,7 @@
 //  WorkPlanAPIService.swift
 //  KSR Cranes App
 //
-//  Updated by Maksymilian Marcinowski on 21/05/2025.
+//  Updated with delete functionality on 23/05/2025.
 //
 
 import Foundation
@@ -32,6 +32,14 @@ final class WorkPlanAPIService: BaseAPIService {
             .eraseToAnyPublisher()
     }
 
+    func deleteWorkPlan(workPlanId: Int) -> AnyPublisher<DeleteWorkPlanResponse, APIError> {
+        let endpoint = "/api/app/work-plans?id=\(workPlanId)"
+        return makeRequest(endpoint: endpoint, method: "DELETE", body: Optional<String>.none)
+            .decode(type: DeleteWorkPlanResponse.self, decoder: jsonDecoder())
+            .mapError { ($0 as? APIError) ?? .decodingError($0) }
+            .eraseToAnyPublisher()
+    }
+
     func fetchWorkPlans(supervisorId: Int, weekNumber: Int?, year: Int?) -> AnyPublisher<[WorkPlan], APIError> {
         var endpoint = "/api/app/work-plans?supervisorId=\(supervisorId)"
         if let week = weekNumber, let year = year {
@@ -45,7 +53,14 @@ final class WorkPlanAPIService: BaseAPIService {
     }
 }
 
+// MARK: - Response Types
 extension WorkPlanAPIService {
+    struct DeleteWorkPlanResponse: Codable {
+        let success: Bool
+        let message: String
+    }
+    
+    // Rest of the existing types remain the same...
     struct WorkPlan: Codable, Identifiable {
         let id: Int
         let work_plan_id: Int
@@ -143,7 +158,7 @@ extension WorkPlanAPIService {
             id = assignment_id
             employee_id = try container.decode(Int.self, forKey: .employee_id)
             
-            // Niestandardowe dekodowanie work_date
+            // Dekodowanie work_date
             let dateString = try container.decode(String.self, forKey: .work_date)
             let isoFormatter = ISO8601DateFormatter()
             isoFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
@@ -162,9 +177,14 @@ extension WorkPlanAPIService {
                 )
             }
             
+            // Simplified time parsing - API now returns VARCHAR(5) "HH:mm" format
             start_time = try container.decodeIfPresent(String.self, forKey: .start_time)
             end_time = try container.decodeIfPresent(String.self, forKey: .end_time)
             notes = try container.decodeIfPresent(String.self, forKey: .notes)
+            
+            #if DEBUG
+            print("[WorkPlanAssignment] Assignment \(assignment_id): start_time='\(start_time ?? "nil")', end_time='\(end_time ?? "nil")'")
+            #endif
         }
         
         func encode(to encoder: Encoder) throws {

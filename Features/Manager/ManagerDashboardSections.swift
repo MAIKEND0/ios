@@ -160,13 +160,14 @@ struct ManagerDashboardSections {
         }
     }
     
-    // Sekcja godzin do zatwierdzenia
+    // Sekcja godzin do zatwierdzenia - FIXED VERSION
     struct PendingTasksSection: View {
         @ObservedObject var viewModel: ManagerDashboardViewModel
         @Environment(\.colorScheme) private var colorScheme
+        let isPulsing: Bool
         let onSelectTaskWeek: (ManagerDashboardViewModel.TaskWeekEntry) -> Void
         let onSelectEntry: (ManagerAPIService.WorkHourEntry) -> Void
-        @State private var expandedTasks: Set<Int> = [] // Śledzenie rozwiniętych zadań
+        @State private var expandedTasks: Set<Int> = []
         
         var body: some View {
             VStack(alignment: .leading, spacing: 12) {
@@ -255,10 +256,22 @@ struct ManagerDashboardSections {
             .background(
                 RoundedRectangle(cornerRadius: 12)
                     .fill(DashboardStyles.gradientGreen.opacity(colorScheme == .dark ? 0.7 : 1.0))
+                    .scaleEffect(isPulsing ? 1.02 : 1.0)
+                    .shadow(
+                        color: isPulsing ? Color.green.opacity(0.4) : Color.clear,
+                        radius: isPulsing ? 8 : 0,
+                        x: 0,
+                        y: isPulsing ? 4 : 0
+                    )
+                    .animation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true), value: isPulsing)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
-                    .stroke(Color.green.opacity(0.8), lineWidth: 2)
+                    .stroke(
+                        isPulsing ? Color.green.opacity(0.9) : Color.green.opacity(0.8),
+                        lineWidth: isPulsing ? 3 : 2
+                    )
+                    .animation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true), value: isPulsing)
             )
         }
         

@@ -5,6 +5,7 @@
 //  Created by Maksymilian Marcinowski on 20/05/2025.
 //  Updated with enhanced UI/UX and bug fixes on 21/05/2025.
 //  Updated week selector on 22/05/2025.
+//  Fixed sheet closing timing to prevent alert errors on 22/05/2025.
 //
 
 import SwiftUI
@@ -56,7 +57,26 @@ struct EditWorkPlanView: View {
             )
             .sheet(isPresented: $showPreview) { previewSheet }
             .sheet(isPresented: $showDatePicker) { datePickerSheet }
+            .toast($viewModel.toast) // NOWY: Toast notifications
             .onTapGesture { dismissKeyboard() }
+            // NOWE: Smart closing po pokazaniu toast sukcesu
+            .onChange(of: viewModel.toast) { _, newToast in
+                if let toast = newToast, toast.type == .success {
+                    // Zamknij sheet po pokazaniu toast sukcesu (z opóźnieniem)
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                        isPresented = false
+                    }
+                }
+            }
+            // Słuchaj zmian alertu i zamykaj sheet po pokazaniu sukcesu
+            .onChange(of: viewModel.showAlert) { oldValue, newValue in
+                if !newValue && viewModel.alertTitle == "Success" {
+                    // Alert sukcesu został zamknięty, teraz zamknij sheet
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                        isPresented = false
+                    }
+                }
+            }
         }
     }
 
@@ -100,21 +120,26 @@ struct EditWorkPlanView: View {
                     .font(.subheadline)
                 .foregroundColor(.gray)
             } else {
+                // POPRAWKA: Wyśrodkowane cards z odpowiednimi paddingami
                 ScrollView(.horizontal, showsIndicators: false) {
-                    LazyHStack(spacing: 12) {
+                    LazyHStack(spacing: 16) { // Zwiększono spacing z 12 na 16
                         ForEach(filteredEmployees) { employee in
                             EmployeeCard(
                                 employee: employee,
                                 isSelected: viewModel.assignments.contains { $0.employee_id == employee.employee_id }
                             )
                             .onTapGesture {
+                                print("[EditWorkPlanView] Tapped employee: \(employee.name), ID: \(employee.employee_id)")
                                 withAnimation(.easeInOut) {
                                     toggleEmployeeSelection(employee)
                                 }
                             }
                         }
                     }
+                    .padding(.horizontal, 20) // Dodano padding żeby cards nie były obcięte
+                    .padding(.vertical, 8) // Dodano padding na górze i dole dla shadow
                 }
+                .frame(height: 160) // Ustaw stałą wysokość żeby pomieścić cards + shadow
             }
         }
         .padding(.horizontal)
@@ -131,14 +156,25 @@ struct EditWorkPlanView: View {
                 .font(.caption)
                 .foregroundColor(.gray)
             } else {
-                ForEach(Array(viewModel.assignments.enumerated()), id: \.offset) { index, _ in
+                // POPRAWKA: Używamy ID zamiast indeksu dla bezpiecznego bindingu (jak w WorkPlanCreatorView)
+                ForEach(viewModel.assignments, id: \.id) { assignment in
                     WorkPlanAssignmentRow(
                         assignment: Binding(
-                            get: { viewModel.assignments[index] },
-                            set: { viewModel.assignments[index] = $0 }
+                            get: {
+                                // Znajdź assignment po ID zamiast używać indeksu
+                                return viewModel.assignments.first { $0.id == assignment.id } ?? assignment
+                            },
+                            set: { newValue in
+                                // Znajdź indeks po ID i bezpiecznie zaktualizuj
+                                if let index = viewModel.assignments.firstIndex(where: { $0.id == assignment.id }) {
+                                    viewModel.assignments[index] = newValue
+                                } else {
+                                    print("[EditWorkPlanView] ⚠️ Could not find assignment with ID: \(assignment.id)")
+                                }
+                            }
                         ),
-                        onCopyToOthers: { assignment in
-                            viewModel.copyHoursToOtherEmployees(from: assignment)
+                        onCopyToOthers: { sourceAssignment in
+                            viewModel.copyHoursToOtherEmployees(from: sourceAssignment)
                         }
                     )
                 }
@@ -201,8 +237,24 @@ struct EditWorkPlanView: View {
     }
 
     private var actionButtonsSection: some View {
-        WorkPlanActionButtons(viewModel: viewModel, isPresented: $isPresented)
+        HStack {
+            Spacer()
+            Button("Save Draft") {
+                print("[EditWorkPlanView] Save Draft tapped")
+                viewModel.saveDraft()
+                // NIE zamykaj od razu sheet - poczekaj na alert
+            }
+            .foregroundColor(Color.ksrYellow)
             .padding(.horizontal)
+            Button("Publish") {
+                print("[EditWorkPlanView] Publish tapped")
+                viewModel.publish()
+                // NIE zamykaj od razu sheet - poczekaj na alert
+            }
+            .foregroundColor(.green)
+            .padding(.horizontal)
+        }
+        .padding(.horizontal)
     }
 
     private var toolbarItems: some ToolbarContent {
@@ -254,8 +306,9 @@ struct EditWorkPlanView: View {
             viewModel: viewModel,
             isPresented: $showPreview,
             onConfirm: {
+                print("[EditWorkPlanView] Preview onConfirm tapped")
                 viewModel.publish()
-                isPresented = false
+                // NIE zamykaj od razu - toast zrobi to automatically
             }
         )
     }
@@ -290,17 +343,39 @@ struct EditWorkPlanView: View {
     }
 
     private func toggleEmployeeSelection(_ employee: ManagerAPIService.Worker) {
-        if let index = viewModel.assignments.firstIndex(where: { $0.employee_id == employee.employee_id }) {
-            viewModel.assignments.remove(at: index)
+        print("[EditWorkPlanView] toggleEmployeeSelection called for: \(employee.name), ID: \(employee.employee_id)")
+        print("[EditWorkPlanView] Current assignments count: \(viewModel.assignments.count)")
+        
+        // Sprawdź czy pracownik już jest w assignments
+        if let existingIndex = viewModel.assignments.firstIndex(where: { $0.employee_id == employee.employee_id }) {
+            print("[EditWorkPlanView] Employee found at index \(existingIndex), removing...")
+            
+            // POPRAWKA: Bezpieczne usuwanie z sprawdzeniem zakresu
+            if existingIndex < viewModel.assignments.count {
+                viewModel.assignments.remove(at: existingIndex)
+                print("[EditWorkPlanView] Employee removed. New count: \(viewModel.assignments.count)")
+            } else {
+                print("[EditWorkPlanView] ⚠️ Index out of range: \(existingIndex) >= \(viewModel.assignments.count)")
+            }
         } else {
-            viewModel.assignments.append(WorkPlanAssignment(
+            print("[EditWorkPlanView] Employee not found, adding new assignment...")
+            
+            // Dodaj nowego pracownika
+            let newAssignment = WorkPlanAssignment(
                 employee_id: employee.employee_id,
                 availableEmployees: viewModel.employees,
                 weekStart: viewModel.selectedMonday,
-                dailyHours: Array(repeating: DailyHours(isActive: false, start_time: Date(), end_time: Date()), count: 7),
+                dailyHours: Array(repeating: DailyHours(), count: 7), // ✅ Bez parametrów = domyślne 7-15
                 notes: ""
-            ))
+            )
+            
+            viewModel.assignments.append(newAssignment)
+            print("[EditWorkPlanView] Employee added. New count: \(viewModel.assignments.count)")
         }
+        
+        // Debug: Pokaż wszystkie assignment IDs
+        let assignmentIDs = viewModel.assignments.map { $0.employee_id }
+        print("[EditWorkPlanView] Current assignment employee IDs: \(assignmentIDs)")
     }
 
     private func dismissKeyboard() {

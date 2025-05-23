@@ -4,13 +4,22 @@
 //
 //  Updated by Maksymilian Marcinowski on 21/05/2025.
 //  Added isWeekInFuture on 22/05/2025.
+//  Fixed week selection refresh issue with cache on 22/05/2025.
+//  Added Hashable conformance for WeekSelection on 22/05/2025.
+//  Fixed incorrect week plan display on 22/05/2025.
+//  Added employees fetching for creator_name on 22/05/2025.
+//  Added clearCache method to refresh work plans on 22/05/2025.
+//  Updated to fix compilation errors by ensuring clearCache is present on 22/05/2025.
+//  Modified loadData to force reload after clearCache on 22/05/2025.
+//  Fixed week to start from Monday instead of Sunday on 22/05/2025.
+//  Unified week calculations using WeekUtils on 22/05/2025.
 //
 
 import Foundation
 import Combine
 import SwiftUI
 
-struct WeekSelection: Equatable {
+struct WeekSelection: Equatable, Hashable {
     let weekNumber: Int
     let year: Int
     let startDate: Date
@@ -24,14 +33,17 @@ struct WeekSelection: Equatable {
     }
     
     static func current() -> WeekSelection {
-        let calendar = Calendar.current
         let today = Date()
-        let startOfWeek = calendar.startOfWeek(for: today)
-        let endOfWeek = calendar.date(byAdding: .day, value: 6, to: startOfWeek)!
+        
+        // Use WeekUtils for consistent week calculation
+        let startOfWeek = WeekUtils.startOfWeek(for: today)
+        let endOfWeek = WeekUtils.endOfWeek(for: today)
+        let weekNumber = WeekUtils.weekNumber(for: today)
+        let year = WeekUtils.year(for: today)
         
         return WeekSelection(
-            weekNumber: calendar.component(.weekOfYear, from: today),
-            year: calendar.component(.year, from: today),
+            weekNumber: weekNumber,
+            year: year,
             startDate: startOfWeek,
             endDate: endOfWeek
         )
@@ -41,27 +53,38 @@ struct WeekSelection: Equatable {
         return lhs.weekNumber == rhs.weekNumber && lhs.year == rhs.year
     }
     
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(weekNumber)
+        hasher.combine(year)
+    }
+    
     func next() -> WeekSelection {
-        let calendar = Calendar.current
-        let nextWeekStart = calendar.date(byAdding: .weekOfYear, value: 1, to: startDate)!
-        let nextWeekEnd = calendar.date(byAdding: .day, value: 6, to: nextWeekStart)!
+        let nextWeekStart = Calendar.current.date(byAdding: .weekOfYear, value: 1, to: startDate)!
+        let nextWeekEnd = Calendar.current.date(byAdding: .day, value: 6, to: nextWeekStart)!
+        
+        // Use WeekUtils for consistent week calculation
+        let weekNumber = WeekUtils.weekNumber(for: nextWeekStart)
+        let year = WeekUtils.year(for: nextWeekStart)
         
         return WeekSelection(
-            weekNumber: calendar.component(.weekOfYear, from: nextWeekStart),
-            year: calendar.component(.year, from: nextWeekStart),
+            weekNumber: weekNumber,
+            year: year,
             startDate: nextWeekStart,
             endDate: nextWeekEnd
         )
     }
     
     func previous() -> WeekSelection {
-        let calendar = Calendar.current
-        let prevWeekStart = calendar.date(byAdding: .weekOfYear, value: -1, to: startDate)!
-        let prevWeekEnd = calendar.date(byAdding: .day, value: 6, to: prevWeekStart)!
+        let prevWeekStart = Calendar.current.date(byAdding: .weekOfYear, value: -1, to: startDate)!
+        let prevWeekEnd = Calendar.current.date(byAdding: .day, value: 6, to: prevWeekStart)!
+        
+        // Use WeekUtils for consistent week calculation
+        let weekNumber = WeekUtils.weekNumber(for: prevWeekStart)
+        let year = WeekUtils.year(for: prevWeekStart)
         
         return WeekSelection(
-            weekNumber: calendar.component(.weekOfYear, from: prevWeekStart),
-            year: calendar.component(.year, from: prevWeekStart),
+            weekNumber: weekNumber,
+            year: year,
             startDate: prevWeekStart,
             endDate: prevWeekEnd
         )
@@ -70,6 +93,7 @@ struct WeekSelection: Equatable {
 
 final class ManagerWorkPlansViewModel: ObservableObject, WeekSelectorViewModel {
     @Published var workPlans: [WorkPlanAPIService.WorkPlan] = []
+    @Published var employees: [ManagerAPIService.Worker] = []
     @Published var selectedWeek: WeekSelection
     @Published var isLoading: Bool = false
     @Published var showAlert: Bool = false
@@ -79,8 +103,12 @@ final class ManagerWorkPlansViewModel: ObservableObject, WeekSelectorViewModel {
     @Published var selectedStatus: String = "All"
     
     private let workPlanService = WorkPlanAPIService.shared
+    private let managerService = ManagerAPIService.shared
     private var cancellables = Set<AnyCancellable>()
     private var lastLoadTime: Date?
+    private var currentWeekRequest: WeekSelection?
+    private var workPlansCache: [WeekSelection: [WorkPlanAPIService.WorkPlan]] = [:]
+    private var forceReload: Bool = false // Flaga do wymuszenia ponownego ładowania
     
     var weekRangeText: String {
         return selectedWeek.formattedRange
@@ -91,16 +119,21 @@ final class ManagerWorkPlansViewModel: ObservableObject, WeekSelectorViewModel {
     }
     
     var filteredWorkPlans: [WorkPlanAPIService.WorkPlan] {
-        workPlans.filter { plan in
+        let filtered = workPlans.filter { plan in
+            let matchesWeek = plan.weekNumber == selectedWeek.weekNumber && plan.year == selectedWeek.year
             let matchesSearch = searchQuery.isEmpty || plan.task_title.lowercased().contains(searchQuery.lowercased())
             let matchesStatus = selectedStatus == "All" || plan.status == selectedStatus
-            return matchesSearch && matchesStatus
+            print("[ManagerWorkPlansViewModel] Filtering plan: \(plan.task_title), week: \(plan.weekNumber)/\(plan.year), matchesWeek: \(matchesWeek), matchesSearch: \(matchesSearch), matchesStatus: \(matchesStatus)")
+            return matchesWeek && matchesSearch && matchesStatus
         }
+        print("[ManagerWorkPlansViewModel] Filtered \(filtered.count) plans from \(workPlans.count) total for week \(selectedWeek.weekNumber), year \(selectedWeek.year)")
+        return filtered
     }
     
     init() {
         self.selectedWeek = WeekSelection.current()
         loadData()
+        fetchEmployees()
     }
     
     func isWeekInFuture() -> Bool {
@@ -120,51 +153,125 @@ final class ManagerWorkPlansViewModel: ObservableObject, WeekSelectorViewModel {
             newWeek = WeekSelection.current()
         }
         selectedWeek = newWeek
+        searchQuery = "" // Reset wyszukiwania
+        selectedStatus = "All" // Reset statusu
+        print("[ManagerWorkPlansViewModel] Changed to week \(newWeek.weekNumber), year \(newWeek.year), reset searchQuery and selectedStatus")
+        
+        // Force reload when changing weeks - clear cache and timeout
+        forceReload = true
+        lastLoadTime = nil
+        workPlansCache.removeValue(forKey: newWeek) // Remove cache for this specific week
+        
         loadData()
     }
     
     func selectWeek(number: Int, year: Int) {
-        let calendar = Calendar.current
-        var components = DateComponents()
-        components.weekOfYear = number
-        components.yearForWeekOfYear = year
-        
-        if let date = calendar.date(from: components) {
-            let startOfWeek = calendar.startOfWeek(for: date)
-            let endOfWeek = calendar.date(byAdding: .day, value: 6, to: startOfWeek)!
+        // Use WeekUtils for consistent date calculation
+        if let weekDate = WeekUtils.date(from: number, year: year) {
+            let startOfWeek = WeekUtils.startOfWeek(for: weekDate)
+            let endOfWeek = WeekUtils.endOfWeek(for: weekDate)
             
-            selectedWeek = WeekSelection(
+            let newWeek = WeekSelection(
                 weekNumber: number,
                 year: year,
                 startDate: startOfWeek,
                 endDate: endOfWeek
             )
+            
+            selectedWeek = newWeek
+            print("[ManagerWorkPlansViewModel] Selected week \(number), year \(year)")
+            
+            // Force reload when selecting a specific week
+            forceReload = true
+            lastLoadTime = nil
+            workPlansCache.removeValue(forKey: newWeek)
+            
             loadData()
         }
     }
     
     func selectCurrentWeek() {
         selectedWeek = WeekSelection.current()
+        print("[ManagerWorkPlansViewModel] Selected current week \(selectedWeek.weekNumber), year \(selectedWeek.year)")
+        
+        // Force reload when selecting current week
+        forceReload = true
+        lastLoadTime = nil
+        
+        loadData()
+    }
+    
+    func fetchEmployees() {
+        let supervisorId = Int(AuthService.shared.getEmployeeId() ?? "0") ?? 0
+        managerService.fetchAssignedWorkers(supervisorId: supervisorId)
+            .receive(on: DispatchQueue.main)
+            .sink(receiveCompletion: { [weak self] completion in
+                if case .failure(let error) = completion {
+                    print("[ManagerWorkPlansViewModel] Failed to fetch employees: \(error)")
+                }
+            }, receiveValue: { [weak self] workers in
+                self?.employees = workers
+                print("[ManagerWorkPlansViewModel] Fetched \(workers.count) employees: \(workers.map { $0.name })")
+            })
+            .store(in: &cancellables)
+    }
+    
+    // Metoda do czyszczenia cache
+    func clearCache() {
+        workPlansCache.removeAll()
+        forceReload = true // Wymuszenie ponownego ładowania po wyczyszczeniu cache
+        lastLoadTime = nil // Reset timeout
+        print("[ManagerWorkPlansViewModel] Cleared work plans cache and reset timeout")
+    }
+    
+    // Metoda do wymuszenia refresh
+    func forceRefresh() {
+        clearCache()
         loadData()
     }
     
     func loadData(fetchAll: Bool = false) {
-        guard lastLoadTime == nil || Date().timeIntervalSince(lastLoadTime!) > 5 else {
+        // Always allow loading when forced or cache cleared
+        let shouldSkip = !forceReload &&
+                        lastLoadTime != nil &&
+                        Date().timeIntervalSince(lastLoadTime!) <= 5
+        
+        if shouldSkip {
             #if DEBUG
-            print("[ManagerWorkPlansViewModel] Skipped data load due to recent refresh")
+            print("[ManagerWorkPlansViewModel] Skipped data load due to recent refresh (forceReload: \(forceReload))")
             #endif
             return
         }
+        
+        // Reset flagi forceReload po użyciu
+        if forceReload {
+            forceReload = false
+            print("[ManagerWorkPlansViewModel] Force reload triggered, clearing cache")
+        }
+        
+        let weekToLoad = selectedWeek
+        // Skip cache check if force reload or fetchAll
+        if !fetchAll && !forceReload, let cachedPlans = workPlansCache[weekToLoad] {
+            print("[ManagerWorkPlansViewModel] Loaded \(cachedPlans.count) plans from cache for week \(weekToLoad.weekNumber), year \(weekToLoad.year)")
+            self.workPlans = cachedPlans
+            self.isLoading = false
+            return
+        }
+        
         lastLoadTime = Date()
-        
         let supervisorId = Int(AuthService.shared.getEmployeeId() ?? "0") ?? 0
-        print("[ManagerWorkPlansViewModel] Loading work plans for supervisorId: \(supervisorId), week: \(selectedWeek.weekNumber), year: \(selectedWeek.year), fetchAll: \(fetchAll)")
+        currentWeekRequest = weekToLoad
         
+        print("[ManagerWorkPlansViewModel] Loading work plans for supervisorId: \(supervisorId), week: \(weekToLoad.weekNumber), year: \(weekToLoad.year), fetchAll: \(fetchAll)")
+        
+        // Clear old data immediately to show loading state
+        self.workPlans = []
         isLoading = true
+        
         workPlanService.fetchWorkPlans(
             supervisorId: supervisorId,
-            weekNumber: fetchAll ? nil : selectedWeek.weekNumber,
-            year: fetchAll ? nil : selectedWeek.year
+            weekNumber: fetchAll ? nil : weekToLoad.weekNumber,
+            year: fetchAll ? nil : weekToLoad.year
         )
         .receive(on: DispatchQueue.main)
         .sink(receiveCompletion: { [weak self] completion in
@@ -197,9 +304,17 @@ final class ManagerWorkPlansViewModel: ObservableObject, WeekSelectorViewModel {
                 }
             }
         }, receiveValue: { [weak self] plans in
-            print("[ManagerWorkPlansViewModel] Fetched \(plans.count) work plans: \(plans.map { "\($0.task_title) (\($0.status))" })")
-            self?.workPlans = plans
-            self?.isLoading = false
+            guard let self = self else { return }
+            if self.currentWeekRequest == weekToLoad || fetchAll {
+                print("[ManagerWorkPlansViewModel] Fetched \(plans.count) work plans for week \(weekToLoad.weekNumber), year \(weekToLoad.year): \(plans.map { "\($0.task_title) (\($0.status))" })")
+                self.workPlans = plans
+                if !fetchAll {
+                    self.workPlansCache[weekToLoad] = plans
+                }
+            } else {
+                print("[ManagerWorkPlansViewModel] Ignored outdated response for week \(weekToLoad.weekNumber), year \(weekToLoad.year)")
+            }
+            self.isLoading = false
         })
         .store(in: &cancellables)
     }

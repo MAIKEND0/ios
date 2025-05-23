@@ -4,6 +4,9 @@
 //
 //  Created by Maksymilian Marcinowski on 21/05/2025.
 //  Updated to fix type errors on 21/05/2025.
+//  Updated to display only day of week in Employees and Schedule on 22/05/2025.
+//  Added debug logging for work_date in Employees and Schedule on 22/05/2025.
+//  Fixed timezone issue in Calendar for date calculation on 22/05/2025.
 //
 
 import SwiftUI
@@ -13,6 +16,22 @@ struct WorkPlanPreviewView<VM: WorkPlanViewModel & WeekSelectorViewModel>: View 
     @Binding var isPresented: Bool
     let onConfirm: () -> Void
     @Environment(\.colorScheme) private var colorScheme
+
+    // Formatter do wyświetlania nazwy dnia tygodnia
+    private let dayOfWeekFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "EEEE" // Pełna nazwa dnia, np. Monday
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone(secondsFromGMT: 0) // UTC
+        return formatter
+    }()
+
+    // Calendar z ustawionym UTC
+    private var calendar: Calendar {
+        var calendar = Calendar.current
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)! // UTC
+        return calendar
+    }
 
     var body: some View {
         NavigationStack {
@@ -115,9 +134,14 @@ struct WorkPlanPreviewView<VM: WorkPlanViewModel & WeekSelectorViewModel>: View 
                             .fontWeight(.bold)
                             .foregroundColor(.primary)
                         ForEach(assignment.dailyHours.indices.filter { assignment.dailyHours[$0].isActive }, id: \.self) { index in
-                            let date = Calendar.current.date(byAdding: .day, value: index, to: assignment.weekStart)!
+                            let date = calendar.date(byAdding: .day, value: index, to: assignment.weekStart)!
                             let hours = assignment.dailyHours[index]
-                            Text("\(formattedDate(date)): \(DateFormatter.time.string(from: hours.start_time)) - \(DateFormatter.time.string(from: hours.end_time))")
+                            // Log debugujący
+                            Text("Debug date: \(DateFormatter.isoDate.string(from: date)) -> \(dayOfWeekFormatter.string(from: date))")
+                                .font(.caption)
+                                .foregroundColor(.red)
+                                .italic()
+                            Text("\(dayOfWeekFormatter.string(from: date)): \(DateFormatter.time.string(from: hours.start_time)) - \(DateFormatter.time.string(from: hours.end_time))")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                         }
@@ -133,12 +157,6 @@ struct WorkPlanPreviewView<VM: WorkPlanViewModel & WeekSelectorViewModel>: View 
                 }
             }
         }
-    }
-
-    private func formattedDate(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "EEEE, MMMM d"
-        return formatter.string(from: date)
     }
 }
 
