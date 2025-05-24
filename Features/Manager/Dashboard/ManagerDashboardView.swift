@@ -21,8 +21,12 @@ struct ManagerDashboardView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
-                    ManagerDashboardSections.PendingTasksSection(
+                VStack(alignment: .leading, spacing: 20) {
+                    // Quick Stats Header
+                    ManagerDashboardSections.SummaryCardsSection(viewModel: viewModel)
+                    
+                    // Compact Pending Approvals - only prominent when there are items
+                    ManagerDashboardSections.CompactPendingSection(
                         viewModel: viewModel,
                         isPulsing: isPulsing,
                         onSelectTaskWeek: { taskWeek in
@@ -34,70 +38,42 @@ struct ManagerDashboardView: View {
                             showRejectionReasonModal = true
                         }
                     )
-
-                    ManagerDashboardSections.SummaryCardsSection(viewModel: viewModel)
-                        .frame(maxWidth: .infinity)
                     
-                    // Kafelek Work Plans
-                    NavigationLink(destination: ManagerWorkPlansView()) {
-                        HStack {
-                            Image(systemName: "calendar.badge.clock")
-                                .font(.system(size: 18, weight: .bold))
-                                .foregroundColor(Color.white)
-                                .frame(width: 36, height: 36)
-                                .background(Color.white.opacity(0.2))
-                                .clipShape(Circle())
-                            
-                            Text("Work Plans")
-                                .font(.title3)
-                                .fontWeight(.bold)
-                                .foregroundColor(Color.white)
-                            
-                            Spacer()
-                            
-                            Image(systemName: "chevron.right")
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundColor(Color.white)
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.vertical, 12)
-                        .padding(.horizontal, 14)
-                        .background(DashboardStyles.gradientBlue)
-                        .cornerRadius(10)
-                        .shadow(color: Color.black.opacity(0.1), radius: 3, x: 0, y: 2)
-                    }
-                    .frame(maxWidth: .infinity)
-
-                    ManagerDashboardSections.WeekSelectorSection(viewModel: viewModel)
-                        .frame(maxWidth: .infinity)
-
+                    // Navigation Cards Row
+                    navigationCardsSection
+                    
+                    // Week Selector (Compact)
+                    ManagerDashboardSections.CompactWeekSelectorSection(viewModel: viewModel)
+                    
+                    // Tasks Section (Enhanced but less overwhelming)
                     ManagerDashboardSections.TasksSection(viewModel: viewModel)
-                        .frame(maxWidth: .infinity)
                 }
                 .padding(.horizontal, 16)
-                .padding(.vertical, 8)
+                .padding(.vertical, 12)
             }
-            .clipped()
-            .background(colorScheme == .dark ? Color.black : Color(.systemBackground))
+            .background(dashboardBackground)
             .navigationTitle("Manager Dashboard")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button {
-                        // Obsługa powiadomień (do rozbudowy)
-                    } label: {
-                        Image(systemName: "bell")
-                            .foregroundColor(colorScheme == .dark ? .white : Color.ksrDarkGray)
-                    }
-                }
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button {
-                        withAnimation {
-                            showFilterOptions.toggle()
+                    HStack(spacing: 12) {
+                        Button {
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                viewModel.loadData()
+                            }
+                        } label: {
+                            Image(systemName: "arrow.clockwise")
+                                .foregroundColor(colorScheme == .dark ? .white : Color.ksrDarkGray)
+                                .font(.system(size: 16, weight: .medium))
                         }
-                    } label: {
-                        Image(systemName: "line.3.horizontal.decrease.circle")
-                            .foregroundColor(colorScheme == .dark ? .white : Color.ksrDarkGray)
+                        .disabled(viewModel.isLoading)
+                        
+                        Button {
+                            // Obsługa powiadomień (do rozbudowy)
+                        } label: {
+                            Image(systemName: "bell")
+                                .foregroundColor(colorScheme == .dark ? .white : Color.ksrDarkGray)
+                        }
                     }
                 }
             }
@@ -229,6 +205,54 @@ struct ManagerDashboardView: View {
         }
     }
     
+    // MARK: - Dashboard Background
+    private var dashboardBackground: some View {
+        LinearGradient(
+            gradient: Gradient(colors: [
+                colorScheme == .dark ? Color.black : Color(.systemBackground),
+                colorScheme == .dark ? Color(.systemGray6).opacity(0.2) : Color(.systemGray6).opacity(0.3)
+            ]),
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+        .ignoresSafeArea()
+    }
+    
+    // MARK: - Navigation Cards Section
+    private var navigationCardsSection: some View {
+        HStack(spacing: 12) {
+            // Work Plans Card
+            NavigationLink(destination: ManagerWorkPlansView()) {
+                NavigationCard(
+                    title: "Work Plans",
+                    icon: "calendar.badge.clock",
+                    color: Color.ksrInfo,
+                    subtitle: "Manage schedules"
+                )
+            }
+            
+            // Projects Card
+            NavigationLink(destination: ManagerProjectsView()) {
+                NavigationCard(
+                    title: "Projects",
+                    icon: "building.2.fill",
+                    color: Color.ksrWarning,
+                    subtitle: "View all projects"
+                )
+            }
+            
+            // Workers Card
+            NavigationLink(destination: ManagerWorkersView()) {
+                NavigationCard(
+                    title: "Workers",
+                    icon: "person.3.fill",
+                    color: Color.ksrSuccess,
+                    subtitle: "Crane operators"
+                )
+            }
+        }
+    }
+    
     private func updatePulsingState() {
         let shouldPulse = !viewModel.allPendingEntriesByTask.isEmpty
         if isPulsing != shouldPulse {
@@ -239,6 +263,46 @@ struct ManagerDashboardView: View {
             print("[ManagerDashboardView] Updated isPulsing to \(isPulsing), entries count: \(viewModel.allPendingEntriesByTask.count)")
             #endif
         }
+    }
+}
+
+// MARK: - Navigation Card Component
+struct NavigationCard: View {
+    let title: String
+    let icon: String
+    let color: Color
+    let subtitle: String
+    @Environment(\.colorScheme) private var colorScheme
+    
+    var body: some View {
+        VStack(spacing: 8) {
+            Image(systemName: icon)
+                .font(.system(size: 24, weight: .semibold))
+                .foregroundColor(color)
+            
+            VStack(spacing: 2) {
+                Text(title)
+                    .font(.subheadline)
+                    .fontWeight(.bold)
+                    .foregroundColor(colorScheme == .dark ? .white : .primary)
+                
+                Text(subtitle)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 16)
+        .padding(.horizontal, 8)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(colorScheme == .dark ? Color(.systemGray6).opacity(0.3) : Color.white)
+                .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.2 : 0.05), radius: 3, x: 0, y: 2)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(color.opacity(0.2), lineWidth: 1)
+        )
     }
 }
 

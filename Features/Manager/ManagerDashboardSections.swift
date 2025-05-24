@@ -3,102 +3,374 @@
 //  KSR Cranes App
 //
 //  Created by Maksymilian Marcinowski on 17/05/2025.
-//  Visual improvements added
+//  Visual improvements added - Enhanced version with better consistency
 
 import SwiftUI
 
-// MARK: - Sekcje ManagerDashboardView
+// MARK: - Enhanced ManagerDashboardSections
 struct ManagerDashboardSections {
-    // Sekcja kart podsumowania
-    struct SummaryCardsSection: View {
-        @ObservedObject var viewModel: ManagerDashboardViewModel
-        
-        var body: some View {
-            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                SummaryCard(
-                    title: "Pending Hours",
-                    value: "\(viewModel.pendingHoursCount)",
-                    icon: "clock.fill",
-                    background: DashboardStyles.gradientGreen
-                )
-                SummaryCard(
-                    title: "Active Workers",
-                    value: "\(viewModel.activeWorkersCount)",
-                    icon: "person.2.fill",
-                    background: DashboardStyles.gradientBlue
-                )
-                SummaryCard(
-                    title: "Approved Hours",
-                    value: String(format: "%.1f", viewModel.totalApprovedHours),
-                    icon: "checkmark.circle.fill",
-                    background: DashboardStyles.gradientOrange
-                )
-                SummaryCard(
-                    title: "Tasks Assigned",
-                    value: "\(viewModel.supervisorTasks.count)",
-                    icon: "briefcase.fill",
-                    background: DashboardStyles.gradientPurple
-                )
-            }
-        }
+    
+    // MARK: - Consistent Card Style
+    static func cardBackground(colorScheme: ColorScheme) -> some View {
+        RoundedRectangle(cornerRadius: 16)
+            .fill(colorScheme == .dark ? Color(.systemGray6).opacity(0.3) : Color.white)
+            .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.3 : 0.08), radius: 8, x: 0, y: 4)
     }
-
-    // Sekcja selektora tygodnia
-    struct WeekSelectorSection: View {
+    
+    static func cardStroke(_ color: Color = Color.gray, opacity: Double = 0.2) -> some View {
+        RoundedRectangle(cornerRadius: 16)
+            .stroke(color.opacity(opacity), lineWidth: 1)
+    }
+    
+    // MARK: - Summary Cards Section
+    struct SummaryCardsSection: View {
         @ObservedObject var viewModel: ManagerDashboardViewModel
         @Environment(\.colorScheme) private var colorScheme
         
         var body: some View {
             VStack(alignment: .leading, spacing: 12) {
-                HStack(spacing: 8) {
-                    Image(systemName: "calendar")
-                        .foregroundColor(Color.ksrPrimary)
-                    Text("Selected Week")
+                Text("Overview")
+                    .font(.title3)
+                    .fontWeight(.bold)
+                    .foregroundColor(colorScheme == .dark ? .white : Color.ksrDarkGray)
+                    .padding(.horizontal, 4)
+                
+                LazyVGrid(columns: [
+                    GridItem(.flexible(), spacing: 12),
+                    GridItem(.flexible(), spacing: 12)
+                ], spacing: 12) {
+                    EnhancedSummaryCard(
+                        title: "Pending Hours",
+                        value: "\(viewModel.pendingHoursCount)",
+                        icon: "clock.fill",
+                        color: Color.ksrWarning,
+                        isHighlighted: viewModel.pendingHoursCount > 0
+                    )
+                    
+                    EnhancedSummaryCard(
+                        title: "Active Workers",
+                        value: "\(viewModel.activeWorkersCount)",
+                        icon: "person.2.fill",
+                        color: Color.ksrSuccess
+                    )
+                    
+                    EnhancedSummaryCard(
+                        title: "Approved Hours",
+                        value: String(format: "%.1f", viewModel.totalApprovedHours),
+                        icon: "checkmark.circle.fill",
+                        color: Color.ksrInfo
+                    )
+                    
+                    EnhancedSummaryCard(
+                        title: "Tasks Assigned",
+                        value: "\(viewModel.supervisorTasks.count)",
+                        icon: "briefcase.fill",
+                        color: Color.ksrPrimary
+                    )
+                }
+            }
+        }
+    }
+    
+    // MARK: - Enhanced Summary Card
+    struct EnhancedSummaryCard: View {
+        let title: String
+        let value: String
+        let icon: String
+        let color: Color
+        let isHighlighted: Bool
+        @Environment(\.colorScheme) private var colorScheme
+        
+        init(title: String, value: String, icon: String, color: Color, isHighlighted: Bool = false) {
+            self.title = title
+            self.value = value
+            self.icon = icon
+            self.color = color
+            self.isHighlighted = isHighlighted
+        }
+        
+        var body: some View {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Image(systemName: icon)
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(color)
+                    
+                    Spacer()
+                    
+                    if isHighlighted {
+                        Circle()
+                            .fill(Color.ksrWarning)
+                            .frame(width: 8, height: 8)
+                    }
+                }
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(value)
+                        .font(.title2)
+                        .fontWeight(.bold)
+                        .foregroundColor(colorScheme == .dark ? .white : .primary)
+                    
+                    Text(title)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                }
+            }
+            .padding(16)
+            .background(cardBackground(colorScheme: colorScheme))
+            .overlay(
+                cardStroke(color, opacity: isHighlighted ? 0.4 : 0.2)
+            )
+            .scaleEffect(isHighlighted ? 1.02 : 1.0)
+            .animation(.easeInOut(duration: 0.2), value: isHighlighted)
+        }
+    }
+    
+    // MARK: - Compact Pending Section
+    struct CompactPendingSection: View {
+        @ObservedObject var viewModel: ManagerDashboardViewModel
+        @Environment(\.colorScheme) private var colorScheme
+        let isPulsing: Bool
+        let onSelectTaskWeek: (ManagerDashboardViewModel.TaskWeekEntry) -> Void
+        let onSelectEntry: (ManagerAPIService.WorkHourEntry) -> Void
+        @State private var expandedTasks: Set<Int> = []
+        @State private var isExpanded = false
+        
+        private var hasPendingItems: Bool {
+            !viewModel.allPendingEntriesByTask.isEmpty
+        }
+        
+        var body: some View {
+            Group {
+                if hasPendingItems {
+                    // Full view when there are pending items
+                    expandedPendingView
+                } else {
+                    // Compact view when no pending items
+                    compactEmptyView
+                }
+            }
+        }
+        
+        // MARK: - Expanded View (with pending items)
+        private var expandedPendingView: some View {
+            VStack(alignment: .leading, spacing: 16) {
+                // Header
+                HStack {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundColor(Color.ksrWarning)
+                        .font(.system(size: 18, weight: .bold))
+                    
+                    Text("Pending Approvals")
                         .font(.title3)
                         .fontWeight(.bold)
                         .foregroundColor(colorScheme == .dark ? .white : Color.ksrDarkGray)
+                    
+                    Spacer()
+                    
+                    // Count badge
+                    Text("\(viewModel.allPendingEntriesByTask.flatMap { $0.entries }.count)")
+                        .font(.caption)
+                        .fontWeight(.bold)
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.ksrWarning)
+                        .clipShape(Capsule())
+                    
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            isExpanded.toggle()
+                        }
+                    } label: {
+                        Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.secondary)
+                    }
                 }
-                HStack {
+                
+                if isExpanded {
+                    // Full pending items list
+                    let tasks = Dictionary(grouping: viewModel.allPendingEntriesByTask, by: { $0.taskId })
+                    ForEach(tasks.keys.sorted(), id: \.self) { taskId in
+                        let taskWeeks = tasks[taskId]!
+                        let taskTitle = taskWeeks.first?.taskTitle ?? "Task ID: \(taskId)"
+                        let totalPendingHours = calculateTotalPendingHours(for: taskWeeks)
+                        
+                        VStack(alignment: .leading, spacing: 8) {
+                            TaskHeaderView(
+                                taskId: taskId,
+                                taskTitle: taskTitle,
+                                totalPendingHours: totalPendingHours,
+                                isExpanded: expandedTasks.contains(taskId),
+                                toggleExpansion: {
+                                    withAnimation(.easeInOut) {
+                                        if expandedTasks.contains(taskId) {
+                                            expandedTasks.remove(taskId)
+                                        } else {
+                                            expandedTasks.insert(taskId)
+                                        }
+                                    }
+                                }
+                            )
+                            
+                            if expandedTasks.contains(taskId) {
+                                ForEach(taskWeeks) { taskWeekEntry in
+                                    NavigationLink(
+                                        destination: WeekDetailView(
+                                            taskWeekEntry: taskWeekEntry,
+                                            onApproveWithSignature: {
+                                                onSelectTaskWeek(taskWeekEntry)
+                                            },
+                                            onReject: { entry in
+                                                onSelectEntry(entry)
+                                            }
+                                        )
+                                    ) {
+                                        CompactWeekRow(taskWeekEntry: taskWeekEntry)
+                                    }
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 4)
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    // Summary view
+                    Text("Tap to view \(viewModel.allPendingEntriesByTask.flatMap { $0.entries }.count) pending entries")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+            }
+            .padding(20)
+            .background(cardBackground(colorScheme: colorScheme))
+            .overlay(
+                cardStroke(Color.ksrWarning, opacity: isPulsing ? 0.6 : 0.4)
+                    .scaleEffect(isPulsing ? 1.02 : 1.0)
+                    .animation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true), value: isPulsing)
+            )
+        }
+        
+        // MARK: - Compact Empty View
+        private var compactEmptyView: some View {
+            HStack(spacing: 12) {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundColor(Color.ksrSuccess)
+                
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("All Caught Up!")
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundColor(colorScheme == .dark ? .white : .primary)
+                    
+                    Text("No pending approvals")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                
+                Spacer()
+                
+                Button {
+                    viewModel.loadData()
+                } label: {
+                    Image(systemName: "arrow.clockwise")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(Color.ksrSuccess)
+                }
+            }
+            .padding(16)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.ksrSuccess.opacity(0.1))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(Color.ksrSuccess.opacity(0.3), lineWidth: 1)
+            )
+        }
+        
+        private func calculateTotalPendingHours(for taskWeeks: [ManagerDashboardViewModel.TaskWeekEntry]) -> Double {
+            taskWeeks.reduce(0.0) { sum, week in
+                sum + week.entries.reduce(0.0) { innerSum, entry in
+                    guard let start = entry.start_time, let end = entry.end_time else { return innerSum }
+                    let interval = end.timeIntervalSince(start)
+                    let pauseSeconds = Double(entry.pause_minutes ?? 0) * 60
+                    return innerSum + max(0, (interval - pauseSeconds) / 3600)
+                }
+            }
+        }
+    }
+    
+    // MARK: - Compact Week Selector Section
+    struct CompactWeekSelectorSection: View {
+        @ObservedObject var viewModel: ManagerDashboardViewModel
+        @Environment(\.colorScheme) private var colorScheme
+        
+        var body: some View {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Week Selection")
+                    .font(.title3)
+                    .fontWeight(.bold)
+                    .foregroundColor(colorScheme == .dark ? .white : Color.ksrDarkGray)
+                    .padding(.horizontal, 4)
+                
+                HStack(spacing: 12) {
                     Button(action: {
                         viewModel.changeWeek(by: -1)
                     }) {
                         Image(systemName: "chevron.left")
+                            .font(.system(size: 16, weight: .semibold))
                             .foregroundColor(Color.ksrPrimary)
+                            .frame(width: 32, height: 32)
+                            .background(
+                                Circle()
+                                    .fill(colorScheme == .dark ? Color(.systemGray5) : Color(.systemGray6))
+                            )
                     }
-                    Text(weekRangeText)
-                        .font(.headline)
-                        .foregroundColor(colorScheme == .dark ? .white : Color.ksrDarkGray)
-                        .frame(maxWidth: .infinity)
+                    
+                    VStack(spacing: 4) {
+                        Text(weekRangeText)
+                            .font(.headline)
+                            .fontWeight(.semibold)
+                            .foregroundColor(colorScheme == .dark ? .white : Color.ksrDarkGray)
+                            .multilineTextAlignment(.center)
+                        
+                        Text("Selected Week")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    .frame(maxWidth: .infinity)
+                    
                     Button(action: {
                         viewModel.changeWeek(by: 1)
                     }) {
                         Image(systemName: "chevron.right")
+                            .font(.system(size: 16, weight: .semibold))
                             .foregroundColor(Color.ksrPrimary)
+                            .frame(width: 32, height: 32)
+                            .background(
+                                Circle()
+                                    .fill(colorScheme == .dark ? Color(.systemGray5) : Color(.systemGray6))
+                            )
                     }
                 }
-                .padding()
-                .background(colorScheme == .dark ? Color(.systemGray6).opacity(0.2) : Color(.secondarySystemBackground))
-                .cornerRadius(12)
+                .padding(16)
+                .background(cardBackground(colorScheme: colorScheme))
+                .overlay(cardStroke(Color.ksrPrimary))
             }
-            .padding()
-            .background(colorScheme == .dark ? Color(.systemGray6).opacity(0.15) : Color(.systemBackground))
-            .cornerRadius(12)
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(Color.gray.opacity(0.2), lineWidth: 1)
-            )
         }
         
         private var weekRangeText: String {
             let formatter = DateFormatter()
-            formatter.dateStyle = .medium
-            formatter.timeStyle = .none
+            formatter.dateFormat = "MMM d"
             let endOfWeek = Calendar.current.date(byAdding: .day, value: 6, to: viewModel.selectedMonday)!
             return "\(formatter.string(from: viewModel.selectedMonday)) - \(formatter.string(from: endOfWeek))"
         }
     }
     
-    // MARK: - Improved Tasks Section
+    // MARK: - Tasks Section (existing but with consistent styling)
     struct TasksSection: View {
         @ObservedObject var viewModel: ManagerDashboardViewModel
         @Environment(\.colorScheme) private var colorScheme
@@ -145,73 +417,30 @@ struct ManagerDashboardSections {
         
         var body: some View {
             VStack(alignment: .leading, spacing: 16) {
-                // Header with enhanced design
+                // Header
                 tasksSectionHeader
                 
-                // Controls Section
+                // Controls
                 tasksControlsSection
                 
                 // Content
                 tasksContentSection
             }
             .padding(20)
-            .background(
-                LinearGradient(
-                    gradient: Gradient(colors: [
-                        colorScheme == .dark ? Color(.systemGray6).opacity(0.2) : Color(.systemBackground),
-                        colorScheme == .dark ? Color(.systemGray5).opacity(0.1) : Color(.systemGray6).opacity(0.3)
-                    ]),
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-            )
-            .cornerRadius(16)
-            .overlay(
-                RoundedRectangle(cornerRadius: 16)
-                    .stroke(
-                        LinearGradient(
-                            gradient: Gradient(colors: [
-                                Color.ksrYellow.opacity(0.3),
-                                Color.ksrYellow.opacity(0.1)
-                            ]),
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
-                        lineWidth: 1
-                    )
-            )
-            .shadow(
-                color: Color.black.opacity(colorScheme == .dark ? 0.3 : 0.1),
-                radius: 10,
-                x: 0,
-                y: 5
-            )
+            .background(cardBackground(colorScheme: colorScheme))
+            .overlay(cardStroke(Color.ksrPrimary))
         }
         
         // MARK: - Header
         private var tasksSectionHeader: some View {
             HStack(spacing: 12) {
-                // Icon with gradient background
-                ZStack {
-                    LinearGradient(
-                        gradient: Gradient(colors: [
-                            Color.ksrYellow,
-                            Color.ksrPrimary
-                        ]),
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                    .frame(width: 44, height: 44)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                    
-                    Image(systemName: "list.bullet.rectangle.fill")
-                        .font(.system(size: 20, weight: .semibold))
-                        .foregroundColor(.white)
-                }
+                Image(systemName: "list.bullet.rectangle.fill")
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundColor(Color.ksrPrimary)
                 
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Supervised Tasks")
-                        .font(.title2)
+                        .font(.title3)
                         .fontWeight(.bold)
                         .foregroundColor(colorScheme == .dark ? .white : Color.ksrDarkGray)
                     
@@ -225,7 +454,7 @@ struct ManagerDashboardSections {
                 // Stats badge
                 HStack(spacing: 8) {
                     VStack(alignment: .trailing, spacing: 2) {
-                        Text("Total Pending")
+                        Text("Pending")
                             .font(.caption2)
                             .foregroundColor(.secondary)
                         
@@ -250,80 +479,78 @@ struct ManagerDashboardSections {
         
         // MARK: - Controls
         private var tasksControlsSection: some View {
-            VStack(spacing: 12) {
-                HStack {
-                    // Sort picker
-                    Menu {
-                        ForEach(TaskSortOption.allCases, id: \.self) { option in
-                            Button {
-                                withAnimation(.easeInOut(duration: 0.2)) {
-                                    selectedSortOption = option
-                                }
-                            } label: {
-                                Label(option.rawValue, systemImage: option.icon)
-                            }
-                        }
-                    } label: {
-                        HStack(spacing: 6) {
-                            Image(systemName: "arrow.up.arrow.down")
-                                .font(.system(size: 12, weight: .medium))
-                            
-                            Text("Sort by \(selectedSortOption.rawValue)")
-                                .font(.caption)
-                                .fontWeight(.medium)
-                        }
-                        .foregroundColor(colorScheme == .dark ? .white : .primary)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .background(
-                            RoundedRectangle(cornerRadius: 8)
-                                .fill(colorScheme == .dark ? Color(.systemGray5) : Color(.systemGray6))
-                        )
-                    }
-                    
-                    Spacer()
-                    
-                    // View toggle
-                    HStack(spacing: 8) {
+            HStack {
+                // Sort picker
+                Menu {
+                    ForEach(TaskSortOption.allCases, id: \.self) { option in
                         Button {
                             withAnimation(.easeInOut(duration: 0.2)) {
-                                isGridView = false
+                                selectedSortOption = option
                             }
                         } label: {
-                            Image(systemName: "list.bullet")
-                                .foregroundColor(isGridView ? .secondary : .primary)
-                                .font(.system(size: 16, weight: .medium))
+                            Label(option.rawValue, systemImage: option.icon)
                         }
+                    }
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "arrow.up.arrow.down")
+                            .font(.system(size: 12, weight: .medium))
                         
-                        Button {
-                            withAnimation(.easeInOut(duration: 0.2)) {
-                                isGridView = true
-                            }
-                        } label: {
-                            Image(systemName: "square.grid.2x2")
-                                .foregroundColor(isGridView ? .primary : .secondary)
-                                .font(.system(size: 16, weight: .medium))
-                        }
+                        Text("Sort by \(selectedSortOption.rawValue)")
+                            .font(.caption)
+                            .fontWeight(.medium)
                     }
+                    .foregroundColor(colorScheme == .dark ? .white : .primary)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 8)
                     .background(
                         RoundedRectangle(cornerRadius: 8)
                             .fill(colorScheme == .dark ? Color(.systemGray5) : Color(.systemGray6))
                     )
-                    
-                    // Refresh button
+                }
+                
+                Spacer()
+                
+                // View toggle
+                HStack(spacing: 8) {
                     Button {
-                        withAnimation(.easeInOut(duration: 0.3)) {
-                            viewModel.loadData()
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            isGridView = false
                         }
                     } label: {
-                        Image(systemName: "arrow.clockwise")
+                        Image(systemName: "list.bullet")
+                            .foregroundColor(isGridView ? .secondary : .primary)
                             .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(Color.ksrPrimary)
                     }
-                    .disabled(viewModel.isLoading)
+                    
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            isGridView = true
+                        }
+                    } label: {
+                        Image(systemName: "square.grid.2x2")
+                            .foregroundColor(isGridView ? .primary : .secondary)
+                            .font(.system(size: 16, weight: .medium))
+                    }
                 }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(colorScheme == .dark ? Color(.systemGray5) : Color(.systemGray6))
+                )
+                
+                // Refresh button
+                Button {
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        viewModel.loadData()
+                    }
+                } label: {
+                    Image(systemName: "arrow.clockwise")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundColor(Color.ksrPrimary)
+                }
+                .disabled(viewModel.isLoading)
             }
         }
         
@@ -437,24 +664,12 @@ struct ManagerDashboardSections {
                 // Action Footer
                 actionFooter
             }
-            .background(
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(colorScheme == .dark ? Color(.systemGray6).opacity(0.3) : Color.white)
-                    .shadow(
-                        color: Color.black.opacity(colorScheme == .dark ? 0.4 : 0.1),
-                        radius: pendingEntries.count > 0 ? 8 : 4,
-                        x: 0,
-                        y: pendingEntries.count > 0 ? 4 : 2
-                    )
-            )
+            .background(cardBackground(colorScheme: colorScheme))
             .overlay(
-                RoundedRectangle(cornerRadius: 16)
-                    .stroke(
-                        pendingEntries.count > 0 ?
-                            Color.ksrWarning.opacity(0.4) :
-                            Color.gray.opacity(0.2),
-                        lineWidth: pendingEntries.count > 0 ? 2 : 1
-                    )
+                cardStroke(
+                    pendingEntries.count > 0 ? Color.ksrWarning : Color.gray,
+                    opacity: pendingEntries.count > 0 ? 0.4 : 0.2
+                )
             )
             .scaleEffect(pendingEntries.count > 0 ? 1.02 : 1.0)
             .animation(.easeInOut(duration: 0.2), value: pendingEntries.count > 0)
@@ -646,8 +861,8 @@ struct ManagerDashboardSections {
                     .background(
                         LinearGradient(
                             gradient: Gradient(colors: [
-                                Color.ksrYellow,
-                                Color.ksrPrimary
+                                Color.ksrPrimary,
+                                Color.ksrYellow
                             ]),
                             startPoint: .leading,
                             endPoint: .trailing
@@ -735,24 +950,12 @@ struct ManagerDashboardSections {
             }
             .padding(16)
             .frame(height: 160)
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(colorScheme == .dark ? Color(.systemGray6).opacity(0.3) : Color.white)
-                    .shadow(
-                        color: Color.black.opacity(colorScheme == .dark ? 0.3 : 0.1),
-                        radius: 6,
-                        x: 0,
-                        y: 3
-                    )
-            )
+            .background(cardBackground(colorScheme: colorScheme))
             .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(
-                        pendingEntries.count > 0 ?
-                            Color.ksrWarning.opacity(0.3) :
-                            Color.gray.opacity(0.2),
-                        lineWidth: 1
-                    )
+                cardStroke(
+                    pendingEntries.count > 0 ? Color.ksrWarning : Color.gray,
+                    opacity: pendingEntries.count > 0 ? 0.3 : 0.2
+                )
             )
             .sheet(isPresented: $showWorkPlanCreator) {
                 WorkPlanCreatorView(
@@ -764,7 +967,7 @@ struct ManagerDashboardSections {
         }
     }
     
-    // MARK: - Status Chip
+    // MARK: - Supporting Components
     struct StatusChip: View {
         let text: String
         let color: Color
@@ -781,7 +984,6 @@ struct ManagerDashboardSections {
         }
     }
     
-    // MARK: - Loading View
     struct TasksLoadingView: View {
         var body: some View {
             VStack(spacing: 16) {
@@ -796,7 +998,6 @@ struct ManagerDashboardSections {
         }
     }
     
-    // MARK: - Empty State View
     struct TasksEmptyStateView: View {
         @Environment(\.colorScheme) private var colorScheme
         
@@ -824,134 +1025,7 @@ struct ManagerDashboardSections {
         }
     }
     
-    // MARK: - Pending Tasks Section
-    struct PendingTasksSection: View {
-        @ObservedObject var viewModel: ManagerDashboardViewModel
-        @Environment(\.colorScheme) private var colorScheme
-        let isPulsing: Bool
-        let onSelectTaskWeek: (ManagerDashboardViewModel.TaskWeekEntry) -> Void
-        let onSelectEntry: (ManagerAPIService.WorkHourEntry) -> Void
-        @State private var expandedTasks: Set<Int> = []
-        
-        var body: some View {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack {
-                    Image(systemName: "exclamationmark.circle.fill")
-                        .foregroundColor(Color.ksrSuccess)
-                        .font(.system(size: 18, weight: .bold))
-                    Text("Pending Approvals")
-                        .font(.title3)
-                        .fontWeight(.bold)
-                        .foregroundColor(colorScheme == .dark ? .white : Color.ksrDarkGray)
-                    Spacer()
-                    Button {
-                        viewModel.loadData()
-                    } label: {
-                        Text("Refresh")
-                            .font(.caption)
-                            .foregroundColor(Color.ksrSuccess)
-                    }
-                }
-
-                if viewModel.isLoading {
-                    ProgressView()
-                        .frame(maxWidth: .infinity, minHeight: 100)
-                } else if viewModel.allPendingEntriesByTask.isEmpty {
-                    VStack(spacing: 12) {
-                        Image(systemName: "clock")
-                            .font(.system(size: 24))
-                            .foregroundColor(Color.gray)
-                        Text("No hours pending approval")
-                            .font(.subheadline)
-                            .foregroundColor(colorScheme == .dark ? .white.opacity(0.7) : Color.ksrMediumGray)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 20)
-                } else {
-                    let tasks = Dictionary(grouping: viewModel.allPendingEntriesByTask, by: { $0.taskId })
-                    ForEach(tasks.keys.sorted(), id: \.self) { taskId in
-                        let taskWeeks = tasks[taskId]!
-                        let taskTitle = taskWeeks.first?.taskTitle ?? "Task ID: \(taskId)"
-                        let totalPendingHours = calculateTotalPendingHours(for: taskWeeks)
-                        
-                        VStack(alignment: .leading, spacing: 8) {
-                            // Nagłówek zadania
-                            TaskHeaderView(
-                                taskId: taskId,
-                                taskTitle: taskTitle,
-                                totalPendingHours: totalPendingHours,
-                                isExpanded: expandedTasks.contains(taskId),
-                                toggleExpansion: {
-                                    withAnimation(.easeInOut) {
-                                        if expandedTasks.contains(taskId) {
-                                            expandedTasks.remove(taskId)
-                                        } else {
-                                            expandedTasks.insert(taskId)
-                                        }
-                                    }
-                                }
-                            )
-                            
-                            // Rozwinięte tygodnie
-                            if expandedTasks.contains(taskId) {
-                                ForEach(taskWeeks) { taskWeekEntry in
-                                    NavigationLink(
-                                        destination: WeekDetailView(
-                                            taskWeekEntry: taskWeekEntry,
-                                            onApproveWithSignature: {
-                                                onSelectTaskWeek(taskWeekEntry)
-                                            },
-                                            onReject: { entry in
-                                                onSelectEntry(entry)
-                                            }
-                                        )
-                                    ) {
-                                        CompactWeekRow(taskWeekEntry: taskWeekEntry)
-                                    }
-                                    .padding(.horizontal, 12)
-                                    .padding(.vertical, 4)
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            .padding()
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(DashboardStyles.gradientGreen.opacity(colorScheme == .dark ? 0.7 : 1.0))
-                    .scaleEffect(isPulsing ? 1.02 : 1.0)
-                    .shadow(
-                        color: isPulsing ? Color.ksrSuccess.opacity(0.4) : Color.clear,
-                        radius: isPulsing ? 8 : 0,
-                        x: 0,
-                        y: isPulsing ? 4 : 0
-                    )
-                    .animation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true), value: isPulsing)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(
-                        isPulsing ? Color.ksrSuccess.opacity(0.9) : Color.ksrSuccess.opacity(0.8),
-                        lineWidth: isPulsing ? 3 : 2
-                    )
-                    .animation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true), value: isPulsing)
-            )
-        }
-        
-        private func calculateTotalPendingHours(for taskWeeks: [ManagerDashboardViewModel.TaskWeekEntry]) -> Double {
-            taskWeeks.reduce(0.0) { sum, week in
-                sum + week.entries.reduce(0.0) { innerSum, entry in
-                    guard let start = entry.start_time, let end = entry.end_time else { return innerSum }
-                    let interval = end.timeIntervalSince(start)
-                    let pauseSeconds = Double(entry.pause_minutes ?? 0) * 60
-                    return innerSum + max(0, (interval - pauseSeconds) / 3600)
-                }
-            }
-        }
-    }
-    
-    // Widok nagłówka zadania
+    // MARK: - Task Header View
     struct TaskHeaderView: View {
         let taskId: Int
         let taskTitle: String
@@ -965,10 +1039,10 @@ struct ManagerDashboardSections {
                 HStack {
                     Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
                         .font(.system(size: 12, weight: .bold))
-                        .foregroundColor(Color.ksrSuccess)
+                        .foregroundColor(Color.ksrWarning)
                     Image(systemName: "briefcase.fill")
                         .font(.system(size: 14))
-                        .foregroundColor(Color.ksrSuccess)
+                        .foregroundColor(Color.ksrWarning)
                     Text(taskTitle)
                         .font(.subheadline)
                         .fontWeight(.semibold)
@@ -977,10 +1051,11 @@ struct ManagerDashboardSections {
                     Spacer()
                     Text(String(format: "%.1f h", totalPendingHours))
                         .font(.caption)
-                        .foregroundColor(Color.ksrSuccess)
+                        .foregroundColor(.white)
+                        .fontWeight(.semibold)
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
-                        .background(Color.ksrSuccess.opacity(0.2))
+                        .background(Color.ksrWarning)
                         .cornerRadius(8)
                 }
                 .padding(.horizontal, 12)
@@ -994,7 +1069,7 @@ struct ManagerDashboardSections {
         }
     }
     
-    // Kompaktowy wiersz dla tygodnia
+    // MARK: - Compact Week Row
     struct CompactWeekRow: View {
         let taskWeekEntry: ManagerDashboardViewModel.TaskWeekEntry
         @Environment(\.colorScheme) private var colorScheme
@@ -1010,7 +1085,7 @@ struct ManagerDashboardSections {
             HStack {
                 Image(systemName: "calendar.badge.clock")
                     .font(.system(size: 12))
-                    .foregroundColor(Color.ksrSuccess)
+                    .foregroundColor(Color.ksrWarning)
                 Text("Week \(taskWeekEntry.weekNumber), \(taskWeekEntry.year)")
                     .font(.caption)
                     .fontWeight(.medium)
@@ -1018,10 +1093,10 @@ struct ManagerDashboardSections {
                 Spacer()
                 Text("\(taskWeekEntry.entries.count) entries, \(String(format: "%.1f", totalHours))h")
                     .font(.caption)
-                    .foregroundColor(Color.ksrSuccess)
+                    .foregroundColor(Color.ksrWarning)
                 Image(systemName: "chevron.right")
                     .font(.system(size: 12))
-                    .foregroundColor(Color.ksrSuccess)
+                    .foregroundColor(Color.ksrWarning)
             }
             .padding(.vertical, 6)
             .padding(.horizontal, 8)
@@ -1029,142 +1104,6 @@ struct ManagerDashboardSections {
                 RoundedRectangle(cornerRadius: 8)
                     .fill(colorScheme == .dark ? Color(.systemGray5).opacity(0.3) : Color(.systemBackground))
             )
-        }
-    }
-    
-    // MARK: - Original Task Card (for compatibility)
-    struct TaskCard: View {
-        let task: ManagerAPIService.Task
-        let pendingEntriesByTask: [ManagerDashboardViewModel.TaskWeekEntry]
-        @Environment(\.colorScheme) private var colorScheme
-        @State private var showWorkPlanCreator: Bool = false
-        
-        var body: some View {
-            VStack(alignment: .leading, spacing: 0) {
-                // Nagłówek z ikonką
-                HStack(spacing: 12) {
-                    Image(systemName: "briefcase.fill")
-                        .font(.system(size: 18, weight: .medium))
-                        .foregroundColor(Color.ksrYellow)
-                        .frame(width: 30, height: 30)
-                        .background(Color.ksrYellow.opacity(0.2))
-                        .cornerRadius(8)
-                    
-                    Text(task.title)
-                        .font(.headline)
-                        .foregroundColor(colorScheme == .dark ? .white : Color.ksrDarkGray)
-                    
-                    Spacer()
-                    
-                    let pendingEntries = pendingEntriesByTask
-                        .filter { $0.taskId == task.task_id }
-                        .flatMap { $0.entries }
-                        .count
-                    
-                    HStack(spacing: 4) {
-                        Text("\(pendingEntries) pending")
-                            .font(.caption)
-                            .foregroundColor(pendingEntries > 0 ? Color.ksrWarning : Color.ksrSuccess)
-                        
-                        Image(systemName: pendingEntries > 0 ? "exclamationmark.circle.fill" : "checkmark.circle.fill")
-                            .foregroundColor(pendingEntries > 0 ? Color.ksrWarning : Color.ksrSuccess)
-                    }
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
-                
-                Divider()
-                    .padding(.leading, 58)
-                
-                // Informacje o zadaniu
-                VStack(alignment: .leading, spacing: 8) {
-                    if let description = task.description, !description.isEmpty {
-                        Text(description)
-                            .font(.subheadline)
-                            .foregroundColor(colorScheme == .dark ? .white.opacity(0.7) : Color.ksrMediumGray)
-                            .lineLimit(2)
-                    }
-                    
-                    HStack {
-                        if let project = task.project {
-                            HStack(spacing: 4) {
-                                Image(systemName: "building.2.fill")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                                Text("Project: \(project.title)")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                            }
-                        }
-                        
-                        Spacer()
-                        
-                        if let deadline = task.deadlineDate {
-                            HStack(spacing: 4) {
-                                Image(systemName: "calendar")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                                Text(deadline, style: .date)
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                            }
-                        }
-                    }
-                    
-                    let taskEntries = pendingEntriesByTask
-                        .filter { $0.taskId == task.task_id }
-                        .flatMap { $0.entries }
-                    let totalHours = taskEntries.reduce(0.0) { sum, entry in
-                        guard let start = entry.start_time, let end = entry.end_time else { return sum }
-                        let interval = end.timeIntervalSince(start)
-                        let pauseSeconds = Double(entry.pause_minutes ?? 0) * 60
-                        return sum + max(0, (interval - pauseSeconds) / 3600)
-                    }
-                    
-                    HStack(spacing: 4) {
-                        Image(systemName: "clock")
-                            .font(.caption)
-                            .foregroundColor(Color.ksrWarning)
-                        Text("Total Pending Hours: \(totalHours, specifier: "%.2f")h")
-                            .font(.caption)
-                            .foregroundColor(Color.ksrWarning)
-                    }
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
-                
-                // Przycisk Create Work Plan
-                HStack {
-                    Spacer()
-                    Button(action: {
-                        showWorkPlanCreator = true
-                    }) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "calendar.badge.plus")
-                                .foregroundColor(Color.ksrPrimary)
-                            Text("Create Work Plan")
-                                .font(.caption)
-                                .foregroundColor(Color.ksrPrimary)
-                        }
-                        .padding(.vertical, 8)
-                        .padding(.horizontal, 12)
-                        .background(Color.black.opacity(0.5))
-                        .cornerRadius(8)
-                    }
-                    .padding(.trailing, 16)
-                    .padding(.bottom, 8)
-                }
-            }
-            .background(colorScheme == .dark ? Color(.systemGray6).opacity(0.2) : Color(.secondarySystemBackground))
-            .cornerRadius(12)
-            .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.3 : 0.05), radius: 2, x: 0, y: 1)
-            .sheet(isPresented: $showWorkPlanCreator) {
-                WorkPlanCreatorView(
-                    task: task,
-                    viewModel: CreateWorkPlanViewModel(),
-                    isPresented: $showWorkPlanCreator
-                )
-            }
         }
     }
 }
