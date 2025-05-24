@@ -6,6 +6,7 @@
 //  Updated with enhanced UI/UX and bug fixes on 21/05/2025.
 //  Updated week selector on 22/05/2025.
 //  Fixed sheet closing timing to prevent alert errors on 22/05/2025.
+//  Fixed WorkPlanPreviewView with isReadOnly parameter on 23/05/2025.
 //
 
 import SwiftUI
@@ -309,7 +310,8 @@ struct EditWorkPlanView: View {
                 print("[EditWorkPlanView] Preview onConfirm tapped")
                 viewModel.publish()
                 // NIE zamykaj od razu - toast zrobi to automatically
-            }
+            },
+            isReadOnly: false  // ← POPRAWKA: Tryb edycji z Edit/Confirm
         )
     }
 

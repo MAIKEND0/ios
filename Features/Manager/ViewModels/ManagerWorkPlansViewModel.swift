@@ -13,6 +13,7 @@
 //  Modified loadData to force reload after clearCache on 22/05/2025.
 //  Fixed week to start from Monday instead of Sunday on 22/05/2025.
 //  Unified week calculations using WeekUtils on 22/05/2025.
+//  Added delete functionality on 23/05/2025.
 //
 
 import Foundation
@@ -101,6 +102,9 @@ final class ManagerWorkPlansViewModel: ObservableObject, WeekSelectorViewModel {
     @Published var alertMessage: String = ""
     @Published var searchQuery: String = ""
     @Published var selectedStatus: String = "All"
+    @Published var showDeleteConfirmation: Bool = false
+    @Published var workPlanToDelete: WorkPlanAPIService.WorkPlan?
+    @Published var toast: ToastData? = nil
     
     private let workPlanService = WorkPlanAPIService.shared
     private let managerService = ManagerAPIService.shared
@@ -205,7 +209,7 @@ final class ManagerWorkPlansViewModel: ObservableObject, WeekSelectorViewModel {
         let supervisorId = Int(AuthService.shared.getEmployeeId() ?? "0") ?? 0
         managerService.fetchAssignedWorkers(supervisorId: supervisorId)
             .receive(on: DispatchQueue.main)
-            .sink(receiveCompletion: { [weak self] completion in
+            .sink(receiveCompletion: { completion in
                 if case .failure(let error) = completion {
                     print("[ManagerWorkPlansViewModel] Failed to fetch employees: \(error)")
                 }
@@ -317,5 +321,55 @@ final class ManagerWorkPlansViewModel: ObservableObject, WeekSelectorViewModel {
             self.isLoading = false
         })
         .store(in: &cancellables)
+    }
+    
+    // MARK: - Delete Work Plan
+    func deleteWorkPlan(_ workPlan: WorkPlanAPIService.WorkPlan) {
+        isLoading = true
+        
+        workPlanService.deleteWorkPlan(workPlanId: workPlan.work_plan_id)
+            .receive(on: DispatchQueue.main)
+            .sink(receiveCompletion: { [weak self] completion in
+                guard let self = self else { return }
+                self.isLoading = false
+                
+                if case .failure(let error) = completion {
+                    self.showAlert = true
+                    self.alertTitle = "Delete Failed"
+                    self.alertMessage = "Failed to delete work plan: \(error.localizedDescription)"
+                    print("[ManagerWorkPlansViewModel] Failed to delete work plan: \(error)")
+                }
+            }, receiveValue: { [weak self] response in
+                guard let self = self else { return }
+                
+                if response.success {
+                    print("[ManagerWorkPlansViewModel] Successfully deleted work plan: \(workPlan.task_title)")
+                    print("[ManagerWorkPlansViewModel] Server message: \(response.message)")
+                    
+                    // Remove from local array
+                    self.workPlans.removeAll { $0.work_plan_id == workPlan.work_plan_id }
+                    
+                    // Remove from cache
+                    self.workPlansCache[self.selectedWeek]?.removeAll { $0.work_plan_id == workPlan.work_plan_id }
+                    
+                    // Show success toast with server message
+                    self.toast = ToastData(
+                        type: .success,
+                        title: "Work Plan Deleted 🗑️",
+                        message: response.message.isEmpty ? "The work plan has been successfully deleted." : response.message,
+                        duration: 3.0
+                    )
+                    
+                    // Reload data to ensure consistency
+                    self.loadData()
+                } else {
+                    // Server returned success: false
+                    self.showAlert = true
+                    self.alertTitle = "Delete Failed"
+                    self.alertMessage = response.message.isEmpty ? "Failed to delete work plan" : response.message
+                    print("[ManagerWorkPlansViewModel] Delete failed: \(response.message)")
+                }
+            })
+            .store(in: &cancellables)
     }
 }

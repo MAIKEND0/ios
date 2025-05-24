@@ -204,7 +204,7 @@ struct TimesheetReceiptView: View {
                 .fontWeight(.bold)
                 .foregroundColor(colorScheme == .dark ? .white : Color.ksrDarkGray)
 
-            PDFViewer(source: .data(timesheetData))
+            PDFViewer(source: PDFSource.data(timesheetData))
                 .frame(height: 400)
                 .cornerRadius(12)
                 .overlay(

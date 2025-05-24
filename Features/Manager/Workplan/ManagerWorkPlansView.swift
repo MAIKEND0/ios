@@ -10,13 +10,14 @@
 //  Optimized work_date formatting using DateFormatter.isoDate on 22/05/2025.
 //  Simplified WorkPlanCard by removing formatWorkDate on 22/05/2025.
 //  Changed work_date to display day of week on 22/05/2025.
-//  Added debug logging for work_date in Assignments on 22/05/2025.
 //  Added fallback for invalid work_date on 22/05/2025.
 //  Cleared cache onAppear to refresh data on 22/05/2025.
 //  Fixed clearCache call in onAppear on 22/05/2025.
 //  Fixed day sorting to start from Monday on 22/05/2025.
 //  Added Edit button for all work plan statuses on 22/05/2025.
 //  Fixed state management for selectedWorkPlan on 22/05/2025.
+//  Added Delete functionality for DRAFT work plans on 23/05/2025.
+//  Fixed employee name display in Assignments on 23/05/2025.
 //
 
 import SwiftUI
@@ -86,6 +87,23 @@ struct ManagerWorkPlansView: View {
                     dismissButton: .default(Text("OK"))
                 )
             }
+            .alert("Delete Work Plan", isPresented: $viewModel.showDeleteConfirmation) {
+                Button("Cancel", role: .cancel) {
+                    viewModel.workPlanToDelete = nil
+                }
+                Button("Delete", role: .destructive) {
+                    if let workPlan = viewModel.workPlanToDelete {
+                        viewModel.deleteWorkPlan(workPlan)
+                        viewModel.workPlanToDelete = nil
+                    }
+                }
+            } message: {
+                if let workPlan = viewModel.workPlanToDelete {
+                    Text("Are you sure you want to delete the work plan for '\(workPlan.task_title)'? This action cannot be undone.")
+                } else {
+                    Text("Are you sure you want to delete this work plan?")
+                }
+            }
             .sheet(isPresented: $showEditWorkPlan) {
                 // Debug przed sprawdzeniem selectedWorkPlan
                 let _ = print("[ManagerWorkPlansView] Opening edit sheet, selectedWorkPlan: \(selectedWorkPlan?.task_title ?? "nil")")
@@ -146,6 +164,7 @@ struct ManagerWorkPlansView: View {
             .onChange(of: showPreviewWorkPlan) { oldValue, newValue in
                 print("[ManagerWorkPlansView] showPreviewWorkPlan changed from: \(oldValue) to: \(newValue), selectedWorkPlan: \(selectedWorkPlan?.task_title ?? "nil")")
             }
+            .toast($viewModel.toast)
         }
     }
 
@@ -201,14 +220,8 @@ struct WorkPlansSection: View {
                 Text("No work plans found")
                     .font(.subheadline)
                     .foregroundColor(.gray)
-                Text("Debug: \(viewModel.workPlans.count) total plans, \(viewModel.filteredWorkPlans.count) filtered, week: \(viewModel.selectedWeek.weekNumber), year: \(viewModel.selectedWeek.year), searchQuery: '\(viewModel.searchQuery)', selectedStatus: \(viewModel.selectedStatus)")
-                    .font(.caption)
-                    .foregroundColor(.red)
             } else {
                 ForEach(viewModel.filteredWorkPlans) { plan in
-                    Text("Debug: \(plan.task_title), Status: \(plan.status), Week: \(plan.weekNumber), Year: \(plan.year)")
-                        .font(.caption)
-                        .foregroundColor(.red)
                     WorkPlanCard(
                         plan: plan,
                         viewModel: viewModel,
@@ -240,15 +253,6 @@ struct WorkPlanCard: View {
         return formatter
     }()
 
-    // Formatter do debugowania pełnej daty
-    private let debugDateFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss Z"
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.timeZone = TimeZone.current
-        return formatter
-    }()
-
     // Oblicz unikalną liczbę pracowników
     private var uniqueEmployeeCount: Int {
         Set(plan.assignments.map { $0.employee_id }).count
@@ -275,6 +279,14 @@ struct WorkPlanCard: View {
         let weekday = calendar.component(.weekday, from: date)
         // Convert to Monday-first (Monday = 0, Sunday = 6)
         return weekday == 1 ? 6 : weekday - 2
+    }
+
+    // Funkcja do pobierania imienia i nazwiska pracownika na podstawie employee_id
+    private func employeeName(for employeeId: Int) -> String {
+        if let employee = viewModel.employees.first(where: { $0.employee_id == employeeId }) {
+            return employee.name
+        }
+        return "Unknown (ID: \(employeeId))"
     }
 
     var body: some View {
@@ -380,7 +392,8 @@ struct WorkPlanCard: View {
                         ForEach(assignmentsByEmployee.keys.sorted(), id: \.self) { employeeId in
                             if let assignments = assignmentsByEmployee[employeeId] {
                                 VStack(alignment: .leading, spacing: 4) {
-                                    Text("Employee ID \(employeeId)")
+                                    // Wyświetl imię i nazwisko zamiast employee_id
+                                    Text(employeeName(for: employeeId))
                                         .font(.caption)
                                         .fontWeight(.semibold)
                                         .foregroundColor(.primary)
@@ -393,12 +406,6 @@ struct WorkPlanCard: View {
                                     }
                                     
                                     ForEach(sortedAssignments) { assignment in
-                                        // Debug logging
-                                        Text("Debug work_date: \(debugDateFormatter.string(from: assignment.work_date)), day index: \(dayOfWeekIndex(for: assignment.work_date))")
-                                            .font(.caption)
-                                            .foregroundColor(.red)
-                                            .italic()
-                                        
                                         // Display assignment
                                         let displayDate = isValidWorkDate(assignment.work_date) ? assignment.work_date : weekMondayStart
                                         Text("\(dayOfWeekFormatter.string(from: displayDate)): \(assignment.start_time ?? "N/A") - \(assignment.end_time ?? "N/A")")
@@ -418,7 +425,7 @@ struct WorkPlanCard: View {
                     }
                 }
 
-                // Przyciski akcji - zawsze pokazuj View i Edit
+                // Przyciski akcji - pokazuj View, Edit i Delete
                 HStack(spacing: 8) {
                     // Przycisk View (Preview)
                     Button(action: {
@@ -442,10 +449,10 @@ struct WorkPlanCard: View {
                             .clipShape(Capsule())
                     }
                     
-                    // Przycisk Edit - zawsze dostępny
+                    // Przycisk Edit - dostępny dla wszystkich
                     Button(action: {
                         print("[WorkPlanCard] Tapped Edit for plan: \(plan.task_title)")
-                        print("[WorkPlanCard] Before setting selectedWorkPlan: \(selectedWorkPlan?.task_title ?? "nil")")
+                        print("[WorkPlanCard] Before setting selectedWorkPlan: \(selectedWorkPlan?.task_title ?? " MSDNnil")")
                         selectedWorkPlan = plan
                         print("[WorkPlanCard] After setting selectedWorkPlan: \(selectedWorkPlan?.task_title ?? "nil")")
                         
@@ -462,6 +469,23 @@ struct WorkPlanCard: View {
                             .padding(.vertical, 6)
                             .background(Color.ksrYellow.opacity(0.2))
                             .clipShape(Capsule())
+                    }
+                    
+                    // Przycisk Delete - tylko dla DRAFT
+                    if plan.status == "DRAFT" {
+                        Button(action: {
+                            print("[WorkPlanCard] Tapped Delete for plan: \(plan.task_title)")
+                            viewModel.workPlanToDelete = plan
+                            viewModel.showDeleteConfirmation = true
+                        }) {
+                            Text("Delete")
+                                .font(.caption)
+                                .foregroundColor(.red)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .background(Color.red.opacity(0.2))
+                                .clipShape(Capsule())
+                        }
                     }
                     
                     Spacer()
