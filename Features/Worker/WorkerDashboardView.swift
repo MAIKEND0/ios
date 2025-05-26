@@ -1,20 +1,17 @@
-//
-//  WorkerDashboardView.swift
-//  KSR Cranes App
-//
-
+// WorkerDashboardView.swift - Updated with shared NotificationService
 import SwiftUI
 
 struct WorkerDashboardView: View {
-    // Use StateObject for the main ViewModel to persist it across view refreshes
     @StateObject private var viewModel = WorkerDashboardViewModel()
+    @ObservedObject private var notificationService = NotificationService.shared // ✅ Use shared instance
     @State private var showWorkHoursForm = false
     @State private var showFilterOptions = false
+    @State private var showNotifications = false
     @State private var searchText = ""
     @State private var hasAppeared = false
     @Environment(\.colorScheme) private var colorScheme
     
-    // Kolory dostosowane do webowej wersji
+    // Kolory dostosowane do webowej wersji (same as before)
     private let gradientGreen = LinearGradient(
         colors: [Color(hex: "66bb6a"), Color(hex: "43a047")],
         startPoint: .topLeading,
@@ -58,7 +55,6 @@ struct WorkerDashboardView: View {
                     
                     // Faktycznie zadania
                     if viewModel.tasksViewModel.isLoading {
-                        // Show loading indicator while loading tasks
                         ProgressView()
                             .frame(maxWidth: .infinity, minHeight: 150)
                     } else if viewModel.tasksViewModel.tasks.isEmpty {
@@ -80,13 +76,37 @@ struct WorkerDashboardView: View {
             .navigationTitle("Dashboard")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                // ✅ Enhanced notification bell with better badge
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button {
-                        // Obsługa powiadomień
+                        showNotifications.toggle()
                     } label: {
-                        Image(systemName: "bell")
-                            .foregroundColor(colorScheme == .dark ? .white : Color.ksrDarkGray)
+                        ZStack(alignment: .topTrailing) {
+                            Image(systemName: notificationService.unreadCount > 0 ? "bell.badge.fill" : "bell")
+                                .foregroundColor(colorScheme == .dark ? .white : Color.ksrDarkGray)
+                                .font(.title3)
+                            
+                            if notificationService.unreadCount > 0 {
+                                Text(notificationService.unreadCount > 99 ? "99+" : "\(notificationService.unreadCount)")
+                                    .font(.caption2)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, notificationService.unreadCount > 9 ? 4 : 6)
+                                    .padding(.vertical, 2)
+                                    .background(
+                                        Capsule()
+                                            .fill(
+                                                notificationService.getUrgentUnreadNotifications().count > 0 ?
+                                                Color.red : Color.orange
+                                            )
+                                    )
+                                    .offset(x: 8, y: -8)
+                                    .scaleEffect(notificationService.unreadCount > 0 ? 1.0 : 0.8)
+                                    .animation(.spring(response: 0.3), value: notificationService.unreadCount)
+                            }
+                        }
                     }
+                    .disabled(notificationService.isLoading)
                 }
                 
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -101,23 +121,25 @@ struct WorkerDashboardView: View {
                 }
             }
             .onAppear {
-                // Load data when view appears
-                viewModel.loadData()
-                
-                // Set the flag so we know the view has appeared
-                hasAppeared = true
+                if !hasAppeared {
+                    viewModel.loadData()
+                    notificationService.fetchNotifications()
+                    notificationService.fetchUnreadCount()
+                    hasAppeared = true
+                }
             }
-            // Force refresh when we come back to this view from another tab
             .onChange(of: hasAppeared) { _, _ in
-                viewModel.loadData()
+                if hasAppeared {
+                    viewModel.loadData()
+                    notificationService.refreshIfNeeded()
+                }
             }
-            // Add timer to periodically refresh data
             .onReceive(Timer.publish(every: 300, on: .main, in: .common).autoconnect()) { _ in
-                // Refresh data every 5 minutes
                 #if DEBUG
-                print("[WorkerDashboardView] Timer triggered refresh, current entries: \(viewModel.hoursViewModel.entries.count)")
+                print("[WorkerDashboardView] Timer triggered refresh")
                 #endif
                 viewModel.loadData()
+                notificationService.refreshIfNeeded()
             }
             .sheet(isPresented: $showWorkHoursForm) {
                 WeeklyWorkEntryForm(
@@ -126,61 +148,63 @@ struct WorkerDashboardView: View {
                     selectedMonday: Calendar.current.startOfWeek(for: Date())
                 )
             }
-            // Add refreshable modifier to allow pull-to-refresh
+            .sheet(isPresented: $showNotifications) {
+                NotificationsView()
+            }
             .refreshable {
                 #if DEBUG
-                print("[WorkerDashboardView] Pull-to-refresh triggered, current entries: \(viewModel.hoursViewModel.entries.count)")
+                print("[WorkerDashboardView] Pull-to-refresh triggered")
                 #endif
                 await withCheckedContinuation { continuation in
                     viewModel.loadData()
-                    // Delay slightly to make refresh feel natural
+                    notificationService.forceRefresh()
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                         continuation.resume()
                     }
                 }
             }
+            // ✅ Listen to notification actions
+            .onReceive(NotificationCenter.default.publisher(for: .openWorkEntryForm)) { notification in
+                if let userInfo = notification.userInfo,
+                   let taskId = userInfo["taskId"] as? Int {
+                    viewModel.setSelectedTaskId(taskId)
+                    showWorkHoursForm = true
+                }
+            }
         }
     }
+    
+    // Rest of the implementation stays exactly the same...
+    // All the sections: summaryCardsSection, tasksHeaderSection, etc.
     
     // MARK: - Summary Cards Section
     private var summaryCardsSection: some View {
         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-            // Karta 1: Godziny w tym tygodniu
             summaryCard(
                 title: "Hours This Week",
                 value: String(format: "%.1f", viewModel.totalWeeklyHours),
                 background: gradientGreen
             )
-            
-            // Karta 2: Kilometry w tym tygodniu
             summaryCard(
                 title: "Km This Week",
                 value: String(format: "%.2f", viewModel.totalWeeklyKm),
                 background: gradientPurple
             )
-            
-            // Karta 3: Godziny w tym miesiącu
             summaryCard(
                 title: "Hours This Month",
                 value: String(format: "%.1f", viewModel.totalMonthlyHours),
                 background: gradientBlue
             )
-            
-            // Karta 4: Kilometry w tym miesiącu
             summaryCard(
                 title: "Km This Month",
                 value: String(format: "%.2f", viewModel.totalMonthlyKm),
                 background: gradientTeal
             )
-            
-            // Karta 5: Aktywne zadania
             summaryCard(
                 title: "Active Tasks",
                 value: "\(viewModel.tasksViewModel.tasks.count)",
                 background: gradientOrange
             )
-            
-            // Karta 6: Godziny w tym roku
             summaryCard(
                 title: "Hours This Year",
                 value: String(format: "%.1f", viewModel.totalYearlyHours),
@@ -192,20 +216,19 @@ struct WorkerDashboardView: View {
     private func summaryCard(title: String, value: String, background: LinearGradient) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(title)
-                .font(Font.subheadline)
+                .font(.subheadline)
                 .fontWeight(.medium)
-                .foregroundColor(Color.white.opacity(0.9))
-            
+                .foregroundColor(.white.opacity(0.9))
             Text(value)
-                .font(Font.title3)
+                .font(.title3)
                 .fontWeight(.bold)
-                .foregroundColor(Color.white)
+                .foregroundColor(.white)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding()
         .background(background)
         .cornerRadius(10)
-        .shadow(color: Color.black.opacity(0.1), radius: 3, x: 0, y: 2)
+        .shadow(color: .black.opacity(0.1), radius: 3, x: 0, y: 2)
     }
     
     // MARK: - Tasks Header Section
@@ -213,20 +236,17 @@ struct WorkerDashboardView: View {
         VStack(spacing: 12) {
             HStack {
                 Text("My Tasks")
-                    .font(Font.title3)
+                    .font(.title3)
                     .fontWeight(.bold)
                     .foregroundColor(colorScheme == .dark ? .white : Color.ksrDarkGray)
-                
                 Spacer()
-                
                 HStack(spacing: 8) {
                     Button {
-                        // Wyszukiwanie
+                        // Wyszukiwanie (do zaimplementowania)
                     } label: {
                         Image(systemName: "magnifyingglass")
                             .foregroundColor(colorScheme == .dark ? .white : Color.ksrDarkGray)
                     }
-                    
                     Button {
                         withAnimation {
                             showFilterOptions.toggle()
@@ -235,8 +255,6 @@ struct WorkerDashboardView: View {
                         Image(systemName: "slider.horizontal.3")
                             .foregroundColor(colorScheme == .dark ? .white : Color.ksrDarkGray)
                     }
-                    
-                    // Add refresh button
                     Button {
                         viewModel.loadData()
                     } label: {
@@ -245,7 +263,6 @@ struct WorkerDashboardView: View {
                     }
                 }
             }
-            
             if showFilterOptions {
                 HStack {
                     TextField("Search tasks...", text: $searchText)
@@ -263,20 +280,16 @@ struct WorkerDashboardView: View {
     private var noTasksView: some View {
         VStack(spacing: 16) {
             Image(systemName: "list.clipboard")
-                .font(Font.largeTitle)
-                .foregroundColor(Color.gray)
-            
+                .font(.largeTitle)
+                .foregroundColor(.gray)
             Text("No tasks assigned yet")
-                .font(Font.headline)
+                .font(.headline)
                 .foregroundColor(colorScheme == .dark ? .white.opacity(0.7) : Color.ksrMediumGray)
-                
             Text("When tasks are assigned to you, they will appear here")
-                .font(Font.subheadline)
+                .font(.subheadline)
                 .multilineTextAlignment(.center)
                 .foregroundColor(colorScheme == .dark ? .white.opacity(0.7) : Color.ksrMediumGray)
                 .padding(.horizontal)
-            
-            // Add a manual refresh button
             Button {
                 viewModel.loadData()
             } label: {
@@ -305,93 +318,49 @@ struct WorkerDashboardView: View {
         }
     }
     
-    // Helper struct to represent weekly status
-    struct WeekStatus: Identifiable {
-        let id = UUID()
-        let weekNumber: Int
-        let year: Int
-        let hours: Double
-        let km: Double // Dodano km
-        let status: EntryStatus
-        
-        var weekLabel: String {
-            return "Week \(weekNumber)"
-        }
-        
-        var statusIcon: (Image, Color) {
-            switch status {
-            case .draft:
-                return (Image(systemName: "pencil.circle"), .orange)
-            case .pending:
-                return (Image(systemName: "clock"), .blue)
-            case .submitted:
-                return (Image(systemName: "paperplane"), .purple)
-            case .confirmed:
-                return (Image(systemName: "checkmark.circle"), .green)
-            case .rejected:
-                return (Image(systemName: "xmark.circle"), .red)
-            }
-        }
-    }
-    
+    // MARK: - Task Card
     private func taskCard(task: WorkerAPIService.Task) -> some View {
-        // Find entries related to this task
-        let taskEntries = viewModel.hoursViewModel.entries.filter {
-            $0.task_id == task.task_id
-        }
+        let taskEntries = viewModel.hoursViewModel.entries.filter { $0.task_id == task.task_id }
         
-        // Log entries for debugging
         #if DEBUG
-        print("[WorkerDashboardView] Task \(task.title) (ID: \(task.task_id)) has \(taskEntries.count) entries: \(taskEntries)")
+        print("[WorkerDashboardView] Task \(task.title) (ID: \(task.task_id)) has \(taskEntries.count) entries")
         #endif
         
-        // Calculate total hours using entries directly
         let totalHours = taskEntries.reduce(0.0) { sum, entry in
             guard let start = entry.start_time, let end = entry.end_time else { return sum }
             let interval = end.timeIntervalSince(start)
             let pauseSeconds = Double(entry.pause_minutes ?? 0) * 60
-            let hours = max(0, (interval - pauseSeconds) / 3600)
-            #if DEBUG
-            print("[WorkerDashboardView] Entry for task \(task.task_id) on \(entry.work_date): \(hours) hours")
-            #endif
-            return sum + hours
+            return sum + max(0, (interval - pauseSeconds) / 3600)
         }
         
-        // Calculate total kilometers using entries directly
         let totalKm = taskEntries.reduce(0.0) { sum, entry in
             guard let km = entry.km else { return sum }
             return sum + km
         }
         
-        // Get weeks statuses for the last 4 weeks
         let weekStatuses = getWeekStatuses(for: task.task_id, entries: taskEntries, count: 4)
         
         return VStack(alignment: .leading, spacing: 12) {
-            // Nagłówek
             HStack {
                 Text(task.title)
-                    .font(Font.headline)
+                    .font(.headline)
                     .foregroundColor(colorScheme == .dark ? .white : Color.ksrDarkGray)
-                
                 Spacer()
-                
                 HStack(spacing: 12) {
                     Button {
-                        // Pokaż kalendarz
+                        // Pokaż kalendarz (do zaimplementowania)
                     } label: {
                         Image(systemName: "calendar")
                             .foregroundColor(colorScheme == .dark ? .white.opacity(0.7) : Color.ksrMediumGray)
                     }
-                    
                     Button {
-                        // Pokaż dokumenty
+                        // Pokaż dokumenty (do zaimplementowania)
                     } label: {
                         Image(systemName: "doc.text")
                             .foregroundColor(colorScheme == .dark ? .white.opacity(0.7) : Color.ksrMediumGray)
                     }
-                    
                     Button {
-                        // Przejdź do szczegółów
+                        // Przejdź do szczegółów (do zaimplementowania)
                     } label: {
                         Image(systemName: "folder")
                             .foregroundColor(colorScheme == .dark ? .white.opacity(0.7) : Color.ksrMediumGray)
@@ -399,26 +368,21 @@ struct WorkerDashboardView: View {
                 }
             }
             
-            // Opis
             if let description = task.description, !description.isEmpty {
                 Text(description)
-                    .font(Font.subheadline)
+                    .font(.subheadline)
                     .foregroundColor(colorScheme == .dark ? .white.opacity(0.7) : Color.ksrMediumGray)
                     .lineLimit(2)
             }
             
-            // Weekly history section
             VStack(spacing: 8) {
                 Text("Recent Hours")
                     .font(.subheadline)
                     .fontWeight(.medium)
                     .foregroundColor(colorScheme == .dark ? .white.opacity(0.7) : Color.ksrMediumGray)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                
                 Divider()
-                    .background(colorScheme == .dark ? Color.gray.opacity(0.3) : Color.gray.opacity(0.2))
-                
-                // History rows for weeks
+                    .background(colorScheme == .dark ? .gray.opacity(0.3) : .gray.opacity(0.2))
                 if weekStatuses.isEmpty {
                     Text("No recent hour entries")
                         .font(.caption)
@@ -434,26 +398,23 @@ struct WorkerDashboardView: View {
             .background(colorScheme == .dark ? Color(.systemGray6).opacity(0.2) : Color(.systemGray6).opacity(0.5))
             .cornerRadius(8)
             
-            // Informacje o godzinach i kilometrach
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
                     HStack {
                         Text("Total Logged Hours:")
-                            .font(Font.caption)
+                            .font(.caption)
                             .foregroundColor(colorScheme == .dark ? .white.opacity(0.7) : Color.ksrMediumGray)
-                        
                         Text("\(totalHours, specifier: "%.2f") hrs")
-                            .font(Font.caption)
+                            .font(.caption)
                             .fontWeight(.semibold)
                             .foregroundColor(Color.ksrYellow)
                     }
                     HStack {
                         Text("Total Logged Km:")
-                            .font(Font.caption)
+                            .font(.caption)
                             .foregroundColor(colorScheme == .dark ? .white.opacity(0.7) : Color.ksrMediumGray)
-                        
                         Text("\(totalKm, specifier: "%.2f") km")
-                            .font(Font.caption)
+                            .font(.caption)
                             .fontWeight(.semibold)
                             .foregroundColor(Color.ksrYellow)
                     }
@@ -461,19 +422,16 @@ struct WorkerDashboardView: View {
                 Spacer()
             }
             
-            // Przyciski akcji
             HStack {
                 Spacer()
-                
                 Button {
-                    // Ustaw zadanie i pokaż formularz godzin
                     viewModel.setSelectedTaskId(task.task_id)
                     showWorkHoursForm = true
                 } label: {
                     Text("Log Hours")
-                        .font(Font.subheadline)
+                        .font(.subheadline)
                         .fontWeight(.medium)
-                        .foregroundColor(Color.black)
+                        .foregroundColor(.black)
                         .padding(.horizontal, 16)
                         .padding(.vertical, 8)
                         .background(Color.ksrYellow)
@@ -484,45 +442,54 @@ struct WorkerDashboardView: View {
         .padding()
         .background(colorScheme == .dark ? Color(.systemGray6).opacity(0.2) : Color(.secondarySystemBackground))
         .cornerRadius(12)
-        .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.3 : 0.05), radius: 2, x: 0, y: 1)
+        .shadow(color: .black.opacity(colorScheme == .dark ? 0.3 : 0.05), radius: 2, x: 0, y: 1)
     }
     
-    // Function to determine the effective status for an entry
-    private func effectiveStatus(for entry: WorkerAPIService.WorkHourEntry) -> EntryStatus {
-        // Najpierw sprawdzamy confirmation_status, jeśli istnieje i nie jest "pending"
-        if let confirmationStatus = entry.confirmation_status, confirmationStatus != "pending" {
-            switch confirmationStatus {
-            case "confirmed":
-                return .confirmed
-            case "rejected":
-                return .rejected
-            default:
-                break // Nieznany status, przejdziemy do dalszej logiki
-            }
+    // MARK: - Week Status
+    struct WeekStatus: Identifiable {
+        let id = UUID()
+        let weekNumber: Int
+        let year: Int
+        let hours: Double
+        let km: Double
+        let status: EntryStatus
+        
+        var weekLabel: String {
+            "Week \(weekNumber)"
         }
         
-        // Jeśli confirmation_status jest "pending" lub nil, sprawdzamy is_draft
+        var statusIcon: (Image, Color) {
+            switch status {
+            case .draft: return (Image(systemName: "pencil.circle"), .orange)
+            case .pending: return (Image(systemName: "clock"), .blue)
+            case .submitted: return (Image(systemName: "paperplane"), .purple)
+            case .confirmed: return (Image(systemName: "checkmark.circle"), .green)
+            case .rejected: return (Image(systemName: "xmark.circle"), .red)
+            }
+        }
+    }
+    
+    private func effectiveStatus(for entry: WorkerAPIService.WorkHourEntry) -> EntryStatus {
+        if let confirmationStatus = entry.confirmation_status, confirmationStatus != "pending" {
+            switch confirmationStatus {
+            case "confirmed": return .confirmed
+            case "rejected": return .rejected
+            default: break
+            }
+        }
         if entry.is_draft == true {
             return .draft
         }
-        
-        // Następnie używamy status, ale tylko do rozróżnienia pending/submitted
         if let status = entry.status {
             switch status {
-            case "submitted":
-                return .submitted
-            case "pending":
-                return .pending
-            default:
-                break
+            case "submitted": return .submitted
+            case "pending": return .pending
+            default: break
             }
         }
-        
-        // Domyślnie pending
         return .pending
     }
     
-    // Function to generate week statuses for a task
     private func getWeekStatuses(for taskId: Int, entries: [WorkerAPIService.WorkHourEntry], count: Int) -> [WeekStatus] {
         var statuses: [WeekStatus] = []
         let calendar = Calendar.current
@@ -530,120 +497,73 @@ struct WorkerDashboardView: View {
         let currentWeek = calendar.component(.weekOfYear, from: currentDate)
         let currentYear = calendar.component(.year, from: currentDate)
         
-        // Filter entries for the current week
         let currentWeekEntries = entries.filter { entry in
-            guard entry.task_id == taskId,
-                  let startTime = entry.start_time else { return false }
+            guard entry.task_id == taskId, let startTime = entry.start_time else { return false }
             return calendar.component(.weekOfYear, from: startTime) == currentWeek &&
                    calendar.component(.year, from: startTime) == currentYear
         }
         
-        // Calculate hours for the current week
         let currentWeekHours = currentWeekEntries.reduce(0.0) { sum, entry in
-            guard let startTime = entry.start_time,
-                  let endTime = entry.end_time else { return sum }
+            guard let startTime = entry.start_time, let endTime = entry.end_time else { return sum }
             let interval = endTime.timeIntervalSince(startTime)
             let pauseSeconds = Double(entry.pause_minutes ?? 0) * 60
             return sum + max(0, (interval - pauseSeconds) / 3600)
         }
         
-        // Calculate kilometers for the current week
         let currentWeekKm = currentWeekEntries.reduce(0.0) { sum, entry in
             guard let km = entry.km else { return sum }
             return sum + km
         }
         
-        // Determine status for the current week
         let currentWeekStatus: EntryStatus = {
-            if currentWeekEntries.isEmpty {
-                return .pending
-            }
-            // Znajdź najbardziej "istotny" status w tygodniu
-            if currentWeekEntries.contains(where: { effectiveStatus(for: $0) == .rejected }) {
-                return .rejected
-            }
-            if currentWeekEntries.contains(where: { effectiveStatus(for: $0) == .confirmed }) {
-                return .confirmed
-            }
-            if currentWeekEntries.contains(where: { effectiveStatus(for: $0) == .submitted }) {
-                return .submitted
-            }
-            if currentWeekEntries.contains(where: { effectiveStatus(for: $0) == .draft }) {
-                return .draft
-            }
+            if currentWeekEntries.isEmpty { return .pending }
+            if currentWeekEntries.contains(where: { effectiveStatus(for: $0) == .rejected }) { return .rejected }
+            if currentWeekEntries.contains(where: { effectiveStatus(for: $0) == .confirmed }) { return .confirmed }
+            if currentWeekEntries.contains(where: { effectiveStatus(for: $0) == .submitted }) { return .submitted }
+            if currentWeekEntries.contains(where: { effectiveStatus(for: $0) == .draft }) { return .draft }
             return .pending
         }()
         
-        // Add current week status
         statuses.append(WeekStatus(
             weekNumber: currentWeek,
             year: currentYear,
             hours: currentWeekHours,
-            km: currentWeekKm, // Dodano km
+            km: currentWeekKm,
             status: currentWeekStatus
         ))
         
-        // Add previous weeks
         for i in 1..<count {
             var dateComponents = DateComponents()
             dateComponents.weekOfYear = -i
-            guard let weekDate = calendar.date(byAdding: dateComponents, to: currentDate) else {
-                continue
-            }
+            guard let weekDate = calendar.date(byAdding: dateComponents, to: currentDate) else { continue }
             
             let weekNumber = calendar.component(.weekOfYear, from: weekDate)
             let year = calendar.component(.year, from: weekDate)
             
-            // Calculate hours for the week
-            let weekHours = entries.reduce(0.0) { sum, entry in
-                guard entry.task_id == taskId,
-                      let startTime = entry.start_time,
-                      let endTime = entry.end_time,
-                      calendar.component(.weekOfYear, from: startTime) == weekNumber,
-                      calendar.component(.year, from: startTime) == year else {
-                    return sum
-                }
+            let weekEntries = entries.filter { entry in
+                guard entry.task_id == taskId, let startTime = entry.start_time else { return false }
+                return calendar.component(.weekOfYear, from: startTime) == weekNumber &&
+                       calendar.component(.year, from: startTime) == year
+            }
+            
+            let weekHours = weekEntries.reduce(0.0) { sum, entry in
+                guard let startTime = entry.start_time, let endTime = entry.end_time else { return sum }
                 let interval = endTime.timeIntervalSince(startTime)
                 let pauseSeconds = Double(entry.pause_minutes ?? 0) * 60
                 return sum + max(0, (interval - pauseSeconds) / 3600)
             }
             
-            // Calculate kilometers for the week
-            let weekKm = entries.reduce(0.0) { sum, entry in
-                guard entry.task_id == taskId,
-                      let km = entry.km,
-                      let startTime = entry.start_time,
-                      calendar.component(.weekOfYear, from: startTime) == weekNumber,
-                      calendar.component(.year, from: startTime) == year else {
-                    return sum
-                }
+            let weekKm = weekEntries.reduce(0.0) { sum, entry in
+                guard let km = entry.km else { return sum }
                 return sum + km
             }
             
-            // Determine status based on entries
-            let weekEntries = entries.filter { entry in
-                guard entry.task_id == taskId,
-                      let startTime = entry.start_time else { return false }
-                return calendar.component(.weekOfYear, from: startTime) == weekNumber &&
-                       calendar.component(.year, from: startTime) == year
-            }
-            
             let status: EntryStatus = {
-                if weekEntries.isEmpty {
-                    return .pending
-                }
-                if weekEntries.contains(where: { effectiveStatus(for: $0) == .rejected }) {
-                    return .rejected
-                }
-                if weekEntries.contains(where: { effectiveStatus(for: $0) == .confirmed }) {
-                    return .confirmed
-                }
-                if weekEntries.contains(where: { effectiveStatus(for: $0) == .submitted }) {
-                    return .submitted
-                }
-                if weekEntries.contains(where: { effectiveStatus(for: $0) == .draft }) {
-                    return .draft
-                }
+                if weekEntries.isEmpty { return .pending }
+                if weekEntries.contains(where: { effectiveStatus(for: $0) == .rejected }) { return .rejected }
+                if weekEntries.contains(where: { effectiveStatus(for: $0) == .confirmed }) { return .confirmed }
+                if weekEntries.contains(where: { effectiveStatus(for: $0) == .submitted }) { return .submitted }
+                if weekEntries.contains(where: { effectiveStatus(for: $0) == .draft }) { return .draft }
                 return .pending
             }()
             
@@ -651,7 +571,7 @@ struct WorkerDashboardView: View {
                 weekNumber: weekNumber,
                 year: year,
                 hours: weekHours,
-                km: weekKm, // Dodano km
+                km: weekKm,
                 status: status
             ))
         }
@@ -659,34 +579,26 @@ struct WorkerDashboardView: View {
         return statuses
     }
     
-    // Week status row component
     private func weekStatusRow(_ weekStatus: WeekStatus) -> some View {
         HStack {
-            // Week label
             Text(weekStatus.weekLabel)
                 .font(.caption)
                 .foregroundColor(colorScheme == .dark ? .white : .primary)
                 .frame(width: 70, alignment: .leading)
-            
-            // Hours and Km
             VStack(alignment: .leading) {
                 Text("\(weekStatus.hours, specifier: "%.2f") hrs")
                     .font(.caption)
                     .foregroundColor(Color.ksrYellow)
-                Text("\(weekStatus.km, specifier: "%.2f") km") // Dodano km
+                Text("\(weekStatus.km, specifier: "%.2f") km")
                     .font(.caption)
                     .foregroundColor(Color.ksrYellow)
             }
             .frame(width: 80)
-            
             Spacer()
-            
-            // Status indicator
             HStack(spacing: 4) {
                 weekStatus.statusIcon.0
                     .foregroundColor(weekStatus.statusIcon.1)
                     .font(.caption)
-                
                 Text(weekStatus.status.rawValue.capitalized)
                     .font(.caption)
                     .foregroundColor(weekStatus.statusIcon.1)
@@ -695,22 +607,22 @@ struct WorkerDashboardView: View {
         .padding(.vertical, 4)
     }
     
-    // MARK: – Ostatnie godziny
+    // MARK: - Recent Work Hours
     private var recentWorkHoursView: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text("Recent Hours")
-                    .font(Font.title3)
+                    .font(.title3)
                     .fontWeight(.bold)
                     .foregroundColor(colorScheme == .dark ? .white : Color.ksrDarkGray)
                 Spacer()
                 NavigationLink(destination: WorkerWorkHoursView()) {
                     Text("View all")
-                        .font(Font.caption)
+                        .font(.caption)
                         .foregroundColor(Color.ksrYellow)
                 }
             }
-
+            
             if viewModel.hoursViewModel.isLoading {
                 ProgressView()
                     .frame(maxWidth: .infinity)
@@ -725,7 +637,7 @@ struct WorkerDashboardView: View {
                     workHourCard(entry: entry)
                 }
             }
-
+            
             Button {
                 showWorkHoursForm = true
             } label: {
@@ -736,28 +648,27 @@ struct WorkerDashboardView: View {
                 .frame(maxWidth: .infinity)
                 .padding()
                 .background(Color.ksrYellow)
-                .foregroundColor(Color.black)
+                .foregroundColor(.black)
                 .cornerRadius(10)
             }
         }
     }
     
-    // MARK: – Ogłoszenia
+    // MARK: - Announcements
     private var announcementsView: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text("Announcements")
-                    .font(Font.title3)
+                    .font(.title3)
                     .fontWeight(.bold)
                     .foregroundColor(colorScheme == .dark ? .white : Color.ksrDarkGray)
                 Spacer()
                 NavigationLink(destination: Text("Announcements List")) {
                     Text("View all")
-                        .font(Font.caption)
+                        .font(.caption)
                         .foregroundColor(Color.ksrYellow)
                 }
             }
-
             if viewModel.isLoadingAnnouncements {
                 ProgressView()
                     .frame(maxWidth: .infinity)
@@ -774,138 +685,49 @@ struct WorkerDashboardView: View {
             }
         }
     }
-
-    @ViewBuilder
-    private func workHourCard(entry: WorkerAPIService.WorkHourEntry) -> some View {
-        // Używamy obliczania godzin z WeeklyWorkEntryViewModel
-        let hours = computeEntryDuration(
-            start: entry.start_time,
-            end: entry.end_time,
-            pauseMinutes: entry.pause_minutes ?? 0
-        )
-        
-        let entryStatus = effectiveStatus(for: entry) // Używamy nowej funkcji
-        
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text(entry.workDateFormatted)
-                    .font(Font.headline)
-                    .foregroundColor(colorScheme == .dark ? .white : Color.ksrDarkGray)
-                Spacer()
-                Text("\(hours, specifier: "%.2f")h")
-                    .font(Font.headline)
-                    .fontWeight(.semibold)
-                    .foregroundColor(Color.ksrYellow)
-            }
-            HStack {
-                Text("\(entry.startTimeFormatted ?? "-") – \(entry.endTimeFormatted ?? "-")")
-                    .font(Font.subheadline)
-                    .foregroundColor(colorScheme == .dark ? .white.opacity(0.7) : Color.ksrMediumGray)
-                Spacer()
-                if let isDraft = entry.is_draft, isDraft {
-                    Text("Draft")
-                        .font(Font.caption2).bold()
-                        .padding(4)
-                        .background(Color.orange.opacity(0.2))
-                        .foregroundColor(Color.orange)
-                        .cornerRadius(4)
-                } else {
-                    let (label, color) = statusLabel(for: entryStatus)
-                    Text(label)
-                        .font(Font.caption2).bold()
-                        .padding(4)
-                        .background(color.opacity(0.2))
-                        .foregroundColor(color)
-                        .cornerRadius(4)
-                }
-            }
-            
-            if let tasks = entry.tasks {
-                Text("Task: \(tasks.title)")
-                    .font(Font.caption)
-                    .foregroundColor(Color.secondary)
-            } else {
-                Text("Task: \(entry.task_id)")
-                    .font(Font.caption)
-                    .foregroundColor(Color.secondary)
-            }
-            
-            // Kilometry
-            Text("Kilometers: \(entry.kmFormatted)")
-                .font(Font.caption)
-                .foregroundColor(Color.secondary)
-        }
-        .padding()
-        .background(colorScheme == .dark ? Color(.systemGray6).opacity(0.2) : Color(UIColor.secondarySystemGroupedBackground))
-        .cornerRadius(10)
-    }
-
-    // Helper function to determine label and color for status
-    private func statusLabel(for status: EntryStatus) -> (String, Color) {
-        switch status {
-        case .draft:
-            return ("Draft", .orange)
-        case .pending:
-            return ("Pending", .blue)
-        case .submitted:
-            return ("Submitted", .purple)
-        case .confirmed:
-            return ("Confirmed", .green)
-        case .rejected:
-            return ("Rejected", .red)
-        }
-    }
-
-    @ViewBuilder
+    
     private func announcementCard(announcement: WorkerAPIService.Announcement) -> some View {
         VStack(alignment: .leading, spacing: 5) {
             HStack {
                 Text(announcement.title)
-                    .font(Font.headline)
+                    .font(.headline)
                     .foregroundColor(colorScheme == .dark ? .white : Color.ksrDarkGray)
-                
                 Spacer()
-                
-                // Etykieta priorytetu
                 priorityLabel(for: announcement.priority)
             }
-            
             Text(announcement.content)
-                .font(Font.subheadline)
+                .font(.subheadline)
                 .foregroundColor(colorScheme == .dark ? .white.opacity(0.7) : Color.ksrMediumGray)
                 .lineLimit(2)
-                
             HStack {
                 Image(systemName: "calendar")
-                    .font(Font.caption)
-                    .foregroundColor(Color.gray)
-                
+                    .font(.caption)
+                    .foregroundColor(.gray)
                 Text(formatDate(announcement.publishedAt))
-                    .font(Font.caption)
-                    .foregroundColor(Color.gray)
-                
+                    .font(.caption)
+                    .foregroundColor(.gray)
                 if let expiresAt = announcement.expiresAt {
                     Spacer()
                     Image(systemName: "clock")
-                        .font(Font.caption)
-                        .foregroundColor(Color.gray)
+                        .font(.caption)
+                        .foregroundColor(.gray)
                     Text("Expires: \(formatDate(expiresAt))")
-                        .font(Font.caption)
-                        .foregroundColor(Color.gray)
+                        .font(.caption)
+                        .foregroundColor(.gray)
                 }
             }
             .padding(.top, 4)
         }
         .padding()
-        .background(colorScheme == .dark ? Color(.systemGray6).opacity(0.2) : Color.white)
+        .background(colorScheme == .dark ? Color(.systemGray6).opacity(0.2) : .white)
         .cornerRadius(10)
-        .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
+        .shadow(color: .black.opacity(0.05), radius: 5, x: 0, y: 2)
     }
     
     private func priorityLabel(for priority: WorkerAPIService.AnnouncementPriority) -> some View {
         let (color, text) = priorityConfig(for: priority)
         return Text(text)
-            .font(Font.caption2)
+            .font(.caption2)
             .padding(.horizontal, 6)
             .padding(.vertical, 2)
             .background(color.opacity(0.15))
@@ -915,16 +737,23 @@ struct WorkerDashboardView: View {
     
     private func priorityConfig(for priority: WorkerAPIService.AnnouncementPriority) -> (Color, String) {
         switch priority {
-        case .high:
-            return (Color.red, "High")
-        case .normal:
-            return (Color.blue, "Normal")
-        case .low:
-            return (Color.gray, "Low")
+        case .high: return (.red, "High")
+        case .normal: return (.blue, "Normal")
+        case .low: return (.gray, "Low")
         }
     }
     
-    // MARK: - Helper funkcje
+    private func statusLabel(for status: EntryStatus) -> (String, Color) {
+        switch status {
+        case .draft: return ("Draft", .orange)
+        case .pending: return ("Pending", .blue)
+        case .submitted: return ("Submitted", .purple)
+        case .confirmed: return ("Confirmed", .green)
+        case .rejected: return ("Rejected", .red)
+        }
+    }
+    
+    // MARK: - Helpers
     private func formatDate(_ date: Date) -> String {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
@@ -933,11 +762,128 @@ struct WorkerDashboardView: View {
     }
     
     private func computeEntryDuration(start: Date?, end: Date?, pauseMinutes: Int) -> Double {
-        guard let start = start, let end = end else { return 0 }
+        guard let start, let end else { return 0 }
         let interval = end.timeIntervalSince(start)
         let pauseSeconds = Double(pauseMinutes) * 60
         return max(0, (interval - pauseSeconds) / 3600)
     }
+    
+    // MARK: - Work Hour Card with enhanced rejection handling
+    private func workHourCard(entry: WorkerAPIService.WorkHourEntry) -> some View {
+        let hours = computeEntryDuration(
+            start: entry.start_time,
+            end: entry.end_time,
+            pauseMinutes: entry.pause_minutes ?? 0
+        )
+        let entryStatus = effectiveStatus(for: entry)
+        
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text(entry.workDateFormatted)
+                    .font(.headline)
+                    .foregroundColor(colorScheme == .dark ? .white : Color.ksrDarkGray)
+                Spacer()
+                Text("\(hours, specifier: "%.2f")h")
+                    .font(.headline)
+                    .fontWeight(.semibold)
+                    .foregroundColor(Color.ksrYellow)
+            }
+            HStack {
+                Text("\(entry.startTimeFormatted ?? "-") – \(entry.endTimeFormatted ?? "-")")
+                    .font(.subheadline)
+                    .foregroundColor(colorScheme == .dark ? .white.opacity(0.7) : Color.ksrMediumGray)
+                Spacer()
+                if let isDraft = entry.is_draft, isDraft {
+                    Text("Draft")
+                        .font(.caption2).bold()
+                        .padding(4)
+                        .background(Color.orange.opacity(0.2))
+                        .foregroundColor(.orange)
+                        .cornerRadius(4)
+                } else {
+                    let (label, color) = statusLabel(for: entryStatus)
+                    Text(label)
+                        .font(.caption2).bold()
+                        .padding(4)
+                        .background(color.opacity(0.2))
+                        .foregroundColor(color)
+                        .cornerRadius(4)
+                }
+            }
+            if let tasks = entry.tasks {
+                Text("Task: \(tasks.title)")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            } else {
+                Text("Task: \(entry.task_id)")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            Text("Kilometers: \(entry.kmFormatted)")
+                .font(.caption)
+                .foregroundColor(.secondary)
+            
+            // ✅ Enhanced rejection reason display
+            if entryStatus == .rejected, let reason = entry.rejection_reason {
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundColor(.red)
+                            .font(.caption)
+                        Text("Rejected:")
+                            .font(.caption)
+                            .fontWeight(.medium)
+                            .foregroundColor(.red)
+                    }
+                    Text(reason)
+                        .font(.caption)
+                        .foregroundColor(.red.opacity(0.8))
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(.red.opacity(0.1))
+                        .cornerRadius(4)
+                    
+                    // Quick action button for rejected entries
+                    Button {
+                        viewModel.setSelectedTaskId(entry.task_id)
+                        showWorkHoursForm = true
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "pencil.circle.fill")
+                                .font(.caption)
+                            Text("Fix & Resubmit")
+                                .font(.caption)
+                                .fontWeight(.medium)
+                        }
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.blue.opacity(0.1))
+                        .foregroundColor(.blue)
+                        .cornerRadius(6)
+                    }
+                    .padding(.top, 2)
+                }
+                .padding(.top, 4)
+            }
+        }
+        .padding()
+        .background(colorScheme == .dark ? Color(.systemGray6).opacity(0.2) : Color(.secondarySystemGroupedBackground))
+        .cornerRadius(10)
+        .overlay(
+            // Add subtle border for rejected entries
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(entryStatus == .rejected ? Color.red.opacity(0.3) : Color.clear, lineWidth: 1)
+        )
+        .onTapGesture {
+            if entryStatus == .rejected {
+                viewModel.setSelectedTaskId(entry.task_id)
+                showWorkHoursForm = true
+            }
+        }
+    }
+    
+    // All other helper methods remain the same...
+    // [Include all other methods from the original file]
 }
 
 struct WorkerDashboardView_Previews: PreviewProvider {
@@ -945,7 +891,6 @@ struct WorkerDashboardView_Previews: PreviewProvider {
         Group {
             WorkerDashboardView()
                 .preferredColorScheme(.light)
-            
             WorkerDashboardView()
                 .preferredColorScheme(.dark)
         }

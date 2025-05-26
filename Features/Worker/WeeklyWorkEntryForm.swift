@@ -1,3 +1,4 @@
+// WeeklyWorkEntryForm.swift
 import SwiftUI
 
 struct WeeklyWorkEntryForm: View {
@@ -7,8 +8,11 @@ struct WeeklyWorkEntryForm: View {
     @State private var selectedDayIndex: Int = 0
     @State private var selectedOutOfWeekIndex: Int?
     @State private var showingCalendarView = false
-    @State private var hasCopiedEntry: Bool = false // Śledzi, czy istnieją skopiowane dane
-    @State private var showClearDraftAlert: Bool = false // Śledzi alert dla Clear Draft
+    @State private var hasCopiedEntry: Bool = false
+    @State private var showClearDraftAlert: Bool = false
+    
+    // Nowy parametr dla odrzuconego wpisu
+    private let preselectedEntry: WorkerAPIService.WorkHourEntry?
     
     // Filter weekData to only include entries for the current week
     private var filteredWeekData: [EditableWorkEntry] {
@@ -16,8 +20,7 @@ struct WeeklyWorkEntryForm: View {
         let weekStart = vm.selectedMonday
         let weekEnd = calendar.date(byAdding: .day, value: 6, to: weekStart)!
         return vm.weekData.filter { entry in
-            let entryDate = entry.date
-            return entryDate >= weekStart && entryDate <= weekEnd
+            entry.date >= weekStart && entry.date <= weekEnd
         }
     }
     
@@ -27,15 +30,17 @@ struct WeeklyWorkEntryForm: View {
         let weekStart = vm.selectedMonday
         let weekEnd = calendar.date(byAdding: .day, value: 6, to: weekStart)!
         return vm.weekData.filter { entry in
-            let entryDate = entry.date
-            return entryDate < weekStart || entryDate > weekEnd
+            entry.date < weekStart || entry.date > weekEnd
         }.sorted { $0.date < $1.date }
     }
     
-    /// Initializes the form with employee ID, task ID, and the Monday of the selected week
-    init(employeeId: String, taskId: String, selectedMonday: Date) {
+    init(
+        employeeId: String,
+        taskId: String,
+        selectedMonday: Date,
+        preselectedEntry: WorkerAPIService.WorkHourEntry? = nil
+    ) {
         let calendar = Calendar.current
-        // Normalizuj selectedMonday do lokalnej strefy czasowej
         let normalizedMonday = calendar.startOfDay(for: selectedMonday)
         _vm = StateObject(
             wrappedValue: WeeklyWorkEntryViewModel(
@@ -44,70 +49,82 @@ struct WeeklyWorkEntryForm: View {
                 selectedMonday: normalizedMonday
             )
         )
+        self.preselectedEntry = preselectedEntry
+        // Ustaw początkowy indeks na dzień odrzuconego wpisu
+        if let entry = preselectedEntry {
+            let entryDate = calendar.startOfDay(for: entry.work_date)
+            if let index = (0..<7).first(where: { calendar.date(byAdding: .day, value: $0, to: normalizedMonday) == entryDate }) {
+                _selectedDayIndex = State(initialValue: index)
+            }
+        }
     }
 
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                // Week header with day selection
+                // Baner dla odrzuconego wpisu
+                if let entry = preselectedEntry, let reason = entry.rejection_reason {
+                    rejectionBanner(reason: reason)
+                }
+                
+                // Week header
                 weekHeader
                 
                 // Main content
                 ScrollView {
                     VStack(spacing: 24) {
-                        // Navigation hint for days
                         Text("Tap a day above to edit entries for that day")
                             .font(.caption)
                             .foregroundColor(.gray)
                             .frame(maxWidth: .infinity, alignment: .center)
                             .padding(.top, 4)
                         
-                        // Out-of-week entries
                         outOfWeekEntriesSection
                         
-                        // Future date warning if applicable
                         if selectedDayIndex < filteredWeekData.count && filteredWeekData[selectedDayIndex].isFutureDate {
                             futureDateWarning
                         }
                         
-                        // Selected day section
                         if selectedDayIndex < filteredWeekData.count {
                             dayEntrySection(for: filteredWeekData[selectedDayIndex], at: selectedDayIndex, isOutOfWeek: false)
                         }
                         
-                        // Week summary section
                         weekSummarySection
                     }
                     .padding()
                 }
                 
-                // Action buttons at the bottom
+                // Action bar
                 bottomActionBar
             }
-            .background(Color(colorScheme == .dark ? .black : .systemGroupedBackground).ignoresSafeArea())
+            .background(colorScheme == .dark ? Color.black : Color(.systemGroupedBackground))
+            .ignoresSafeArea(edges: .bottom)
             .navigationTitle("Log Hours")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") {
+                    Button(action: {
                         vm.saveDraft()
+                    }) {
+                        Text("Save")
+                            .fontWeight(.semibold)
+                            .foregroundColor(.ksrYellow)
                     }
-                    .fontWeight(.semibold)
-                    .foregroundColor(Color.ksrYellow)
                 }
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
+                    Button(action: {
                         dismiss()
+                    }) {
+                        Text("Cancel")
+                            .foregroundColor(colorScheme == .dark ? .white : .blue)
                     }
-                    .foregroundColor(colorScheme == .dark ? .white : .blue)
                 }
-                
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: {
                         showingCalendarView.toggle()
                     }) {
                         Image(systemName: "calendar")
-                            .foregroundColor(Color.ksrYellow)
+                            .foregroundColor(.ksrYellow)
                     }
                 }
             }
@@ -119,7 +136,7 @@ struct WeeklyWorkEntryForm: View {
                 )
             }
             .alert("Clear All Drafts?", isPresented: $showClearDraftAlert) {
-                Button("Cancel", role: .cancel) { }
+                Button("Cancel", role: .cancel) {}
                 Button("Clear", role: .destructive) {
                     withAnimation {
                         vm.clearAllDrafts()
@@ -139,43 +156,60 @@ struct WeeklyWorkEntryForm: View {
         }
     }
     
-    // MARK: - Future Date Warning
+    // MARK: - Rejection Banner
+    private func rejectionBanner(reason: String) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .foregroundColor(.ksrError)
+                Text("Entry Rejected")
+                    .font(.headline)
+                    .foregroundColor(.ksrError)
+            }
+            Text("Reason: \(reason)")
+                .font(.subheadline)
+                .foregroundColor(.ksrError.opacity(0.8))
+            Text("Please correct the entry and resubmit.")
+                .font(.caption)
+                .foregroundColor(.secondary)
+        }
+        .padding()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.ksrErrorLight)
+        .cornerRadius(8)
+    }
     
+    // MARK: - Future Date Warning
     private var futureDateWarning: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Image(systemName: "exclamationmark.triangle.fill")
-                    .foregroundColor(.orange)
-                
+                    .foregroundColor(.ksrWarning)
                 Text("Future Date")
                     .font(.headline)
-                    .foregroundColor(.orange)
+                    .foregroundColor(.ksrWarning)
             }
-            
             Text("You cannot log hours for future dates. Please select a current or past date.")
                 .font(.subheadline)
                 .foregroundColor(.secondary)
         }
         .padding()
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.orange.opacity(0.1))
+        .background(Color.ksrWarningLight)
         .cornerRadius(8)
     }
     
     // MARK: - Week Header
-    
     private var weekHeader: some View {
         VStack(spacing: 0) {
-            // Week title
             HStack {
                 Text("Week \(getWeekNumber()) of \(formatWeek(vm.selectedMonday))")
                     .font(.headline)
                     .padding()
                 Spacer()
             }
-            .background(Color(colorScheme == .dark ? .black : .systemGroupedBackground))
+            .background(colorScheme == .dark ? Color.black : Color(.systemGroupedBackground))
             
-            // Days of the week - pills, stretched to full width
             GeometryReader { geometry in
                 HStack(spacing: 0) {
                     ForEach(0..<filteredWeekData.count, id: \.self) { index in
@@ -216,14 +250,14 @@ struct WeeklyWorkEntryForm: View {
         
         let background: Color = {
             if isSelected {
-                return isFuture ? Color.orange : Color.ksrYellow
+                return isFuture ? .ksrWarning : .ksrYellow
             } else {
                 if isToday {
-                    return Color.ksrYellow.opacity(0.15)
+                    return .ksrYellowLight
                 } else if isFuture {
-                    return Color.orange.opacity(0.1)
+                    return .ksrWarningLight
                 } else {
-                    return colorScheme == .dark ? Color(UIColor.systemGray6).opacity(0.3) : Color(UIColor.systemGray6)
+                    return colorScheme == .dark ? Color(.systemGray6).opacity(0.3) : Color(.systemGray6)
                 }
             }
         }()
@@ -235,11 +269,10 @@ struct WeeklyWorkEntryForm: View {
             Text(dayNumber)
                 .font(.headline)
                 .fontWeight(.bold)
-            
             if isFuture {
                 Image(systemName: "lock.fill")
                     .font(.system(size: 8))
-                    .foregroundColor(isSelected ? .white : .orange)
+                    .foregroundColor(isSelected ? .white : .ksrWarning)
             }
         }
         .foregroundColor(dayPillTextColor(isSelected: isSelected, isToday: isToday, isFuture: isFuture))
@@ -256,24 +289,22 @@ struct WeeklyWorkEntryForm: View {
         if isSelected {
             return .white
         } else if isToday {
-            return Color.ksrYellow
+            return .ksrYellow
         } else if isFuture {
-            return .orange
+            return .ksrWarning
         } else {
             return colorScheme == .dark ? .white : .primary
         }
     }
     
     // MARK: - Selected Day Section
-    
     private func dayEntrySection(for entry: EditableWorkEntry, at index: Int, isOutOfWeek: Bool) -> some View {
         VStack(alignment: .leading, spacing: 16) {
             Text(formatDate(entry.date))
                 .font(.title3)
                 .fontWeight(.bold)
-                .foregroundColor(colorScheme == .dark ? .white : Color.ksrDarkGray)
+                .foregroundColor(colorScheme == .dark ? .white : .ksrDarkGray)
             
-            // Przyciski Copy, Paste i Clear Day
             if !entry.isFutureDate {
                 HStack(spacing: 12) {
                     Button(action: {
@@ -286,8 +317,8 @@ struct WeeklyWorkEntryForm: View {
                             .font(.subheadline)
                             .padding(.horizontal, 12)
                             .padding(.vertical, 8)
-                            .background(Color.ksrYellow.opacity(0.2))
-                            .foregroundColor(Color.ksrYellow)
+                            .background(Color.ksrYellowLight)
+                            .foregroundColor(.ksrYellow)
                             .cornerRadius(8)
                     }
                     .disabled(entry.startTime == nil || entry.endTime == nil || entry.status == "submitted" || entry.status == "confirmed")
@@ -301,8 +332,8 @@ struct WeeklyWorkEntryForm: View {
                             .font(.subheadline)
                             .padding(.horizontal, 12)
                             .padding(.vertical, 8)
-                            .background(hasCopiedEntry ? Color.ksrYellow.opacity(0.2) : Color.gray.opacity(0.2))
-                            .foregroundColor(hasCopiedEntry ? Color.ksrYellow : Color.gray)
+                            .background(hasCopiedEntry ? Color.ksrYellowLight : Color.inactiveColor.opacity(0.2))
+                            .foregroundColor(hasCopiedEntry ? .ksrYellow : .inactiveColor)
                             .cornerRadius(8)
                     }
                     .disabled(!hasCopiedEntry || entry.status == "submitted" || entry.status == "confirmed")
@@ -316,8 +347,8 @@ struct WeeklyWorkEntryForm: View {
                             .font(.subheadline)
                             .padding(.horizontal, 12)
                             .padding(.vertical, 8)
-                            .background(Color.red.opacity(0.2))
-                            .foregroundColor(.red)
+                            .background(Color.ksrErrorLight)
+                            .foregroundColor(.ksrError)
                             .cornerRadius(8)
                     }
                     .disabled(entry.status == "submitted" || entry.status == "confirmed")
@@ -330,8 +361,8 @@ struct WeeklyWorkEntryForm: View {
                     .fontWeight(.medium)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 6)
-                    .background(entry.isDraft == true ? Color.orange.opacity(0.2) : Color.blue.opacity(0.2))
-                    .foregroundColor(entry.isDraft == true ? Color.orange : Color.blue)
+                    .background(entry.isDraft == true ? Color.ksrWarningLight : Color.ksrInfoLight)
+                    .foregroundColor(entry.isDraft == true ? .ksrWarning : .ksrInfo)
                     .cornerRadius(8)
                 
                 Spacer()
@@ -339,12 +370,13 @@ struct WeeklyWorkEntryForm: View {
                 if entry.startTime != nil && entry.endTime != nil {
                     Text("\(entry.totalHours, specifier: "%.2f") hrs")
                         .font(.headline)
-                        .foregroundColor(Color.ksrYellow)
+                        .foregroundColor(.ksrYellow)
                 } else {
                     Text("No hours")
                         .font(.headline)
                         .foregroundColor(.gray)
                 }
+
             }
             
             if !entry.isFutureDate {
@@ -365,9 +397,9 @@ struct WeeklyWorkEntryForm: View {
             VStack(alignment: .leading, spacing: 8) {
                 Text("Start Time")
                     .font(.subheadline)
-                    .foregroundColor(colorScheme == .dark ? .white.opacity(0.7) : Color.ksrMediumGray)
+                    .foregroundColor(colorScheme == .dark ? .white.opacity(0.7) : .ksrMediumGray)
                 
-                customTimePicker(
+                CustomTimePicker(
                     label: "Start Time",
                     time: startTimeBinding(for: index, defaultDate: entry.date, isOutOfWeek: isOutOfWeek),
                     displayTime: formatTimeOnly(entry.startTime ?? entry.date),
@@ -378,9 +410,9 @@ struct WeeklyWorkEntryForm: View {
             VStack(alignment: .leading, spacing: 8) {
                 Text("End Time")
                     .font(.subheadline)
-                    .foregroundColor(colorScheme == .dark ? .white.opacity(0.7) : Color.ksrMediumGray)
+                    .foregroundColor(colorScheme == .dark ? .white.opacity(0.7) : .ksrMediumGray)
                 
-                customTimePicker(
+                CustomTimePicker(
                     label: "End Time",
                     time: endTimeBinding(for: index, defaultDate: entry.date, isOutOfWeek: isOutOfWeek),
                     displayTime: formatTimeOnly(entry.endTime ?? entry.date),
@@ -391,24 +423,24 @@ struct WeeklyWorkEntryForm: View {
             VStack(alignment: .leading, spacing: 8) {
                 Text("Break (minutes)")
                     .font(.subheadline)
-                    .foregroundColor(colorScheme == .dark ? .white.opacity(0.7) : Color.ksrMediumGray)
+                    .foregroundColor(colorScheme == .dark ? .white.opacity(0.7) : .ksrMediumGray)
                 
                 HStack {
                     Slider(value: pauseMinutesBinding(for: index, isOutOfWeek: isOutOfWeek), in: 0...120, step: 5)
-                        .accentColor(Color.ksrYellow)
+                        .accentColor(.ksrYellow)
                         .disabled(entry.status == "submitted" || entry.status == "confirmed")
                     
                     Text("\(Int(entry.pauseMinutes))")
                         .font(.headline)
                         .frame(width: 50)
-                        .foregroundColor(colorScheme == .dark ? .white : Color.ksrDarkGray)
+                        .foregroundColor(colorScheme == .dark ? .white : .ksrDarkGray)
                 }
             }
             
             VStack(alignment: .leading, spacing: 8) {
                 Text("Kilometers")
                     .font(.subheadline)
-                    .foregroundColor(colorScheme == .dark ? .white.opacity(0.7) : Color.ksrMediumGray)
+                    .foregroundColor(colorScheme == .dark ? .white.opacity(0.7) : .ksrMediumGray)
                 
                 HStack {
                     TextField("Enter km", value: kmBinding(for: index, isOutOfWeek: isOutOfWeek), format: .number)
@@ -416,18 +448,18 @@ struct WeeklyWorkEntryForm: View {
                         .textFieldStyle(.roundedBorder)
                         .frame(maxWidth: 100)
                         .padding(.vertical, 4)
-                        .disabled(entry.status == "submitted" || entry.status == "confirmed")
+                        .disabled(entry.status == "submitted" || entry.status != "confirmed")
                     
                     Text("km")
                         .font(.subheadline)
-                        .foregroundColor(colorScheme == .dark ? .white.opacity(0.7) : Color.ksrMediumGray)
+                        .foregroundColor(colorScheme == .dark ? .white.opacity(0.7) : .ksrMediumGray)
                 }
             }
             
             VStack(alignment: .leading, spacing: 8) {
                 Text("Notes (optional)")
                     .font(.subheadline)
-                    .foregroundColor(colorScheme == .dark ? .white.opacity(0.7) : Color.ksrMediumGray)
+                    .foregroundColor(colorScheme == .dark ? .white.opacity(0.7) : .ksrMediumGray)
                 
                 if colorScheme == .dark {
                     ZStack(alignment: .topLeading) {
@@ -444,63 +476,35 @@ struct WeeklyWorkEntryForm: View {
                             .disabled(entry.status == "submitted" || entry.status == "confirmed")
                     }
                 } else {
-                    TextEditor(text: notesBinding(for: index, isOutOfWeek: isOutOfWeek))
-                        .frame(height: 100)
-                        .padding(4)
-                        .background(Color(.systemGray6))
-                        .cornerRadius(8)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke(Color(.systemGray3), lineWidth: 1)
-                        )
-                        .disabled(entry.status == "submitted" || entry.status == "confirmed")
+                    ZStack(alignment: .topLeading) {
+                        TextEditor(text: notesBinding(for: index, isOutOfWeek: isOutOfWeek))
+                            .frame(height: 100)
+                            .padding(4)
+                            .background(Color(.systemGray6))
+                            .cornerRadius(8)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(Color(.systemGray3), lineWidth: 1)
+                            )
+                            .disabled(entry.status == "submitted" || entry.status == "confirmed")
+                    }
                 }
             }
         }
         .padding()
-        .background(colorScheme == .dark ? Color(.systemGray6).opacity(0.2) : Color.white)
+        .background(colorScheme == .dark ? Color(.systemGray6).opacity(0.2) : .white)
         .cornerRadius(12)
-        .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.3 : 0.05), radius: 2, x: 0, y: 2)
-    }
-    
-    private func customTimePicker(label: String, time: Binding<Date>, displayTime: String, isEditable: Bool) -> some View {
-        ZStack(alignment: .trailing) {
-            DatePicker(
-                label,
-                selection: time,
-                displayedComponents: .hourAndMinute
-            )
-            .labelsHidden()
-            .datePickerStyle(.compact)
-            .accentColor(.ksrYellow)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .disabled(!isEditable)
-            
-            Text(displayTime)
-                .font(.system(size: 20, weight: .semibold))
-                .foregroundColor(isEditable ? (colorScheme == .dark ? .white : .black) : .gray)
-                .padding(8)
-                .background(
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(colorScheme == .dark ? Color(.systemGray5).opacity(0.5) : Color(.systemGray6))
-                )
-                .padding(.trailing, 8)
-                .allowsHitTesting(false)
-        }
-        .padding(8)
-        .background(colorScheme == .dark ? Color(.systemGray6).opacity(0.2) : Color(.systemGray6))
-        .cornerRadius(8)
+        .shadow(color: .black.opacity(colorScheme == .dark ? 0.3 : 0.05), radius: 2, x: 0, y: 2)
     }
     
     // MARK: - Out-of-Week Entries Section
-    
     private var outOfWeekEntriesSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             if !outOfWeekEntries.isEmpty {
                 Text("Entries Outside This Week")
                     .font(.title3)
                     .fontWeight(.bold)
-                    .foregroundColor(colorScheme == .dark ? .white : Color.ksrDarkGray)
+                    .foregroundColor(colorScheme == .dark ? .white : .ksrDarkGray)
                 
                 ForEach(outOfWeekEntries.indices, id: \.self) { index in
                     let entry = outOfWeekEntries[index]
@@ -515,13 +519,11 @@ struct WeeklyWorkEntryForm: View {
                             Text(formatDate(entry.date))
                                 .font(.headline)
                                 .foregroundColor(.gray)
-                            
                             Spacer()
-                            
                             if entry.startTime != nil && entry.endTime != nil {
                                 Text("\(entry.totalHours, specifier: "%.2f") hrs")
                                     .font(.subheadline)
-                                    .foregroundColor(Color.ksrYellow)
+                                    .foregroundColor(.ksrYellow)
                             } else {
                                 Text("No hours")
                                     .font(.subheadline)
@@ -530,13 +532,10 @@ struct WeeklyWorkEntryForm: View {
                         }
                         .padding()
                         .background(
-                            isSelected ?
-                                Color.ksrYellow.opacity(0.1) :
-                                (colorScheme == .dark ? Color(.systemGray6).opacity(0.2) : Color.white)
+                            isSelected ? Color.ksrYellowLight : (colorScheme == .dark ? Color(.systemGray6).opacity(0.2) : .white)
                         )
                         .cornerRadius(12)
                     }
-                    
                     if isSelected {
                         dayEntrySection(for: entry, at: index, isOutOfWeek: true)
                     }
@@ -546,13 +545,12 @@ struct WeeklyWorkEntryForm: View {
     }
     
     // MARK: - Week Summary Section
-    
     private var weekSummarySection: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Week Summary")
                 .font(.title3)
                 .fontWeight(.bold)
-                .foregroundColor(colorScheme == .dark ? .white : Color.ksrDarkGray)
+                .foregroundColor(colorScheme == .dark ? .white : .ksrDarkGray)
             
             VStack(spacing: 0) {
                 ForEach(0..<filteredWeekData.count, id: \.self) { index in
@@ -566,27 +564,25 @@ struct WeeklyWorkEntryForm: View {
                         HStack {
                             Text(formatDayShort(entry.date))
                                 .font(.subheadline)
-                                .foregroundColor(entry.isFutureDate ? Color.orange : (colorScheme == .dark ? .white : Color.ksrDarkGray))
-                            
+                                .foregroundColor(entry.isFutureDate ? .ksrWarning : (colorScheme == .dark ? .white : .ksrDarkGray))
                             Spacer()
-                            
                             if entry.isFutureDate {
                                 Image(systemName: "lock.fill")
-                                    .foregroundColor(.orange)
+                                    .foregroundColor(.ksrWarning)
                                     .font(.caption)
                                     .padding(.trailing, 4)
                                 Text("Future")
                                     .font(.caption)
-                                    .foregroundColor(.orange)
+                                    .foregroundColor(.ksrWarning)
                             } else if entry.startTime != nil && entry.endTime != nil {
                                 HStack {
                                     Text("\(entry.totalHours, specifier: "%.2f") hrs")
                                         .font(.subheadline)
-                                        .foregroundColor(Color.ksrYellow)
+                                        .foregroundColor(.ksrYellow)
                                     if let km = entry.km {
                                         Text("• \(km, specifier: "%.2f") km")
                                             .font(.subheadline)
-                                            .foregroundColor(Color.ksrYellow)
+                                            .foregroundColor(.ksrYellow)
                                     }
                                 }
                             } else {
@@ -599,30 +595,28 @@ struct WeeklyWorkEntryForm: View {
                         .padding(.horizontal)
                         .background(
                             index == selectedDayIndex ?
-                                (entry.isFutureDate ? Color.orange.opacity(0.1) : Color.ksrYellow.opacity(0.1)) :
+                                (entry.isFutureDate ? Color.ksrWarningLight : Color.ksrYellowLight) :
                                 (index % 2 == 0 ? (colorScheme == .dark ? Color(.systemGray6).opacity(0.3) : Color(.systemGray6)) :
-                                                  (colorScheme == .dark ? Color.black : Color.white))
+                                                  (colorScheme == .dark ? .black : .white))
                         )
                     }
                 }
                 
                 Divider()
-                    .background(colorScheme == .dark ? Color.gray.opacity(0.3) : Color.gray.opacity(0.2))
+                    .background(colorScheme == .dark ? .gray.opacity(0.3) : .gray.opacity(0.2))
                 
                 HStack {
                     Text("Total")
                         .font(.headline)
-                        .foregroundColor(colorScheme == .dark ? .white : Color.ksrDarkGray)
-                    
+                        .foregroundColor(colorScheme == .dark ? .white : .ksrDarkGray)
                     Spacer()
-                    
                     HStack {
                         Text("\(totalWeekHours(), specifier: "%.2f") hrs")
                             .font(.headline)
-                            .foregroundColor(Color.ksrYellow)
+                            .foregroundColor(.ksrYellow)
                         Text("• \(totalWeekKm(), specifier: "%.2f") km")
                             .font(.headline)
-                            .foregroundColor(Color.ksrYellow)
+                            .foregroundColor(.ksrYellow)
                     }
                 }
                 .padding()
@@ -637,56 +631,60 @@ struct WeeklyWorkEntryForm: View {
     }
     
     // MARK: - Bottom Action Bar
-    
     private var bottomActionBar: some View {
         HStack(spacing: 12) {
-            Button("Clear Draft") {
+            Button(action: {
                 showClearDraftAlert = true
+            }) {
+                Text("Clear Draft")
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.ksrErrorLight)
+                    .foregroundColor(.ksrError)
+                    .font(.headline)
+                    .cornerRadius(10)
             }
-            .frame(maxWidth: .infinity)
-            .padding()
-            .background(Color.red.opacity(0.2))
-            .foregroundColor(.red)
-            .font(.headline)
-            .cornerRadius(10)
             .disabled(vm.isLoading || !vm.anyDrafts)
             
-            Button("Save Draft") {
+            Button(action: {
                 vm.saveDraft()
+            }) {
+                Text("Save Draft")
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(colorScheme == .dark ? Color(.systemGray6).opacity(0.3) : .white)
+                    .foregroundColor(colorScheme == .dark ? .white : .ksrDarkGray)
+                    .font(.headline)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10)
+                            .stroke(colorScheme == .dark ? .gray.opacity(0.5) : .ksrDarkGray, lineWidth: 1)
+                    )
+                    .cornerRadius(10)
             }
-            .frame(maxWidth: .infinity)
-            .padding()
-            .background(colorScheme == .dark ? Color(.systemGray6).opacity(0.3) : Color.white)
-            .foregroundColor(colorScheme == .dark ? .white : Color.ksrDarkGray)
-            .font(.headline)
-            .overlay(
-                RoundedRectangle(cornerRadius: 10)
-                    .stroke(colorScheme == .dark ? Color.gray.opacity(0.5) : Color.ksrDarkGray, lineWidth: 1)
-            )
-            .cornerRadius(10)
             .disabled(vm.isLoading)
             
-            Button("Submit for Approval") {
+            Button(action: {
                 vm.submitEntries()
+            }) {
+                Text(preselectedEntry != nil ? "Resubmit" : "Submit for Approval")
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(Color.ksrYellow)
+                    .foregroundColor(.black)
+                    .font(.headline)
+                    .cornerRadius(10)
             }
-            .frame(maxWidth: .infinity)
-            .padding()
-            .background(Color.ksrYellow)
-            .foregroundColor(.black)
-            .font(.headline)
-            .cornerRadius(10)
             .disabled(vm.isLoading)
         }
         .padding()
         .background(
             Rectangle()
-                .fill(colorScheme == .dark ? Color.black : Color.white)
-                .shadow(color: Color.black.opacity(0.05), radius: 4, y: -2)
+                .fill(colorScheme == .dark ? .black : .white)
+                .shadow(color: .black.opacity(0.05), radius: 4, y: -2)
         )
     }
     
     // MARK: - Actions and Helper Functions
-    
     private var loadingOverlay: some View {
         ZStack {
             Color(.systemBackground)
@@ -698,13 +696,13 @@ struct WeeklyWorkEntryForm: View {
                     .scaleEffect(1.5)
                 Text("Saving...")
                     .font(.headline)
-                    .foregroundColor(colorScheme == .dark ? .white : Color.ksrDarkGray)
+                    .foregroundColor(colorScheme == .dark ? .white : .ksrDarkGray)
             }
             .padding(24)
             .background(
                 RoundedRectangle(cornerRadius: 16)
                     .fill(colorScheme == .dark ? Color(.systemGray6).opacity(0.7) : Color(.systemBackground))
-                    .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
+                    .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
             )
         }
     }
@@ -722,7 +720,6 @@ struct WeeklyWorkEntryForm: View {
     }
     
     // MARK: - Bindings
-    
     private func weekDataIndex(for index: Int, isOutOfWeek: Bool) -> Int? {
         let sourceArray = isOutOfWeek ? outOfWeekEntries : filteredWeekData
         guard index < sourceArray.count else { return nil }
@@ -806,7 +803,6 @@ struct WeeklyWorkEntryForm: View {
     }
     
     // MARK: - Formatting
-    
     private func formatDate(_ date: Date) -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "EEEE, MMMM d, yyyy"
@@ -853,6 +849,30 @@ struct WeeklyWorkEntryForm: View {
         formatter.locale = Locale(identifier: "en_US")
         formatter.timeZone = TimeZone.current
         return formatter.string(from: date)
+    }
+}
+
+// MARK: - Custom Time Picker
+struct CustomTimePicker: View {
+    let label: String
+    @Binding var time: Date
+    let displayTime: String
+    let isEditable: Bool
+    
+    var body: some View {
+        DatePicker(
+            label,
+            selection: $time,
+            displayedComponents: [.hourAndMinute]
+        )
+        .datePickerStyle(.wheel)
+        .labelsHidden()
+        .disabled(!isEditable)
+        .padding(.vertical, 4)
+        .background(
+            RoundedRectangle(cornerRadius: 8)
+                .fill(Color(.systemGray6).opacity(0.3))
+        )
     }
 }
 

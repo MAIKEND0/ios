@@ -52,7 +52,7 @@
 		1B71EFED2DD3636000731223 /* LoginViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B71EFEC2DD3635F00731223 /* LoginViewModel.swift */; };
 		1B71EFEF2DD363F700731223 /* RoleBasedRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B71EFEE2DD363F600731223 /* RoleBasedRootView.swift */; };
 		1B71EFF12DD371D700731223 /* KeychainService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B71EFF02DD371D500731223 /* KeychainService.swift */; };
-		1B71EFF32DD3A06800731223 /* APIError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B71EFF22DD3A06300731223 /* APIError.swift */; };
+		1B71EFF32DD3A06800731223 /* tempAPIError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B71EFF22DD3A06300731223 /* tempAPIError.swift */; };
 		1B71F00D2DD46AEC00731223 /* UIApplication+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B71F00C2DD46AE900731223 /* UIApplication+Extensions.swift */; };
 		1B71F00F2DD470FA00731223 /* SplashLoginContainerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B71F00E2DD470F700731223 /* SplashLoginContainerView.swift */; };
 		1B71F0142DD494F400731223 /* WorkerTasksView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B71F0132DD494EE00731223 /* WorkerTasksView.swift */; };
@@ -71,7 +71,12 @@
 		1B71F0422DD4BE9200731223 /* AuthInterceptor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B71F0412DD4BE9100731223 /* AuthInterceptor.swift */; };
 		1B71F0452DD4C41400731223 /* AuthDebugger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B71F0442DD4C40B00731223 /* AuthDebugger.swift */; };
 		1B71F0482DD4C44900731223 /* AuthenticationHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B71F0472DD4C43D00731223 /* AuthenticationHandler.swift */; };
+		1B779BB22DE4BD9400947C94 /* NotificationsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B779BB12DE4BD9400947C94 /* NotificationsViewModel.swift */; };
 		1B7A27782DD6032F004FFF06 /* Notifications.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B7A27772DD6032B004FFF06 /* Notifications.swift */; };
+		1B7D9B2E2DE45F9A00D39069 /* AppNotification.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B7D9B2D2DE45F9300D39069 /* AppNotification.swift */; };
+		1B7D9B322DE4600300D39069 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B7D9B312DE4600100D39069 /* NotificationService.swift */; };
+		1B7D9B332DE46CDE00D39069 /* NotificationResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B7D9B302DE45FC500D39069 /* NotificationResponse.swift */; };
+		1B7D9B372DE49BDC00D39069 /* NotificationsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B7D9B362DE49BDA00D39069 /* NotificationsView.swift */; };
 		1BA25FF42DE227D300501208 /* ManagerProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BA25FF32DE227CF00501208 /* ManagerProfileView.swift */; };
 		1BA25FF62DE227F000501208 /* ManagerProfileViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BA25FF52DE227E600501208 /* ManagerProfileViewModel.swift */; };
 		1BA25FF82DE22FE400501208 /* ManagerProfileComponent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BA25FF72DE22FDC00501208 /* ManagerProfileComponent.swift */; };
@@ -146,7 +151,7 @@
 		1B71EFEC2DD3635F00731223 /* LoginViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginViewModel.swift; sourceTree = "<group>"; };
 		1B71EFEE2DD363F600731223 /* RoleBasedRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoleBasedRootView.swift; sourceTree = "<group>"; };
 		1B71EFF02DD371D500731223 /* KeychainService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainService.swift; sourceTree = "<group>"; };
-		1B71EFF22DD3A06300731223 /* APIError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIError.swift; sourceTree = "<group>"; };
+		1B71EFF22DD3A06300731223 /* tempAPIError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = tempAPIError.swift; sourceTree = "<group>"; };
 		1B71F00C2DD46AE900731223 /* UIApplication+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UIApplication+Extensions.swift"; sourceTree = "<group>"; };
 		1B71F00E2DD470F700731223 /* SplashLoginContainerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashLoginContainerView.swift; sourceTree = "<group>"; };
 		1B71F0132DD494EE00731223 /* WorkerTasksView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkerTasksView.swift; sourceTree = "<group>"; };
@@ -165,7 +170,12 @@
 		1B71F0412DD4BE9100731223 /* AuthInterceptor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthInterceptor.swift; sourceTree = "<group>"; };
 		1B71F0442DD4C40B00731223 /* AuthDebugger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthDebugger.swift; sourceTree = "<group>"; };
 		1B71F0472DD4C43D00731223 /* AuthenticationHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthenticationHandler.swift; sourceTree = "<group>"; };
+		1B779BB12DE4BD9400947C94 /* NotificationsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationsViewModel.swift; sourceTree = SOURCE_ROOT; };
 		1B7A27772DD6032B004FFF06 /* Notifications.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notifications.swift; sourceTree = "<group>"; };
+		1B7D9B2D2DE45F9300D39069 /* AppNotification.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppNotification.swift; sourceTree = "<group>"; };
+		1B7D9B302DE45FC500D39069 /* NotificationResponse.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationResponse.swift; sourceTree = "<group>"; };
+		1B7D9B312DE4600100D39069 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
+		1B7D9B362DE49BDA00D39069 /* NotificationsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationsView.swift; sourceTree = "<group>"; };
 		1BA25FF32DE227CF00501208 /* ManagerProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManagerProfileView.swift; sourceTree = "<group>"; };
 		1BA25FF52DE227E600501208 /* ManagerProfileViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManagerProfileViewModel.swift; sourceTree = "<group>"; };
 		1BA25FF72DE22FDC00501208 /* ManagerProfileComponent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManagerProfileComponent.swift; sourceTree = "<group>"; };
@@ -321,6 +331,7 @@
 		1B71EF452DD3102000731223 = {
 			isa = PBXGroup;
 			children = (
+				1B7D9B2F2DE45FBF00D39069 /* Models */,
 				1B71F0432DD4C3C600731223 /* Debug */,
 				1B71F0332DD4A4D900731223 /* Utils */,
 				1B71EFB02DD3170F00731223 /* ViewModels */,
@@ -414,10 +425,11 @@
 		1B71EF942DD3126E00731223 /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				1B7D9B312DE4600100D39069 /* NotificationService.swift */,
 				1B6FB0112DD7ADC3007B2C9E /* API */,
 				1B71F0472DD4C43D00731223 /* AuthenticationHandler.swift */,
 				1B71F0412DD4BE9100731223 /* AuthInterceptor.swift */,
-				1B71EFF22DD3A06300731223 /* APIError.swift */,
+				1B71EFF22DD3A06300731223 /* tempAPIError.swift */,
 				1B71EFF02DD371D500731223 /* KeychainService.swift */,
 				1B71EFCE2DD3355200731223 /* AuthService.swift */,
 			);
@@ -530,6 +542,7 @@
 		1B71EFB02DD3170F00731223 /* ViewModels */ = {
 			isa = PBXGroup;
 			children = (
+				1B779BB12DE4BD9400947C94 /* NotificationsViewModel.swift */,
 			);
 			path = ViewModels;
 			sourceTree = "<group>";
@@ -612,9 +625,9 @@
 				1B3600D52DDA3B0C00943E5B /* OrientationManager.swift */,
 				1B3600D12DDA3A7F00943E5B /* AppDelegate.swift */,
 				1B3600C32DD9CD4000943E5B /* PDFViewer.swift */,
-				1B7A27772DD6032B004FFF06 /* Notifications.swift */,
 				1B71F03D2DD4BBC300731223 /* Calendar+Extensions.swift */,
 				1B71F0342DD4A4E000731223 /* DateFormatter+ISO.swift */,
+				1B7A27772DD6032B004FFF06 /* Notifications.swift */,
 			);
 			path = Utils;
 			sourceTree = "<group>";
@@ -625,6 +638,16 @@
 				1B71F0442DD4C40B00731223 /* AuthDebugger.swift */,
 			);
 			path = Debug;
+			sourceTree = "<group>";
+		};
+		1B7D9B2F2DE45FBF00D39069 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				1B7D9B362DE49BDA00D39069 /* NotificationsView.swift */,
+				1B7D9B302DE45FC500D39069 /* NotificationResponse.swift */,
+				1B7D9B2D2DE45F9300D39069 /* AppNotification.swift */,
+			);
+			path = Models;
 			sourceTree = "<group>";
 		};
 		1BA25FF22DE227CA00501208 /* Profile */ = {
@@ -825,6 +848,7 @@
 				1B71F0212DD4972200731223 /* WorkerWorkHoursViewModel.swift in Sources */,
 				1B4514862DDC5A0D0020443F /* ManagerWorkPlansView.swift in Sources */,
 				1B71EFE82DD3617200731223 /* LoginView.swift in Sources */,
+				1B7D9B322DE4600300D39069 /* NotificationService.swift in Sources */,
 				1B71F02F2DD4A49100731223 /* WorkHourEntry.swift in Sources */,
 				1B71F0352DD4AA0C00731223 /* DateFormatter+ISO.swift in Sources */,
 				1B71EFC22DD32A6500731223 /* SplashScreenView.swift in Sources */,
@@ -844,14 +868,18 @@
 				1B71F0482DD4C44900731223 /* AuthenticationHandler.swift in Sources */,
 				1B71F0382DD4B29A00731223 /* WorkerDashboardView.swift in Sources */,
 				1B63CC5E2DD867E3005F598D /* TimesheetReceiptView.swift in Sources */,
+				1B779BB22DE4BD9400947C94 /* NotificationsViewModel.swift in Sources */,
 				1B63CC6D2DD91CE7005F598D /* ManagerDashboardComponents.swift in Sources */,
 				1B71F0452DD4C41400731223 /* AuthDebugger.swift in Sources */,
+				1B7D9B332DE46CDE00D39069 /* NotificationResponse.swift in Sources */,
+				1B7D9B2E2DE45F9A00D39069 /* AppNotification.swift in Sources */,
+				1B7D9B372DE49BDC00D39069 /* NotificationsView.swift in Sources */,
 				1B71F03E2DD4BBC400731223 /* Calendar+Extensions.swift in Sources */,
 				1B45147E2DDC58180020443F /* WorkPlanAPIService.swift in Sources */,
 				1B4514802DDC588D0020443F /* CreateWorkPlanViewModel.swift in Sources */,
 				1B71EFC42DD3307700731223 /* WeeklyWorkEntryViewModel.swift in Sources */,
 				1B4514A92DDF373B0020443F /* WeekUtils.swift in Sources */,
-				1B71EFF32DD3A06800731223 /* APIError.swift in Sources */,
+				1B71EFF32DD3A06800731223 /* tempAPIError.swift in Sources */,
 				1B6FB00E2DD7A81C007B2C9E /* BaseAPIService.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
