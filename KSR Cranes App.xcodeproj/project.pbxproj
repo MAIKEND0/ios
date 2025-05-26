@@ -72,6 +72,12 @@
 		1B71F0452DD4C41400731223 /* AuthDebugger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B71F0442DD4C40B00731223 /* AuthDebugger.swift */; };
 		1B71F0482DD4C44900731223 /* AuthenticationHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B71F0472DD4C43D00731223 /* AuthenticationHandler.swift */; };
 		1B7A27782DD6032F004FFF06 /* Notifications.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B7A27772DD6032B004FFF06 /* Notifications.swift */; };
+		1BA25FF42DE227D300501208 /* ManagerProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BA25FF32DE227CF00501208 /* ManagerProfileView.swift */; };
+		1BA25FF62DE227F000501208 /* ManagerProfileViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BA25FF52DE227E600501208 /* ManagerProfileViewModel.swift */; };
+		1BA25FF82DE22FE400501208 /* ManagerProfileComponent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BA25FF72DE22FDC00501208 /* ManagerProfileComponent.swift */; };
+		1BA25FFA2DE248F300501208 /* SupervisorProfileApiService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BA25FF92DE248E600501208 /* SupervisorProfileApiService.swift */; };
+		1BA25FFC2DE24C4900501208 /* ProfilePictureView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BA25FFB2DE24C4200501208 /* ProfilePictureView.swift */; };
+		1BA25FFE2DE272F700501208 /* TabButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BA25FFD2DE272ED00501208 /* TabButton.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -160,6 +166,12 @@
 		1B71F0442DD4C40B00731223 /* AuthDebugger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthDebugger.swift; sourceTree = "<group>"; };
 		1B71F0472DD4C43D00731223 /* AuthenticationHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthenticationHandler.swift; sourceTree = "<group>"; };
 		1B7A27772DD6032B004FFF06 /* Notifications.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notifications.swift; sourceTree = "<group>"; };
+		1BA25FF32DE227CF00501208 /* ManagerProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManagerProfileView.swift; sourceTree = "<group>"; };
+		1BA25FF52DE227E600501208 /* ManagerProfileViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManagerProfileViewModel.swift; sourceTree = "<group>"; };
+		1BA25FF72DE22FDC00501208 /* ManagerProfileComponent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManagerProfileComponent.swift; sourceTree = "<group>"; };
+		1BA25FF92DE248E600501208 /* SupervisorProfileApiService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupervisorProfileApiService.swift; sourceTree = "<group>"; };
+		1BA25FFB2DE24C4200501208 /* ProfilePictureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfilePictureView.swift; sourceTree = "<group>"; };
+		1BA25FFD2DE272ED00501208 /* TabButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabButton.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -221,6 +233,7 @@
 		1B63CC4F2DD86017005F598D /* Workers */ = {
 			isa = PBXGroup;
 			children = (
+				1BA25FFD2DE272ED00501208 /* TabButton.swift */,
 				1B63CC4A2DD85FE3005F598D /* ManagerWorkersView.swift */,
 			);
 			path = Workers;
@@ -255,6 +268,7 @@
 		1B6FB0052DD79D7F007B2C9E /* Manager */ = {
 			isa = PBXGroup;
 			children = (
+				1BA25FF22DE227CA00501208 /* Profile */,
 				1B4514822DDC58A60020443F /* Workplan */,
 				1B63CC732DD91D1D005F598D /* WeekDetailView.swift */,
 				1B63CC6E2DD91D00005F598D /* ManagerDashboardSections.swift */,
@@ -280,6 +294,7 @@
 		1B6FB0092DD79DE8007B2C9E /* ViewModels */ = {
 			isa = PBXGroup;
 			children = (
+				1BA25FF52DE227E600501208 /* ManagerProfileViewModel.swift */,
 				1B45148B2DDC5A440020443F /* EditWorkPlanViewModel.swift */,
 				1B4514872DDC5A1A0020443F /* ManagerWorkPlansViewModel.swift */,
 				1B45147F2DDC58860020443F /* CreateWorkPlanViewModel.swift */,
@@ -294,6 +309,7 @@
 		1B6FB0112DD7ADC3007B2C9E /* API */ = {
 			isa = PBXGroup;
 			children = (
+				1BA25FF92DE248E600501208 /* SupervisorProfileApiService.swift */,
 				1B45147D2DDC58150020443F /* WorkPlanAPIService.swift */,
 				1B6FB00D2DD7A817007B2C9E /* BaseAPIService.swift */,
 				1B6FB00F2DD7A849007B2C9E /* ManagerAPIService.swift */,
@@ -611,6 +627,16 @@
 			path = Debug;
 			sourceTree = "<group>";
 		};
+		1BA25FF22DE227CA00501208 /* Profile */ = {
+			isa = PBXGroup;
+			children = (
+				1BA25FFB2DE24C4200501208 /* ProfilePictureView.swift */,
+				1BA25FF72DE22FDC00501208 /* ManagerProfileComponent.swift */,
+				1BA25FF32DE227CF00501208 /* ManagerProfileView.swift */,
+			);
+			path = Profile;
+			sourceTree = "<group>";
+		};
 		D6DA9B9AC9F577E1E87424F7 /* Pods */ = {
 			isa = PBXGroup;
 			children = (
@@ -766,15 +792,19 @@
 				1B71F0322DD4A4BB00731223 /* WorkHoursViewModeltemp.swift in Sources */,
 				1B4514902DDC5D230020443F /* WorkPlanComponents.swift in Sources */,
 				1B4514AB2DDF83260020443F /* ToastView.swift in Sources */,
+				1BA25FFA2DE248F300501208 /* SupervisorProfileApiService.swift in Sources */,
 				1B4514882DDC5A290020443F /* ManagerWorkPlansViewModel.swift in Sources */,
 				1B3600C42DD9CD4500943E5B /* PDFViewer.swift in Sources */,
 				1B71F01E2DD496FF00731223 /* WorkerTasksViewModel.swift in Sources */,
 				1B71EFCD2DD3351E00731223 /* WorkerAPIService.swift in Sources */,
 				1B6FB00B2DD79DF9007B2C9E /* ManagerDashboardViewModel.swift in Sources */,
+				1BA25FFE2DE272F700501208 /* TabButton.swift in Sources */,
 				1B71F0402DD4BBFB00731223 /* WorkHourEntry+Extensions.swift in Sources */,
 				1B3600DA2DDA56E700943E5B /* TimesheetReportsViewModel.swift in Sources */,
 				1B6FB0082DD79DD1007B2C9E /* ManagerDashboardView.swift in Sources */,
+				1BA25FFC2DE24C4900501208 /* ProfilePictureView.swift in Sources */,
 				1B71EFAC2DD315C900731223 /* Color+Extensions.swift in Sources */,
+				1BA25FF62DE227F000501208 /* ManagerProfileViewModel.swift in Sources */,
 				1B3600D82DDA563800943E5B /* TimesheetReportsView.swift in Sources */,
 				1B71F0422DD4BE9200731223 /* AuthInterceptor.swift in Sources */,
 				1B63CC742DD91D20005F598D /* WeekDetailView.swift in Sources */,
@@ -798,6 +828,7 @@
 				1B71F02F2DD4A49100731223 /* WorkHourEntry.swift in Sources */,
 				1B71F0352DD4AA0C00731223 /* DateFormatter+ISO.swift in Sources */,
 				1B71EFC22DD32A6500731223 /* SplashScreenView.swift in Sources */,
+				1BA25FF42DE227D300501208 /* ManagerProfileView.swift in Sources */,
 				1B3600D62DDA3B1500943E5B /* OrientationManager.swift in Sources */,
 				1B71F03A2DD4B53C00731223 /* WorkerDashboardViewModel.swift in Sources */,
 				1B71F02D2DD4A10200731223 /* EditableWorkEntry.swift in Sources */,
@@ -809,6 +840,7 @@
 				1B63CC5B2DD865D2005F598D /* SignatureModalView.swift in Sources */,
 				1B45148A2DDC5A3B0020443F /* EditWorkPlanView.swift in Sources */,
 				1B63CC512DD8602A005F598D /* ManagerWorkersViewModel.swift in Sources */,
+				1BA25FF82DE22FE400501208 /* ManagerProfileComponent.swift in Sources */,
 				1B71F0482DD4C44900731223 /* AuthenticationHandler.swift in Sources */,
 				1B71F0382DD4B29A00731223 /* WorkerDashboardView.swift in Sources */,
 				1B63CC5E2DD867E3005F598D /* TimesheetReceiptView.swift in Sources */,

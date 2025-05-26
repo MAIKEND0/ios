@@ -16,6 +16,10 @@ class ManagerDashboardViewModel: ObservableObject {
     @Published var alertTitle: String = ""
     @Published var alertMessage: String = ""
     @Published var showAllPendingEntries: Bool = true
+    
+    // DODANE: Przechowywanie informacji o pracownikach i ich przypisaniach
+    @Published var assignedWorkers: [ManagerAPIService.Worker] = []
+    private var taskWorkerAssignments: [Int: [String]] = [:] // taskId -> [workerNames]
 
     private var isProcessingApproval: Bool = false
     private var isViewActive: Bool = true
@@ -58,6 +62,11 @@ class ManagerDashboardViewModel: ObservableObject {
                    lhs.canBeConfirmed == rhs.canBeConfirmed
         }
     }
+    
+    // DODANA: Metoda do pobierania przypisanych pracowników dla zadania
+    func getAssignedWorkers(for taskId: Int) -> [String] {
+        return taskWorkerAssignments[taskId] ?? []
+    }
 
     func viewAppeared() {
         isViewActive = true
@@ -81,12 +90,20 @@ class ManagerDashboardViewModel: ObservableObject {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
         let weekStartStr = formatter.string(from: selectedMonday)
-
-        Publishers.Zip3(
+        
+        // POPRAWIONE: Dodanie supervisorId na początku
+        let supervisorId = Int(AuthService.shared.getEmployeeId() ?? "0") ?? 0
+        
+        // POPRAWIONE: Używam dwóch Publishers.Zip3 zamiast Zip4
+        let mainDataPublisher = Publishers.Zip3(
             managerService.fetchSupervisorTasks(supervisorId: 0),
             managerService.fetchPendingWorkEntriesForManager(weekStartDate: weekStartStr),
             managerService.fetchAllPendingWorkEntriesForManager()
         )
+        
+        let workersPublisher = managerService.fetchAssignedWorkers(supervisorId: supervisorId)
+        
+        Publishers.Zip(mainDataPublisher, workersPublisher)
         .receive(on: DispatchQueue.main)
         .sink(receiveCompletion: { [weak self] completionStatus in
             guard let self = self, self.isViewActive else { return }
@@ -96,10 +113,19 @@ class ManagerDashboardViewModel: ObservableObject {
                 self.alertTitle = "Error"
                 self.alertMessage = error.localizedDescription
             }
-        }, receiveValue: { [weak self] tasks, weekEntries, allEntries in
+        }, receiveValue: { [weak self] mainData, workers in
             guard let self = self, self.isViewActive else { return }
             
+            let (tasks, weekEntries, allEntries) = mainData
+            
             self.supervisorTasks = tasks
+            self.assignedWorkers = workers // DODANE
+            
+            // DODANE: Budowanie mapowania task -> workers
+            self.buildTaskWorkerAssignments()
+            
+            // DODANE: Budowanie mapowania task -> workers
+            self.buildTaskWorkerAssignments()
             
             let pendingWeekEntries = weekEntries.filter { $0.confirmation_status != "confirmed" }
             let weekGrouped = Dictionary(grouping: pendingWeekEntries) { $0.task_id }
@@ -172,6 +198,28 @@ class ManagerDashboardViewModel: ObservableObject {
             self.isLoading = false
         })
         .store(in: &cancellables)
+    }
+    
+    // DODANA: Metoda do budowania mapowania task -> workers
+    private func buildTaskWorkerAssignments() {
+        taskWorkerAssignments.removeAll()
+        
+        for worker in assignedWorkers {
+            for task in worker.assignedTasks {
+                if taskWorkerAssignments[task.task_id] == nil {
+                    taskWorkerAssignments[task.task_id] = []
+                }
+                taskWorkerAssignments[task.task_id]?.append(worker.name)
+            }
+        }
+        
+        #if DEBUG
+        print("[ManagerDashboardViewModel] ========== TASK WORKER ASSIGNMENTS ==========")
+        for (taskId, workerNames) in taskWorkerAssignments {
+            print("[ManagerDashboardViewModel] Task \(taskId): \(workerNames.joined(separator: ", "))")
+        }
+        print("[ManagerDashboardViewModel] ============================================")
+        #endif
     }
 
     func changeWeek(by offset: Int) {

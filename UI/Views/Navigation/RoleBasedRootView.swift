@@ -1,9 +1,9 @@
 //
-//  RoleBasedRootView.swift
+//  RoleBasedRootView.swift (Updated)
 //  KSR Cranes App
 //
 //  Created by Maksymilian Marcinowski on 13/05/2025.
-//
+//  Updated to use role-specific profile views
 
 import SwiftUI
 
@@ -17,7 +17,7 @@ struct RoleBasedRootView: View {
             // Worker view
             WorkerMainView()
         case "byggeleder":
-            // Manager view
+            // Manager view with enhanced profile
             ManagerMainView()
         case "chef":
             // Boss view
@@ -35,11 +35,32 @@ struct RoleBasedRootView: View {
 // Worker's main view - this is your existing MainTabView
 struct WorkerMainView: View {
     var body: some View {
-        MainTabView()
+        TabView {
+            WorkerDashboardView()
+                .tabItem {
+                    Label("Dashboard", systemImage: "house.fill")
+                }
+            
+            WorkerWorkHoursView()
+                .tabItem {
+                    Label("Hours", systemImage: "clock.fill")
+                }
+            
+            WorkerTasksView()
+                .tabItem {
+                    Label("Tasks", systemImage: "list.bullet")
+                }
+            
+            ProfileView()  // Standard profile for workers
+                .tabItem {
+                    Label("Profile", systemImage: "person.fill")
+                }
+        }
+        .accentColor(Color.ksrYellow)
     }
 }
 
-// Manager's main view
+// Manager's main view with enhanced profile
 struct ManagerMainView: View {
     var body: some View {
         TabView {
@@ -58,12 +79,12 @@ struct ManagerMainView: View {
                     Label("Workers", systemImage: "person.3.fill")
                 }
             
-            TimesheetReportsView()
+            ManagerWorkPlansView()
                 .tabItem {
-                    Label("Timesheets", systemImage: "doc.text.fill")
+                    Label("Work Plans", systemImage: "calendar")
                 }
             
-            ProfileView()
+            ManagerProfileView()  // Enhanced profile for managers
                 .tabItem {
                     Label("Profile", systemImage: "person.fill")
                 }
@@ -72,10 +93,9 @@ struct ManagerMainView: View {
     }
 }
 
-// Boss's main view
+// Boss's main view with potential for boss-specific profile
 struct BossMainView: View {
     var body: some View {
-        // Replace with actual boss UI when implemented
         TabView {
             Text("Executive Dashboard")
                 .tabItem {
@@ -92,6 +112,7 @@ struct BossMainView: View {
                     Label("Management", systemImage: "building.2.fill")
                 }
             
+            // Could be BossProfileView() in the future
             ProfileView()
                 .tabItem {
                     Label("Profile", systemImage: "person.fill")
@@ -101,10 +122,9 @@ struct BossMainView: View {
     }
 }
 
-// Admin's main view
+// Admin's main view with potential for admin-specific profile
 struct AdminMainView: View {
     var body: some View {
-        // Replace with actual admin UI when implemented
         TabView {
             Text("System Dashboard")
                 .tabItem {
@@ -121,6 +141,7 @@ struct AdminMainView: View {
                     Label("Settings", systemImage: "gearshape.2.fill")
                 }
             
+            // Could be AdminProfileView() in the future
             ProfileView()
                 .tabItem {
                     Label("Profile", systemImage: "person.fill")

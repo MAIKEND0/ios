@@ -1,9 +1,7 @@
-//
-//  TimesheetReportsView.swift
-//  KSR Cranes App
-//
-//  Created by Maksymilian Marcinowski on 18/05/2025.
-//  Visual improvements added - Modern design with enhanced UI
+// TimesheetReportsView.swift
+// KSR Cranes App
+// Created by Maksymilian Marcinowski on 18/05/2025.
+// Visual improvements added - Modern design with enhanced UI
 
 import SwiftUI
 import UIKit
@@ -13,11 +11,11 @@ struct TimesheetReportsView: View {
     @StateObject private var viewModel = TimesheetReportsViewModel()
     @Environment(\.colorScheme) private var colorScheme
     @State private var selectedTimesheet: ManagerAPIService.Timesheet?
-    @State private var selectedTab: Tab = .tasks
+    @State private var selectedTab: TimesheetTab = .tasks
     @State private var searchText = ""
     @State private var selectedFilter: TimeFilter = .all
     
-    enum Tab: String, CaseIterable, Identifiable {
+    enum TimesheetTab: String, TabProtocol {
         case tasks = "By Tasks"
         case workers = "By Workers"
         
@@ -65,7 +63,6 @@ struct TimesheetReportsView: View {
         }
     }
     
-    // Grupowanie timesheetów
     private var groupedByTasks: [Int: [ManagerAPIService.Timesheet]] {
         Dictionary(grouping: filteredTimesheets) { $0.task_id }
     }
@@ -74,11 +71,9 @@ struct TimesheetReportsView: View {
         Dictionary(grouping: filteredTimesheets) { $0.employee_id ?? 0 }
     }
     
-    // Filtrowanie timesheetów
     private var filteredTimesheets: [ManagerAPIService.Timesheet] {
         var timesheets = viewModel.timesheets
         
-        // Apply time filter
         if selectedFilter != .all {
             let calendar = Calendar.current
             let now = Date()
@@ -92,10 +87,8 @@ struct TimesheetReportsView: View {
                 case .thisMonth:
                     let monthComponent = calendar.component(.month, from: now)
                     let yearComponent = calendar.component(.year, from: now)
-                    // Approximate week-to-month conversion
                     return timesheet.year == yearComponent && (timesheet.weekNumber >= (monthComponent - 1) * 4)
                 case .recent:
-                    // Last 30 days
                     return calendar.dateInterval(of: .day, for: timesheet.created_at)?.start ?? timesheet.created_at >= calendar.date(byAdding: .day, value: -30, to: now) ?? now
                 case .all:
                     return true
@@ -103,7 +96,6 @@ struct TimesheetReportsView: View {
             }
         }
         
-        // Apply search filter
         if !searchText.isEmpty {
             let lowercasedSearch = searchText.lowercased()
             timesheets = timesheets.filter { timesheet in
@@ -125,16 +117,9 @@ struct TimesheetReportsView: View {
         NavigationStack {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 20) {
-                    // Header with statistics
                     headerStatsSection
-                    
-                    // Search and filter section
                     searchAndFilterSection
-                    
-                    // Tab selection
                     tabSelectionSection
-                    
-                    // Timesheets content
                     timesheetsContentSection
                 }
                 .padding(.horizontal, 16)
@@ -187,7 +172,6 @@ struct TimesheetReportsView: View {
         }
     }
     
-    // MARK: - Background Gradient
     private var backgroundGradient: some View {
         LinearGradient(
             gradient: Gradient(colors: [
@@ -200,7 +184,6 @@ struct TimesheetReportsView: View {
         .ignoresSafeArea()
     }
     
-    // MARK: - Header Stats Section
     private var headerStatsSection: some View {
         HStack(spacing: 16) {
             TimesheetStatCard(
@@ -241,10 +224,8 @@ struct TimesheetReportsView: View {
         Set(viewModel.timesheets.map { $0.task_id }).count
     }
     
-    // MARK: - Search and Filter Section
     private var searchAndFilterSection: some View {
         VStack(spacing: 16) {
-            // Search Bar
             HStack {
                 Image(systemName: "magnifyingglass")
                     .foregroundColor(.secondary)
@@ -270,7 +251,6 @@ struct TimesheetReportsView: View {
                     .fill(colorScheme == .dark ? Color(.systemGray5) : Color(.systemGray6))
             )
             
-            // Time Filter Buttons
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 12) {
                     ForEach(TimeFilter.allCases, id: \.id) { filter in
@@ -289,10 +269,9 @@ struct TimesheetReportsView: View {
         }
     }
     
-    // MARK: - Tab Selection Section
     private var tabSelectionSection: some View {
         HStack(spacing: 12) {
-            ForEach(Tab.allCases, id: \.id) { tab in
+            ForEach(TimesheetTab.allCases, id: \.id) { tab in
                 TabButton(
                     tab: tab,
                     isSelected: selectedTab == tab
@@ -305,7 +284,6 @@ struct TimesheetReportsView: View {
         }
     }
     
-    // MARK: - Timesheets Content Section
     private var timesheetsContentSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("\(filteredTimesheets.count) timesheets")
@@ -328,7 +306,6 @@ struct TimesheetReportsView: View {
         }
     }
     
-    // MARK: - Task Grouped View
     private var taskGroupedView: some View {
         LazyVStack(spacing: 20) {
             ForEach(groupedByTasks.keys.sorted(), id: \.self) { taskId in
@@ -351,7 +328,6 @@ struct TimesheetReportsView: View {
         .animation(.easeInOut(duration: 0.3), value: filteredTimesheets.count)
     }
     
-    // MARK: - Worker Grouped View
     private var workerGroupedView: some View {
         LazyVStack(spacing: 20) {
             ForEach(groupedByWorkers.keys.sorted(), id: \.self) { employeeId in
@@ -372,231 +348,6 @@ struct TimesheetReportsView: View {
             }
         }
         .animation(.easeInOut(duration: 0.3), value: filteredTimesheets.count)
-    }
-}
-
-// MARK: - PDF Viewer with Actions Component
-
-struct PDFViewerWithActions: View {
-    let url: URL
-    let onClose: () -> Void
-    
-    @Environment(\.colorScheme) private var colorScheme
-    @State private var isDownloading = false
-    @State private var showDownloadAlert = false
-    
-    var body: some View {
-        NavigationStack {
-            ZStack {
-                PDFViewer(source: PDFSource.url(url))
-                
-                // Simple loading overlay
-                if isDownloading {
-                    Color.black.opacity(0.4)
-                        .ignoresSafeArea()
-                    
-                    VStack(spacing: 16) {
-                        ProgressView()
-                            .scaleEffect(1.2)
-                            .tint(.ksrYellow)
-                        
-                        Text("Preparing PDF...")
-                            .font(.subheadline)
-                            .foregroundColor(.white)
-                    }
-                    .padding(24)
-                    .background(
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(colorScheme == .dark ? Color(.systemGray6).opacity(0.9) : Color(.systemGray5).opacity(0.9))
-                    )
-                }
-            }
-            .navigationTitle("Timesheet PDF")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Close") {
-                        onClose()
-                    }
-                    .foregroundColor(.ksrYellow)
-                    .disabled(isDownloading)
-                }
-                
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    HStack(spacing: 12) {
-                        Button {
-                            printPDF()
-                        } label: {
-                            Image(systemName: "printer")
-                                .foregroundColor(.ksrInfo)
-                        }
-                        .disabled(isDownloading)
-                        
-                        Button {
-                            sharePDF()
-                        } label: {
-                            Image(systemName: "square.and.arrow.up")
-                                .foregroundColor(.ksrSuccess)
-                        }
-                        .disabled(isDownloading)
-                    }
-                }
-            }
-            .alert("Download Failed", isPresented: $showDownloadAlert) {
-                Button("OK", role: .cancel) {}
-            } message: {
-                Text("Failed to download PDF for sharing. Please try again.")
-            }
-        }
-    }
-    
-    private func printPDF() {
-        Task {
-            await MainActor.run {
-                isDownloading = true
-            }
-            
-            do {
-                #if DEBUG
-                print("[PDFViewerWithActions] Quick download for printing...")
-                #endif
-                
-                let data = try await URLSession.shared.data(from: url).0
-                
-                await MainActor.run {
-                    isDownloading = false
-                    let printController = UIPrintInteractionController.shared
-                    printController.printingItem = data
-                    printController.present(animated: true) { controller, completed, error in
-                        #if DEBUG
-                        if let error = error {
-                            print("[PDFViewerWithActions] Printing failed: \(error)")
-                        } else if completed {
-                            print("[PDFViewerWithActions] Printing completed")
-                        }
-                        #endif
-                    }
-                }
-            } catch {
-                await MainActor.run {
-                    isDownloading = false
-                    showDownloadAlert = true
-                }
-                #if DEBUG
-                print("[PDFViewerWithActions] Failed to download PDF for printing: \(error)")
-                #endif
-            }
-        }
-    }
-    
-    private func sharePDF() {
-        Task {
-            await MainActor.run {
-                isDownloading = true
-            }
-            
-            do {
-                #if DEBUG
-                print("[PDFViewerWithActions] Quick download for sharing...")
-                #endif
-                
-                let data = try await URLSession.shared.data(from: url).0
-                
-                #if DEBUG
-                print("[PDFViewerWithActions] Downloaded \(data.count) bytes")
-                #endif
-                
-                await MainActor.run {
-                    isDownloading = false
-                    
-                    // Create temporary file with proper extension
-                    let tempDir = NSTemporaryDirectory()
-                    let filename = "Timesheet_\(Int(Date().timeIntervalSince1970)).pdf"
-                    let tempPath = (tempDir as NSString).appendingPathComponent(filename)
-                    let tempURL = URL(fileURLWithPath: tempPath)
-                    
-                    do {
-                        try data.write(to: tempURL)
-                        
-                        // Verify file was created
-                        guard FileManager.default.fileExists(atPath: tempURL.path) else {
-                            showDownloadAlert = true
-                            return
-                        }
-                        
-                        #if DEBUG
-                        print("[PDFViewerWithActions] Created temp file: \(tempURL.path)")
-                        #endif
-                        
-                        // Use the existing ShareSheet from TimesheetReceiptView
-                        let activityVC = UIActivityViewController(activityItems: [tempURL], applicationActivities: nil)
-                        
-                        // Present directly using UIApplication
-                        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-                           let window = windowScene.windows.first,
-                           let rootVC = window.rootViewController {
-                            
-                            // Find the topmost presented view controller
-                            var topVC = rootVC
-                            while let presentedVC = topVC.presentedViewController {
-                                topVC = presentedVC
-                            }
-                            
-                            topVC.present(activityVC, animated: true)
-                            
-                            #if DEBUG
-                            print("[PDFViewerWithActions] Presented activity controller directly")
-                            #endif
-                        }
-                        
-                    } catch {
-                        showDownloadAlert = true
-                        #if DEBUG
-                        print("[PDFViewerWithActions] Failed to create temp file: \(error)")
-                        #endif
-                    }
-                }
-            } catch {
-                await MainActor.run {
-                    isDownloading = false
-                    showDownloadAlert = true
-                }
-                #if DEBUG
-                print("[PDFViewerWithActions] Failed to download PDF for sharing: \(error)")
-                #endif
-            }
-        }
-    }
-}
-
-// MARK: - Simple ShareSheet for PDF Data
-
-struct ShareSheetForPDF: UIViewControllerRepresentable {
-    let pdfData: Data
-    let filename: String
-    
-    func makeUIViewController(context: Context) -> UIActivityViewController {
-        // Create a simple activity controller with just the data
-        let controller = UIActivityViewController(
-            activityItems: [pdfData],
-            applicationActivities: nil
-        )
-        
-        // Set completion handler to debug
-        controller.completionWithItemsHandler = { activityType, completed, returnedItems, error in
-            #if DEBUG
-            print("[ShareSheetForPDF] Activity: \(activityType?.rawValue ?? "nil"), completed: \(completed)")
-            if let error = error {
-                print("[ShareSheetForPDF] Error: \(error)")
-            }
-            #endif
-        }
-        
-        return controller
-    }
-    
-    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {
-        // No updates needed
     }
 }
 
@@ -673,39 +424,6 @@ struct TimeFilterChip: View {
     }
 }
 
-struct TabButton: View {
-    let tab: TimesheetReportsView.Tab
-    let isSelected: Bool
-    let action: () -> Void
-    
-    @Environment(\.colorScheme) private var colorScheme
-    
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: 8) {
-                Image(systemName: tab.icon)
-                    .font(.system(size: 16, weight: .medium))
-                
-                Text(tab.rawValue)
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
-            }
-            .foregroundColor(isSelected ? .white : (colorScheme == .dark ? .white : .primary))
-            .padding(.horizontal, 20)
-            .padding(.vertical, 12)
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(isSelected ? tab.color : (colorScheme == .dark ? Color(.systemGray5) : Color(.systemGray6)))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(tab.color.opacity(0.3), lineWidth: isSelected ? 0 : 1)
-            )
-        }
-        .buttonStyle(PlainButtonStyle())
-    }
-}
-
 struct TimesheetGroupCard: View {
     let title: String
     let subtitle: String
@@ -719,7 +437,6 @@ struct TimesheetGroupCard: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Header
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
@@ -754,7 +471,6 @@ struct TimesheetGroupCard: View {
                     }
                 }
                 
-                // Quick stats
                 HStack(spacing: 20) {
                     TimesheetStatItem(icon: "doc.text", value: "\(timesheets.count) sheets", color: color)
                     
@@ -766,7 +482,6 @@ struct TimesheetGroupCard: View {
             }
             .padding(20)
             
-            // Expandable content
             if isExpanded {
                 VStack(alignment: .leading, spacing: 16) {
                     Divider()
@@ -922,6 +637,194 @@ struct TimesheetsEmptyStateView: View {
         }
         .frame(maxWidth: .infinity, minHeight: 300)
         .padding(.vertical, 40)
+    }
+}
+
+// MARK: - PDF Viewer with Actions Component
+
+struct PDFViewerWithActions: View {
+    let url: URL
+    let onClose: () -> Void
+    
+    @Environment(\.colorScheme) private var colorScheme
+    @State private var isDownloading = false
+    @State private var showDownloadAlert = false
+    
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                PDFViewer(source: PDFSource.url(url))
+                
+                if isDownloading {
+                    Color.black.opacity(0.4)
+                        .ignoresSafeArea()
+                    
+                    VStack(spacing: 16) {
+                        ProgressView()
+                            .scaleEffect(1.2)
+                            .tint(.ksrYellow)
+                        
+                        Text("Preparing PDF...")
+                            .font(.subheadline)
+                            .foregroundColor(.white)
+                    }
+                    .padding(24)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(colorScheme == .dark ? Color(.systemGray6).opacity(0.9) : Color(.systemGray5).opacity(0.9))
+                    )
+                }
+            }
+            .navigationTitle("Timesheet PDF")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Close") {
+                        onClose()
+                    }
+                    .foregroundColor(.ksrYellow)
+                    .disabled(isDownloading)
+                }
+                
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    HStack(spacing: 12) {
+                        Button {
+                            printPDF()
+                        } label: {
+                            Image(systemName: "printer")
+                                .foregroundColor(.ksrInfo)
+                        }
+                        .disabled(isDownloading)
+                        
+                        Button {
+                            sharePDF()
+                        } label: {
+                            Image(systemName: "square.and.arrow.up")
+                                .foregroundColor(.ksrSuccess)
+                        }
+                        .disabled(isDownloading)
+                    }
+                }
+            }
+            .alert("Download Failed", isPresented: $showDownloadAlert) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text("Failed to download PDF for sharing. Please try again.")
+            }
+        }
+    }
+    
+    private func printPDF() {
+        Task {
+            await MainActor.run {
+                isDownloading = true
+            }
+            
+            do {
+                #if DEBUG
+                print("[PDFViewerWithActions] Quick download for printing...")
+                #endif
+                
+                let data = try await URLSession.shared.data(from: url).0
+                
+                await MainActor.run {
+                    isDownloading = false
+                    let printController = UIPrintInteractionController.shared
+                    printController.printingItem = data
+                    printController.present(animated: true) { controller, completed, error in
+                        #if DEBUG
+                        if let error = error {
+                            print("[PDFViewerWithActions] Printing failed: \(error)")
+                        } else if completed {
+                            print("[PDFViewerWithActions] Printing completed")
+                        }
+                        #endif
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    isDownloading = false
+                    showDownloadAlert = true
+                }
+                #if DEBUG
+                print("[PDFViewerWithActions] Failed to download PDF for printing: \(error)")
+                #endif
+            }
+        }
+    }
+    
+    private func sharePDF() {
+        Task {
+            await MainActor.run {
+                isDownloading = true
+            }
+            
+            do {
+                #if DEBUG
+                print("[PDFViewerWithActions] Quick download for sharing...")
+                #endif
+                
+                let data = try await URLSession.shared.data(from: url).0
+                
+                #if DEBUG
+                print("[PDFViewerWithActions] Downloaded \(data.count) bytes")
+                #endif
+                
+                await MainActor.run {
+                    isDownloading = false
+                    
+                    let tempDir = NSTemporaryDirectory()
+                    let filename = "Timesheet_\(Int(Date().timeIntervalSince1970)).pdf"
+                    let tempPath = (tempDir as NSString).appendingPathComponent(filename)
+                    let tempURL = URL(fileURLWithPath: tempPath)
+                    
+                    do {
+                        try data.write(to: tempURL)
+                        
+                        guard FileManager.default.fileExists(atPath: tempURL.path) else {
+                            showDownloadAlert = true
+                            return
+                        }
+                        
+                        #if DEBUG
+                        print("[PDFViewerWithActions] Created temp file: \(tempURL.path)")
+                        #endif
+                        
+                        let activityVC = UIActivityViewController(activityItems: [tempURL], applicationActivities: nil)
+                        
+                        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+                           let window = windowScene.windows.first,
+                           let rootVC = window.rootViewController {
+                            
+                            var topVC = rootVC
+                            while let presentedVC = topVC.presentedViewController {
+                                topVC = presentedVC
+                            }
+                            
+                            topVC.present(activityVC, animated: true)
+                            
+                            #if DEBUG
+                            print("[PDFViewerWithActions] Presented activity controller directly")
+                            #endif
+                        }
+                        
+                    } catch {
+                        showDownloadAlert = true
+                        #if DEBUG
+                        print("[PDFViewerWithActions] Failed to create temp file: \(error)")
+                        #endif
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    isDownloading = false
+                    showDownloadAlert = true
+                }
+                #if DEBUG
+                print("[PDFViewerWithActions] Failed to download PDF for sharing: \(error)")
+                #endif
+            }
+        }
     }
 }
 

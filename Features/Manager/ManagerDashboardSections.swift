@@ -370,7 +370,7 @@ struct ManagerDashboardSections {
         }
     }
     
-    // MARK: - Tasks Section (existing but with consistent styling)
+    // MARK: - Tasks Section
     struct TasksSection: View {
         @ObservedObject var viewModel: ManagerDashboardViewModel
         @Environment(\.colorScheme) private var colorScheme
@@ -580,7 +580,8 @@ struct ManagerDashboardSections {
                 ForEach(sortedTasks) { task in
                     TaskGridCard(
                         task: task,
-                        pendingEntriesByTask: viewModel.pendingEntriesByTask
+                        pendingEntriesByTask: viewModel.pendingEntriesByTask,
+                        viewModel: viewModel
                     )
                 }
             }
@@ -592,7 +593,8 @@ struct ManagerDashboardSections {
                 ForEach(sortedTasks) { task in
                     EnhancedTaskCard(
                         task: task,
-                        pendingEntriesByTask: viewModel.pendingEntriesByTask
+                        pendingEntriesByTask: viewModel.pendingEntriesByTask,
+                        viewModel: viewModel
                     )
                     .transition(.asymmetric(
                         insertion: .scale.combined(with: .opacity),
@@ -628,6 +630,7 @@ struct ManagerDashboardSections {
     struct EnhancedTaskCard: View {
         let task: ManagerAPIService.Task
         let pendingEntriesByTask: [ManagerDashboardViewModel.TaskWeekEntry]
+        let viewModel: ManagerDashboardViewModel
         @Environment(\.colorScheme) private var colorScheme
         @State private var showWorkPlanCreator = false
         @State private var isExpanded = false
@@ -647,6 +650,11 @@ struct ManagerDashboardSections {
             }
         }
         
+        // POPRAWIONE: Pracownicy przypisani do zadania
+        private var assignedWorkers: [String] {
+            viewModel.getAssignedWorkers(for: task.task_id)
+        }
+        
         var body: some View {
             VStack(alignment: .leading, spacing: 0) {
                 // Main Header
@@ -664,9 +672,9 @@ struct ManagerDashboardSections {
                 // Action Footer
                 actionFooter
             }
-            .background(cardBackground(colorScheme: colorScheme))
+            .background(ManagerDashboardSections.cardBackground(colorScheme: colorScheme))
             .overlay(
-                cardStroke(
+                ManagerDashboardSections.cardStroke(
                     pendingEntries.count > 0 ? Color.ksrWarning : Color.gray,
                     opacity: pendingEntries.count > 0 ? 0.4 : 0.2
                 )
@@ -725,6 +733,18 @@ struct ManagerDashboardSections {
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                             .lineLimit(1)
+                    }
+                    
+                    // POPRAWIONE: Wyświetlanie liczby przypisanych pracowników
+                    if !assignedWorkers.isEmpty {
+                        HStack(spacing: 4) {
+                            Image(systemName: "person.2.fill")
+                                .font(.caption)
+                                .foregroundColor(Color.ksrInfo)
+                            Text("\(assignedWorkers.count) workers assigned")
+                                .font(.caption)
+                                .foregroundColor(Color.ksrInfo)
+                        }
                     }
                     
                     // Status row
@@ -799,6 +819,36 @@ struct ManagerDashboardSections {
                         }
                     }
                     
+                    // POPRAWIONE: Lista przypisanych pracowników
+                    if !assignedWorkers.isEmpty {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Assigned Workers")
+                                .font(.subheadline)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.secondary)
+                            
+                            LazyVGrid(columns: [
+                                GridItem(.flexible()),
+                                GridItem(.flexible())
+                            ], spacing: 8) {
+                                ForEach(assignedWorkers, id: \.self) { workerName in
+                                    HStack(spacing: 6) {
+                                        Circle()
+                                            .fill(Color.ksrInfo)
+                                            .frame(width: 6, height: 6)
+                                        
+                                        Text(workerName)
+                                            .font(.caption)
+                                            .foregroundColor(colorScheme == .dark ? .white.opacity(0.8) : .primary)
+                                            .lineLimit(1)
+                                        
+                                        Spacer()
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
                     // Pending entries detail
                     if !pendingEntries.isEmpty {
                         VStack(alignment: .leading, spacing: 8) {
@@ -839,7 +889,7 @@ struct ManagerDashboardSections {
             }
         }
         
-        // MARK: - Action Footer
+        // MARK: - Action Footer (ZMNIEJSZONY PRZYCISK)
         private var actionFooter: some View {
             HStack {
                 Spacer()
@@ -847,17 +897,17 @@ struct ManagerDashboardSections {
                 Button {
                     showWorkPlanCreator = true
                 } label: {
-                    HStack(spacing: 8) {
+                    HStack(spacing: 6) {
                         Image(systemName: "calendar.badge.plus")
-                            .font(.system(size: 14, weight: .medium))
+                            .font(.system(size: 12, weight: .medium))
                         
-                        Text("Create Work Plan")
-                            .font(.subheadline)
+                        Text("Work Plan")
+                            .font(.caption)
                             .fontWeight(.medium)
                     }
                     .foregroundColor(.white)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 10)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
                     .background(
                         LinearGradient(
                             gradient: Gradient(colors: [
@@ -868,10 +918,10 @@ struct ManagerDashboardSections {
                             endPoint: .trailing
                         )
                     )
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
                 }
                 .padding(.trailing, 20)
-                .padding(.bottom, 16)
+                .padding(.bottom, 12)
             }
             .sheet(isPresented: $showWorkPlanCreator) {
                 WorkPlanCreatorView(
@@ -887,6 +937,7 @@ struct ManagerDashboardSections {
     struct TaskGridCard: View {
         let task: ManagerAPIService.Task
         let pendingEntriesByTask: [ManagerDashboardViewModel.TaskWeekEntry]
+        let viewModel: ManagerDashboardViewModel
         @Environment(\.colorScheme) private var colorScheme
         @State private var showWorkPlanCreator = false
         
@@ -894,6 +945,11 @@ struct ManagerDashboardSections {
             pendingEntriesByTask
                 .filter { $0.taskId == task.task_id }
                 .flatMap { $0.entries }
+        }
+        
+        // POPRAWIONE: Pracownicy przypisani do zadania
+        private var assignedWorkersCount: Int {
+            viewModel.getAssignedWorkers(for: task.task_id).count
         }
         
         var body: some View {
@@ -928,31 +984,43 @@ struct ManagerDashboardSections {
                         .lineLimit(1)
                 }
                 
+                // POPRAWIONE: Wyświetlanie liczby przypisanych pracowników
+                if assignedWorkersCount > 0 {
+                    HStack(spacing: 4) {
+                        Image(systemName: "person.2.fill")
+                            .font(.caption)
+                            .foregroundColor(Color.ksrInfo)
+                        Text("\(assignedWorkersCount) assigned")
+                            .font(.caption)
+                            .foregroundColor(Color.ksrInfo)
+                    }
+                }
+                
                 Spacer()
                 
-                // Action button
+                // ZMNIEJSZONY Action button
                 Button {
                     showWorkPlanCreator = true
                 } label: {
-                    HStack {
+                    HStack(spacing: 4) {
                         Image(systemName: "calendar.badge.plus")
-                            .font(.system(size: 12))
+                            .font(.system(size: 10))
                         Text("Plan")
-                            .font(.caption)
+                            .font(.caption2)
                             .fontWeight(.medium)
                     }
                     .foregroundColor(.white)
-                    .padding(.horizontal, 12)
+                    .padding(.horizontal, 10)
                     .padding(.vertical, 6)
                     .background(Color.ksrPrimary)
                     .clipShape(RoundedRectangle(cornerRadius: 8))
                 }
             }
             .padding(16)
-            .frame(height: 160)
-            .background(cardBackground(colorScheme: colorScheme))
+            .frame(height: 170)
+            .background(ManagerDashboardSections.cardBackground(colorScheme: colorScheme))
             .overlay(
-                cardStroke(
+                ManagerDashboardSections.cardStroke(
                     pendingEntries.count > 0 ? Color.ksrWarning : Color.gray,
                     opacity: pendingEntries.count > 0 ? 0.3 : 0.2
                 )
@@ -1003,7 +1071,7 @@ struct ManagerDashboardSections {
         
         var body: some View {
             VStack(spacing: 20) {
-                Image(systemName: "briefcase.badge.questionmark")
+                Image(systemName: "briefcase")
                     .font(.system(size: 48, weight: .light))
                     .foregroundColor(.secondary)
                 

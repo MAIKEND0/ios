@@ -1,21 +1,42 @@
-//
-//  ManagerWorkersView.swift
-//  KSR Cranes App
-//
-//  Created by Maksymilian Marcinowski on 17/05/2025.
-//  Visual improvements added - Uses real API data without mocks
+// ManagerWorkersView.swift
+// KSR Cranes App
+// Created by Maksymilian Marcinowski on 17/05/2025.
+// Visual improvements added - Integrates TimesheetReportsView in Timesheets tab
 
 import SwiftUI
+import UIKit
 
 struct ManagerWorkersView: View {
     @StateObject private var viewModel = ManagerWorkersViewModel()
     @Environment(\.colorScheme) private var colorScheme
+    @State private var selectedMainTab: MainTab = .operators
     @State private var searchText = ""
+    
+    enum MainTab: String, TabProtocol {
+        case operators = "Operators"
+        case timesheets = "Timesheets"
+        
+        var id: String { rawValue }
+        
+        var icon: String {
+            switch self {
+            case .operators: return "person.3.fill"
+            case .timesheets: return "doc.text.fill"
+            }
+        }
+        
+        var color: Color {
+            switch self {
+            case .operators: return .ksrYellow
+            case .timesheets: return .ksrInfo
+            }
+        }
+    }
     
     var filteredWorkers: [ManagerAPIService.Worker] {
         let workers = viewModel.workers
         
-        if searchText.isEmpty {
+        if searchText.isEmpty || selectedMainTab != .operators {
             return workers
         } else {
             return workers.filter { worker in
@@ -31,14 +52,16 @@ struct ManagerWorkersView: View {
         NavigationStack {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 20) {
-                    // Header with crane operator statistics
                     headerStatsSection
-                    
-                    // Search section
                     searchSection
+                    mainTabSelectionSection
                     
-                    // Operators list
-                    operatorsContentSection
+                    if selectedMainTab == .operators {
+                        operatorsContentSection
+                    } else {
+                        TimesheetReportsView()
+                            .padding(.top, 8)
+                    }
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 12)
@@ -81,7 +104,6 @@ struct ManagerWorkersView: View {
         }
     }
     
-    // MARK: - Background Gradient
     private var backgroundGradient: some View {
         LinearGradient(
             gradient: Gradient(colors: [
@@ -94,7 +116,6 @@ struct ManagerWorkersView: View {
         .ignoresSafeArea()
     }
     
-    // MARK: - Header Stats Section
     private var headerStatsSection: some View {
         HStack(spacing: 16) {
             OperatorStatCard(
@@ -120,16 +141,14 @@ struct ManagerWorkersView: View {
         }
     }
     
-    // MARK: - Search Section
     private var searchSection: some View {
         VStack(spacing: 16) {
-            // Search Bar
             HStack {
                 Image(systemName: "magnifyingglass")
                     .foregroundColor(.secondary)
                     .font(.system(size: 16))
                 
-                TextField("Search operators...", text: $searchText)
+                TextField(selectedMainTab == .operators ? "Search operators..." : "Search timesheets, tasks, workers...", text: $searchText)
                     .textFieldStyle(PlainTextFieldStyle())
                 
                 if !searchText.isEmpty {
@@ -151,7 +170,24 @@ struct ManagerWorkersView: View {
         }
     }
     
-    // MARK: - Operators Content Section
+    private var mainTabSelectionSection: some View {
+        HStack(spacing: 12) {
+            ForEach(MainTab.allCases, id: \.id) { tab in
+                TabButton(
+                    tab: tab,
+                    isSelected: selectedMainTab == tab
+                ) {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        selectedMainTab = tab
+                        if tab == .timesheets {
+                            searchText = ""
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
     private var operatorsContentSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("\(filteredWorkers.count) operators")
@@ -228,14 +264,12 @@ struct OperatorCard: View {
     @Environment(\.colorScheme) private var colorScheme
     @State private var isExpanded = false
     
-    // Simple status indicator based on whether they have tasks
     private var hasActiveTasks: Bool {
         !craneOperator.assignedTasks.isEmpty
     }
     
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Header
             VStack(alignment: .leading, spacing: 12) {
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
@@ -247,7 +281,6 @@ struct OperatorCard: View {
                             
                             Spacer()
                             
-                            // Simple status indicator
                             HStack(spacing: 4) {
                                 Circle()
                                     .fill(hasActiveTasks ? Color.ksrSuccess : Color.ksrInfo)
@@ -277,7 +310,6 @@ struct OperatorCard: View {
                     }
                 }
                 
-                // Quick info
                 HStack(spacing: 20) {
                     OperatorInfoItem(
                         icon: "list.clipboard",
@@ -296,15 +328,12 @@ struct OperatorCard: View {
             }
             .padding(20)
             
-            // Expandable content
             if isExpanded {
                 VStack(alignment: .leading, spacing: 16) {
                     Divider()
                         .padding(.horizontal, 20)
                     
                     VStack(alignment: .leading, spacing: 12) {
-                        
-                        // Contact info
                         if let email = craneOperator.email {
                             ContactInfoRow(icon: "envelope.fill", label: "Email", value: email, color: .ksrInfo)
                         }
@@ -313,7 +342,6 @@ struct OperatorCard: View {
                             ContactInfoRow(icon: "phone.fill", label: "Phone", value: phone, color: .ksrSuccess)
                         }
                         
-                        // Assigned tasks
                         if !craneOperator.assignedTasks.isEmpty {
                             VStack(alignment: .leading, spacing: 8) {
                                 Text("Current Tasks (\(craneOperator.assignedTasks.count))")

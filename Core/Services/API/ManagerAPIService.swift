@@ -1,6 +1,7 @@
+// ManagerAPIService.swift
 import Foundation
 import Combine
-import SwiftUI
+import UIKit
 
 struct AnyEncodable: Encodable {
     private let value: Encodable
@@ -68,6 +69,28 @@ final class ManagerAPIService: BaseAPIService {
                 #if DEBUG
                 let taskDescriptions = tasks.map { "task_id=\($0.task_id), title=\($0.title), supervisor_id=\($0.supervisor_id ?? -1)" }.joined(separator: "; ")
                 print("[ManagerAPIService] Raw tasks from API: [\(taskDescriptions)]")
+                
+                // DODANY DEBUG dla taskAssignments
+                print("[ManagerAPIService] ========== TASK ASSIGNMENTS DEBUG ==========")
+                for task in tasks {
+                    print("[ManagerAPIService] Task: \(task.title) (ID: \(task.task_id))")
+                    if let assignments = task.taskAssignments, !assignments.isEmpty {
+                        print("  - taskAssignments count: \(assignments.count)")
+                        for (index, assignment) in assignments.enumerated() {
+                            print("    Assignment \(index + 1):")
+                            print("      - employee_id: \(assignment.employee_id)")
+                            if let employee = assignment.employees {
+                                print("      - worker name: \(employee.name)")
+                                print("      - worker employee_id: \(employee.employee_id)")
+                            } else {
+                                print("      - worker: NO EMPLOYEE DATA")
+                            }
+                        }
+                    } else {
+                        print("  - taskAssignments: EMPTY or NIL")
+                    }
+                }
+                print("[ManagerAPIService] ============================================")
                 #endif
                 return tasks
             }
@@ -148,14 +171,37 @@ final class ManagerAPIService: BaseAPIService {
             .eraseToAnyPublisher()
     }
 
-    func fetchProjects(supervisorId: Int) -> AnyPublisher<[Project], APIError> {
-        let endpoint = "/api/app/projects?supervisorId=\(supervisorId)&cacheBust=\(Int(Date().timeIntervalSince1970))"
+    // POPRAWIONE: Usunięto parametr supervisorId - API pobiera go z JWT tokenu
+    func fetchProjects() -> AnyPublisher<[Project], APIError> {
+        let endpoint = "/api/app/projects?cacheBust=\(Int(Date().timeIntervalSince1970))"
         return makeRequest(endpoint: endpoint, method: "GET", body: Optional<String>.none)
+            .handleEvents(receiveOutput: { data in
+                #if DEBUG
+                if let jsonString = String(data: data, encoding: .utf8) {
+                    print("[ManagerAPIService] Raw JSON Response for projects:")
+                    print(jsonString.prefix(2000))
+                }
+                #endif
+            })
             .decode(type: [Project].self, decoder: jsonDecoder())
-            .mapError { ($0 as? APIError) ?? .decodingError($0) }
+            .mapError { error in
+                #if DEBUG
+                print("[ManagerAPIService] ❌ Dekodowanie projektów nie powiodło się: \(error)")
+                #endif
+                return (error as? APIError) ?? .decodingError(error)
+            }
             .map { projects in
                 #if DEBUG
-                print("[ManagerAPIService] Loaded \(projects.count) projects: \(projects.map { $0.title })")
+                print("[ManagerAPIService] ✅ Pomyślnie zdekodowano \(projects.count) projektów")
+                for (index, project) in projects.enumerated() {
+                    print("  Projekt \(index + 1):")
+                    print("    - ID: \(project.project_id)")
+                    print("    - Tytuł: \(project.title)")
+                    print("    - Zadania: \(project.tasks.count)")
+                    print("    - Pracownicy: \(project.assignedWorkersCount)")
+                    print("    - Klient: \(project.customer?.name ?? "Brak")")
+                    print("    - Status: \(project.status?.rawValue ?? "Brak")")
+                }
                 #endif
                 return projects
             }
@@ -304,7 +350,166 @@ final class ManagerAPIService: BaseAPIService {
             .map { _ in "Connection successful" }
             .eraseToAnyPublisher()
     }
+    
+    // MARK: - Manager Profile API Methods
+    
+    func fetchManagerDashboardStats(managerId: String) -> AnyPublisher<ManagerDashboardStatsResponse, APIError> {
+        let endpoint = "/api/app/manager/dashboard/\(managerId)?cacheBust=\(Int(Date().timeIntervalSince1970))"
+        return makeRequest(endpoint: endpoint, method: "GET", body: Optional<String>.none)
+            .decode(type: ManagerDashboardStatsResponse.self, decoder: jsonDecoder())
+            .mapError { ($0 as? APIError) ?? .decodingError($0) }
+            .eraseToAnyPublisher()
+    }
+    
+    func fetchExternalManagerProfile(managerId: String) -> AnyPublisher<ExternalManagerProfileResponse, APIError> {
+        let endpoint = "/api/app/manager/profile/\(managerId)?cacheBust=\(Int(Date().timeIntervalSince1970))"
+        return makeRequest(endpoint: endpoint, method: "GET", body: Optional<String>.none)
+            .decode(type: ExternalManagerProfileResponse.self, decoder: jsonDecoder())
+            .mapError { ($0 as? APIError) ?? .decodingError($0) }
+            .eraseToAnyPublisher()
+    }
+    
+    func updateExternalManagerContact(managerId: String, contactData: ManagerContactUpdateRequest) -> AnyPublisher<UpdateResponse, APIError> {
+        let body: [String: AnyEncodable] = [
+            "email": AnyEncodable(contactData.email),
+            "phoneNumber": AnyEncodable(contactData.phoneNumber),
+            "address": AnyEncodable(contactData.address),
+            "emergencyContact": AnyEncodable(contactData.emergencyContact)
+        ]
+        
+        let endpoint = "/api/app/manager/profile/\(managerId)"
+        return makeRequest(endpoint: endpoint, method: "PATCH", body: body)
+            .decode(type: UpdateResponse.self, decoder: jsonDecoder())
+            .mapError { ($0 as? APIError) ?? .decodingError($0) }
+            .eraseToAnyPublisher()
+    }
+    
+    func fetchManagerPerformanceMetrics(managerId: String) -> AnyPublisher<ManagerPerformanceResponse, APIError> {
+        let endpoint = "/api/app/manager/performance/\(managerId)?cacheBust=\(Int(Date().timeIntervalSince1970))"
+        return makeRequest(endpoint: endpoint, method: "GET", body: Optional<String>.none)
+            .decode(type: ManagerPerformanceResponse.self, decoder: jsonDecoder())
+            .mapError { ($0 as? APIError) ?? .decodingError($0) }
+            .eraseToAnyPublisher()
+    }
+    
+    func submitWorkerFeedback(managerId: String, feedback: WorkerFeedbackRequest) -> AnyPublisher<UpdateResponse, APIError> {
+        let body: [String: AnyEncodable] = [
+            "workerId": AnyEncodable(feedback.workerId),
+            "rating": AnyEncodable(feedback.rating),
+            "comments": AnyEncodable(feedback.comments),
+            "categories": AnyEncodable(feedback.categories)
+        ]
+        
+        let endpoint = "/api/app/manager/feedback/\(managerId)"
+        return makeRequest(endpoint: endpoint, method: "POST", body: body)
+            .decode(type: UpdateResponse.self, decoder: jsonDecoder())
+            .mapError { ($0 as? APIError) ?? .decodingError($0) }
+            .eraseToAnyPublisher()
+    }
 }
+
+// MARK: - API Request Models
+
+struct ManagerContactUpdateRequest: Codable {
+    let email: String
+    let phoneNumber: String?
+    let address: String?
+    let emergencyContact: String?
+}
+
+struct WorkerFeedbackRequest: Codable {
+    let workerId: Int
+    let rating: Double
+    let comments: String
+    let categories: [String]
+}
+
+// MARK: - API Response Models
+
+struct ManagerDashboardStatsResponse: Codable {
+    let assignedProjects: Int
+    let activeProjects: Int
+    let totalWorkers: Int
+    let pendingApprovals: Int
+    let projectsCompleted: Int
+    let totalTasks: Int
+    let averageProjectDuration: Double
+    let approvalResponseTime: Double
+    let projectSuccessRate: Double
+    let workerSatisfactionScore: Double
+    let hoursThisWeek: Int
+    let tasksCompleted: Int
+    let efficiencyRate: Int
+    let workPlansCreated: Int
+}
+
+struct ExternalManagerProfileResponse: Codable {
+    let employeeId: String
+    let name: String
+    let email: String
+    let role: String
+    let assignedSince: String
+    let contractType: String
+    let companyName: String?
+    let contractEndDate: String?
+    let hourlyRate: String?
+    let specializations: [String]
+    let certifications: [CertificationResponse]
+    let address: String?
+    let phoneNumber: String?
+    let emergencyContact: String?
+    let profilePictureUrl: String?
+    let isActivated: Bool
+    let createdAt: String?
+    let maxProjectsAllowed: Int
+    let preferredProjectTypes: [String]
+}
+
+struct CertificationResponse: Codable {
+    let name: String
+    let issuingOrganization: String
+    let issueDate: String
+    let expiryDate: String?
+    let certificateNumber: String?
+}
+
+struct ManagerPerformanceResponse: Codable {
+    let approvalResponseTime: Double
+    let projectSuccessRate: Double
+    let workerSatisfactionScore: Double
+    let totalProjectsManaged: Int
+    let averageProjectDuration: Double
+    let onTimeCompletionRate: Double
+    let qualityStandardsMet: Double
+    let clientSatisfactionScore: Double
+}
+
+struct UpdateResponse: Codable {
+    let success: Bool
+    let message: String
+    let data: [String: String]?
+}
+
+// MARK: - Extensions
+
+extension String {
+    func toDate() -> Date? {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        if let date = formatter.date(from: self) {
+            return date
+        }
+        
+        let isoFormatter = ISO8601DateFormatter()
+        return isoFormatter.date(from: self)
+    }
+    
+    func toDecimal() -> Decimal? {
+        return Decimal(string: self)
+    }
+}
+
+// MARK: - Existing Model Extensions
 
 extension ManagerAPIService {
     struct Task: Codable, Identifiable, Equatable {
@@ -315,6 +520,22 @@ extension ManagerAPIService {
         let deadline: String?
         let project: Project?
         let supervisor_id: Int?
+        let taskAssignments: [TaskAssignment]? // DODANE jako opcjonalne
+
+        // DODANA struktura TaskAssignment
+        struct TaskAssignment: Codable, Equatable {
+            let employee_id: Int
+            let employees: AssignedEmployee?
+            
+            struct AssignedEmployee: Codable, Equatable {
+                let employee_id: Int
+                let name: String
+            }
+            
+            private enum CodingKeys: String, CodingKey {
+                case employee_id, employees = "Employees"
+            }
+        }
 
         var deadlineDate: Date? {
             guard let deadline = deadline else { return nil }
@@ -325,7 +546,19 @@ extension ManagerAPIService {
 
         private enum CodingKeys: String, CodingKey {
             case task_id, title, description, deadline, supervisor_id
-            case project = "Projects" // Mapowanie klucza JSON "Projects" na właściwość "project"
+            case project = "Projects"
+            case taskAssignments = "TaskAssignments" // DODANE
+        }
+
+        // DODANY inicjalizator z domyślnymi wartościami
+        init(task_id: Int, title: String, description: String?, deadline: String?, project: Project?, supervisor_id: Int?, taskAssignments: [TaskAssignment]? = nil) {
+            self.task_id = task_id
+            self.title = title
+            self.description = description
+            self.deadline = deadline
+            self.project = project
+            self.supervisor_id = supervisor_id
+            self.taskAssignments = taskAssignments
         }
 
         static func == (lhs: Task, rhs: Task) -> Bool {
@@ -472,6 +705,7 @@ extension ManagerAPIService {
         case afventer
     }
     
+    // POPRAWIONY model Project z obsługą Customer z więcej pól
     struct Project: Codable, Identifiable, Equatable {
         let id: UUID
         let project_id: Int
@@ -487,32 +721,34 @@ extension ManagerAPIService {
         var assignedWorkersCount: Int
         let customer: Customer?
 
+        // POPRAWIONA struktura Customer z dodatkowymi polami
         struct Customer: Codable, Equatable {
             let customer_id: Int
             let name: String
+            let contact_email: String?
+            let phone: String?
 
             private enum CodingKeys: String, CodingKey {
-                case customer_id, name
+                case customer_id, name, contact_email, phone
+            }
+            
+            // DODANY inicjalizator dla backward compatibility
+            init(customer_id: Int, name: String, contact_email: String? = nil, phone: String? = nil) {
+                self.customer_id = customer_id
+                self.name = name
+                self.contact_email = contact_email
+                self.phone = phone
             }
         }
 
         private enum CodingKeys: String, CodingKey {
             case project_id, title, description, start_date, end_date, street, city, zip, status
-            case customer = "Customers", tasks, assignedWorkersCount
+            case customer, tasks, assignedWorkersCount
         }
         
         var fullAddress: String? {
             let components = [street, city, zip].compactMap { $0 }
             return components.isEmpty ? nil : components.joined(separator: ", ")
-        }
-        
-        var statusColor: Color {
-            switch status {
-            case .aktiv: return .green
-            case .afsluttet: return .gray
-            case .afventer: return .orange
-            case .none: return .gray
-            }
         }
         
         init(from decoder: Decoder) throws {
@@ -528,13 +764,19 @@ extension ManagerAPIService {
             self.zip = try container.decodeIfPresent(String.self, forKey: .zip)
             self.status = try container.decodeIfPresent(ProjectStatus.self, forKey: .status)
             self.customer = try container.decodeIfPresent(Customer.self, forKey: .customer)
-            #if DEBUG
-            print("[ManagerAPIService] Decoded project: \(project_id), customer: \(String(describing: customer?.name))")
-            #endif
             self.tasks = try container.decodeIfPresent([Task].self, forKey: .tasks) ?? []
             self.assignedWorkersCount = try container.decodeIfPresent(Int.self, forKey: .assignedWorkersCount) ?? 0
+            
+            #if DEBUG
+            print("[ManagerAPIService] Decoded project: \(project_id)")
+            print("  - Title: \(title)")
+            print("  - Tasks count: \(tasks.count)")
+            print("  - Workers count: \(assignedWorkersCount)")
+            print("  - Customer: \(String(describing: customer?.name))")
+            #endif
         }
         
+        // DODANY inicjalizator dla backward compatibility
         init(id: UUID, project_id: Int, title: String, description: String?, start_date: Date?, end_date: Date?, street: String?, city: String?, zip: String?, status: ProjectStatus?, tasks: [Task], assignedWorkersCount: Int, customer: Customer?) {
             self.id = id
             self.project_id = project_id

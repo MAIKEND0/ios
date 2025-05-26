@@ -32,10 +32,14 @@ extension Color {
     /// Contrast ratio: 4.7:1 with white text ✅
     static let ksrInfo = Color(hex: "3366A3") // Navy Blue
     
-    // MARK: - Existing Gray Colors (Keep as-is)
+    // MARK: - Existing Gray Colors
     static let ksrDarkGray = Color(hex: "333333")
     static let ksrMediumGray = Color(hex: "666666")
     static let ksrLightGray = Color(hex: "EEEEEE")
+    
+    // MARK: - Additional Colors
+    /// Secondary text/icon color for subtle elements
+    static let ksrSecondary = Color(hex: "666666") // Same as ksrMediumGray for consistency
     
     // MARK: - Semantic Color Aliases
     
@@ -89,7 +93,7 @@ extension Color {
         return self
     }
     
-    // MARK: - Hex Color Initializer (Existing)
+    // MARK: - Hex Color Initializer
     init(hex: String) {
         let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
         var int: UInt64 = 0
@@ -125,46 +129,3 @@ extension Color {
         self.init(.sRGB, red: r, green: g, blue: b, opacity: a)
     }
 }
-
-// MARK: - Color Usage Guidelines
-/*
- WCAG COMPLIANT COLOR USAGE:
- 
- ✅ GOOD - High Contrast Combinations:
- - Color.ksrYellow background + Color.white text (5.3:1)
- - Color.ksrSuccess background + Color.white text (6.2:1)
- - Color.ksrWarning background + Color.white text (4.9:1)
- - Color.ksrError background + Color.white text (5.9:1)
- - Color.ksrInfo background + Color.white text (4.7:1)
- 
- ❌ AVOID - Low Contrast:
- - Any light color background + Color.white text
- - Pure yellow (#FFD700) + Color.white text (1.4:1) ❌
- - Light green + Color.white text (< 3:1) ❌
- 
- EXAMPLES:
- 
- // Status Badge (Good Contrast)
- Text("Pending")
-     .foregroundColor(.white) // ✅ Good contrast
-     .padding(.horizontal, 12)
-     .padding(.vertical, 6)
-     .background(Color.ksrWarning) // 4.9:1 ratio ✅
-     .cornerRadius(8)
- 
- // Success Button
- Button("Approve") { }
-     .foregroundColor(.white) // ✅ Good contrast
-     .padding()
-     .background(Color.ksrSuccess) // 6.2:1 ratio ✅
-     .cornerRadius(12)
- 
- // Light Background (Good for cards)
- VStack { }
-     .padding()
-     .background(Color.ksrSuccessLight) // Light tint
-     .overlay(
-         RoundedRectangle(cornerRadius: 12)
-             .stroke(Color.ksrSuccess.opacity(0.3), lineWidth: 1)
-     )
-*/
