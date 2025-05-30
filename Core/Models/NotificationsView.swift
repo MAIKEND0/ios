@@ -299,10 +299,29 @@ struct NotificationsView: View {
                         .foregroundColor(colorScheme == .dark ? .white.opacity(0.7) : Color.ksrMediumGray)
                         .lineLimit(3)
                     
-                    if let context = notification.contextualInfo {
-                        Text(context)
+                    // Dodatkowe informacje o tygodniu
+                    if let metadata = notification.metadata,
+                       let weekNumber = metadata["weekNumber"],
+                       let year = metadata["year"],
+                       let entryCount = metadata["entryCount"] {
+                        Text("Week \(weekNumber), \(year) - \(entryCount) entries affected")
                             .font(.caption)
                             .foregroundColor(.secondary)
+                        
+                        // Wyświetlanie problematycznych dni, jeśli dostępne
+                        if let problematicDaysJson = metadata["problematicDays"],
+                           let problematicDaysData = problematicDaysJson.data(using: .utf8),
+                           let problematicDays = try? JSONDecoder().decode([String].self, from: problematicDaysData) {
+                            let formattedDays = problematicDays.map { date in
+                                let formatter = DateFormatter()
+                                formatter.dateFormat = "MMM d"
+                                return formatter.string(from: ISO8601DateFormatter().date(from: date) ?? Date())
+                            }.joined(separator: ", ")
+                            Text("Problematic days: \(formattedDays)")
+                                .font(.caption)
+                                .foregroundColor(.red)
+                                .lineLimit(2)
+                        }
                     }
                     
                     // Priority indicator
@@ -409,7 +428,6 @@ struct NotificationsView: View {
 }
 
 // MARK: - Enhanced Filter Chip
-
 struct FilterChip: View {
     let label: String
     let isSelected: Bool

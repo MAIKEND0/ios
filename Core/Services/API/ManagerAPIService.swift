@@ -227,7 +227,15 @@ final class ManagerAPIService: BaseAPIService {
             .eraseToAnyPublisher()
     }
 
-    func updateWorkEntryStatus(entry: WorkHourEntry, confirmationStatus: String, rejectionReason: String? = nil) -> AnyPublisher<WorkEntryResponse, APIError> {
+    // POPRAWIONE: Dodano parametry status i isDraft dla obsługi odrzuconych wpisów
+    func updateWorkEntryStatus(
+        entry: WorkHourEntry,
+        confirmationStatus: String,
+        rejectionReason: String? = nil,
+        status: String? = nil,
+        isDraft: Bool? = nil
+    ) -> AnyPublisher<WorkEntryResponse, APIError> {
+        
         let updateRequest = UpdateWorkEntryRequest(
             entry_id: entry.entry_id,
             confirmation_status: confirmationStatus,
@@ -235,17 +243,22 @@ final class ManagerAPIService: BaseAPIService {
             task_id: entry.task_id,
             employee_id: entry.employee_id,
             rejection_reason: rejectionReason,
-            km: entry.km
+            km: entry.km,
+            status: status,
+            is_draft: isDraft
         )
+        
         let body: [String: AnyEncodable] = [
             "entries": AnyEncodable([updateRequest]),
             "rejectionReason": AnyEncodable(rejectionReason ?? "")
         ]
+        
         #if DEBUG
         if let jsonData = try? JSONEncoder().encode(body), let jsonString = String(data: jsonData, encoding: .utf8) {
             print("[ManagerAPIService] Update request body: \(jsonString)")
         }
         #endif
+        
         return makeRequest(endpoint: "/api/app/timesheet", method: "POST", body: body)
             .decode(type: WorkEntryResponse.self, decoder: jsonDecoder())
             .mapError { ($0 as? APIError) ?? .decodingError($0) }
@@ -261,6 +274,27 @@ final class ManagerAPIService: BaseAPIService {
         #if DEBUG
         if let jsonData = try? JSONEncoder().encode(body), let jsonString = String(data: jsonData, encoding: .utf8) {
             print("[ManagerAPIService] Approve entries request body: \(jsonString)")
+        }
+        #endif
+        
+        return makeRequest(endpoint: "/api/app/timesheet", method: "POST", body: body)
+            .decode(type: WorkEntryResponse.self, decoder: jsonDecoder())
+            .mapError { ($0 as? APIError) ?? .decodingError($0) }
+            .eraseToAnyPublisher()
+    }
+    
+    // NOWA METODA: Grupowe odrzucanie wpisów z całego tygodnia
+    func rejectWeekEntries(entries: [UpdateWorkEntryRequest], rejectionReason: String) -> AnyPublisher<WorkEntryResponse, APIError> {
+        let body: [String: AnyEncodable] = [
+            "entries": AnyEncodable(entries),
+            "rejectionReason": AnyEncodable(rejectionReason)
+        ]
+        
+        #if DEBUG
+        print("[ManagerAPIService] 🔄 Rejecting \(entries.count) entries as a group")
+        print("[ManagerAPIService] Rejection reason: \(rejectionReason)")
+        if let jsonData = try? JSONEncoder().encode(body), let jsonString = String(data: jsonData, encoding: .utf8) {
+            print("[ManagerAPIService] Reject week request body: \(jsonString)")
         }
         #endif
         
@@ -842,6 +876,7 @@ extension ManagerAPIService {
         }
     }
 
+    // POPRAWIONY UpdateWorkEntryRequest z nowymi polami dla obsługi odrzuconych wpisów
     struct UpdateWorkEntryRequest: Codable {
         let entry_id: Int
         let confirmation_status: String
@@ -850,12 +885,17 @@ extension ManagerAPIService {
         let employee_id: Int
         let rejection_reason: String?
         let km: Double?
+        let status: String?      // DODANE - dla odrzuconych wpisów: "pending"
+        let is_draft: Bool?      // DODANE - dla odrzuconych wpisów: true
 
         private enum CodingKeys: String, CodingKey {
-            case entry_id, confirmation_status, work_date, task_id, employee_id, rejection_reason, km
+            case entry_id, confirmation_status, work_date, task_id, employee_id,
+                 rejection_reason, km, status, is_draft
         }
 
-        init(entry_id: Int, confirmation_status: String, work_date: Date, task_id: Int, employee_id: Int, rejection_reason: String?, km: Double?) {
+        init(entry_id: Int, confirmation_status: String, work_date: Date, task_id: Int,
+             employee_id: Int, rejection_reason: String?, km: Double?,
+             status: String? = nil, is_draft: Bool? = nil) {
             self.entry_id = entry_id
             self.confirmation_status = confirmation_status
             self.work_date = work_date
@@ -863,6 +903,8 @@ extension ManagerAPIService {
             self.employee_id = employee_id
             self.rejection_reason = rejection_reason
             self.km = km
+            self.status = status
+            self.is_draft = is_draft
         }
 
         func encode(to encoder: Encoder) throws {
@@ -873,6 +915,9 @@ extension ManagerAPIService {
             try container.encode(employee_id, forKey: .employee_id)
             try container.encodeIfPresent(rejection_reason, forKey: .rejection_reason)
             try container.encodeIfPresent(km, forKey: .km)
+            try container.encodeIfPresent(status, forKey: .status)              // DODANE
+            try container.encodeIfPresent(is_draft, forKey: .is_draft)          // DODANE
+            
             let formatter = ISO8601DateFormatter()
             formatter.formatOptions = [.withInternetDateTime]
             try container.encode(formatter.string(from: work_date), forKey: .work_date)

@@ -132,8 +132,7 @@ struct ManagerDashboardSections {
         @ObservedObject var viewModel: ManagerDashboardViewModel
         @Environment(\.colorScheme) private var colorScheme
         let isPulsing: Bool
-        let onSelectTaskWeek: (ManagerDashboardViewModel.TaskWeekEntry) -> Void
-        let onSelectEntry: (ManagerAPIService.WorkHourEntry) -> Void
+        let onViewWeekDetails: (ManagerDashboardViewModel.TaskWeekEntry) -> Void
         @State private var expandedTasks: Set<Int> = []
         @State private var isExpanded = false
         
@@ -216,20 +215,14 @@ struct ManagerDashboardSections {
                             )
                             
                             if expandedTasks.contains(taskId) {
+                                // Week entry cards with view details button
                                 ForEach(taskWeeks) { taskWeekEntry in
-                                    NavigationLink(
-                                        destination: WeekDetailView(
-                                            taskWeekEntry: taskWeekEntry,
-                                            onApproveWithSignature: {
-                                                onSelectTaskWeek(taskWeekEntry)
-                                            },
-                                            onReject: { entry in
-                                                onSelectEntry(entry)
-                                            }
-                                        )
-                                    ) {
-                                        CompactWeekRow(taskWeekEntry: taskWeekEntry)
-                                    }
+                                    WeekEntryCard(
+                                        taskWeekEntry: taskWeekEntry,
+                                        onViewDetails: {
+                                            onViewWeekDetails(taskWeekEntry)
+                                        }
+                                    )
                                     .padding(.horizontal, 12)
                                     .padding(.vertical, 4)
                                 }
@@ -244,9 +237,9 @@ struct ManagerDashboardSections {
                 }
             }
             .padding(20)
-            .background(cardBackground(colorScheme: colorScheme))
+            .background(ManagerDashboardSections.cardBackground(colorScheme: colorScheme))
             .overlay(
-                cardStroke(Color.ksrWarning, opacity: isPulsing ? 0.6 : 0.4)
+                ManagerDashboardSections.cardStroke(Color.ksrWarning, opacity: isPulsing ? 0.6 : 0.4)
                     .scaleEffect(isPulsing ? 1.02 : 1.0)
                     .animation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true), value: isPulsing)
             )
@@ -300,6 +293,152 @@ struct ManagerDashboardSections {
                     return innerSum + max(0, (interval - pauseSeconds) / 3600)
                 }
             }
+        }
+    }
+    
+    // MARK: - Week Entry Card with View Details Button
+    struct WeekEntryCard: View {
+        let taskWeekEntry: ManagerDashboardViewModel.TaskWeekEntry
+        let onViewDetails: () -> Void
+        @Environment(\.colorScheme) private var colorScheme
+        
+        var body: some View {
+            VStack(alignment: .leading, spacing: 12) {
+                // Week Info Header
+                HStack(spacing: 8) {
+                    Image(systemName: "calendar.badge.clock")
+                        .font(.system(size: 14))
+                        .foregroundColor(Color.ksrWarning)
+                    
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Week \(taskWeekEntry.weekNumber), \(taskWeekEntry.year)")
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                            .foregroundColor(colorScheme == .dark ? .white : Color.ksrDarkGray)
+                        
+                        if let employeeName = taskWeekEntry.entries.first?.employees?.name {
+                            Text("Employee: \(employeeName)")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    
+                    Spacer()
+                    
+                    // Week Stats
+                    VStack(alignment: .trailing, spacing: 2) {
+                        Text("\(taskWeekEntry.entries.count) entries")
+                            .font(.caption)
+                            .foregroundColor(Color.ksrWarning)
+                            .fontWeight(.medium)
+                        
+                        let totalHours = taskWeekEntry.entries.reduce(0.0) { sum, entry in
+                            guard let start = entry.start_time, let end = entry.end_time else { return sum }
+                            let interval = end.timeIntervalSince(start)
+                            let pauseSeconds = Double(entry.pause_minutes ?? 0) * 60
+                            return sum + max(0, (interval - pauseSeconds) / 3600)
+                        }
+                        
+                        Text("\(String(format: "%.1f", totalHours))h")
+                            .font(.caption)
+                            .foregroundColor(Color.ksrWarning)
+                            .fontWeight(.medium)
+                    }
+                }
+                
+                // Days Preview (first 3 days)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Days in this week:")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                        .fontWeight(.medium)
+                    
+                    let sortedEntries = taskWeekEntry.entries.sorted { $0.work_date < $1.work_date }
+                    ForEach(sortedEntries.prefix(3), id: \.entry_id) { entry in
+                        HStack(spacing: 8) {
+                            Circle()
+                                .fill(Color.ksrWarning)
+                                .frame(width: 4, height: 4)
+                            
+                            Text(dayFormatter.string(from: entry.work_date))
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                            
+                            if let start = entry.startTimeFormatted, let end = entry.endTimeFormatted {
+                                Text("\(start)-\(end)")
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
+                            }
+                            
+                            Spacer()
+                            
+                            let hours = computeEntryHours(entry)
+                            Text("\(String(format: "%.1f", hours))h")
+                                .font(.caption2)
+                                .foregroundColor(Color.ksrWarning)
+                                .fontWeight(.medium)
+                        }
+                    }
+                    
+                    if sortedEntries.count > 3 {
+                        Text("and \(sortedEntries.count - 3) more days...")
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                            .italic()
+                            .padding(.leading, 12)
+                    }
+                }
+                
+                // View Details Button
+                Button {
+                    onViewDetails()
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "eye.fill")
+                            .font(.system(size: 12, weight: .semibold))
+                        Text("View Details & Actions")
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 10, weight: .semibold))
+                    }
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    .background(
+                        LinearGradient(
+                            colors: [Color.ksrPrimary, Color.ksrPrimary.opacity(0.8)],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                    .cornerRadius(10)
+                }
+            }
+            .padding(12)
+            .background(
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(colorScheme == .dark ? Color(.systemGray5).opacity(0.3) : Color.white)
+                    .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.2 : 0.05), radius: 2, x: 0, y: 1)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(Color.ksrWarning.opacity(0.3), lineWidth: 1)
+            )
+        }
+        
+        private var dayFormatter: DateFormatter {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "E, MMM d"
+            return formatter
+        }
+        
+        private func computeEntryHours(_ entry: ManagerAPIService.WorkHourEntry) -> Double {
+            guard let start = entry.start_time, let end = entry.end_time else { return 0 }
+            let interval = end.timeIntervalSince(start)
+            let pauseSeconds = Double(entry.pause_minutes ?? 0) * 60
+            return max(0, (interval - pauseSeconds) / 3600)
         }
     }
     
@@ -650,7 +789,6 @@ struct ManagerDashboardSections {
             }
         }
         
-        // POPRAWIONE: Pracownicy przypisani do zadania
         private var assignedWorkers: [String] {
             viewModel.getAssignedWorkers(for: task.task_id)
         }
@@ -735,7 +873,6 @@ struct ManagerDashboardSections {
                             .lineLimit(1)
                     }
                     
-                    // POPRAWIONE: Wyświetlanie liczby przypisanych pracowników
                     if !assignedWorkers.isEmpty {
                         HStack(spacing: 4) {
                             Image(systemName: "person.2.fill")
@@ -819,7 +956,7 @@ struct ManagerDashboardSections {
                         }
                     }
                     
-                    // POPRAWIONE: Lista przypisanych pracowników
+                    // Lista przypisanych pracowników
                     if !assignedWorkers.isEmpty {
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Assigned Workers")
@@ -889,7 +1026,7 @@ struct ManagerDashboardSections {
             }
         }
         
-        // MARK: - Action Footer (ZMNIEJSZONY PRZYCISK)
+        // MARK: - Action Footer
         private var actionFooter: some View {
             HStack {
                 Spacer()
@@ -947,7 +1084,6 @@ struct ManagerDashboardSections {
                 .flatMap { $0.entries }
         }
         
-        // POPRAWIONE: Pracownicy przypisani do zadania
         private var assignedWorkersCount: Int {
             viewModel.getAssignedWorkers(for: task.task_id).count
         }
@@ -984,7 +1120,6 @@ struct ManagerDashboardSections {
                         .lineLimit(1)
                 }
                 
-                // POPRAWIONE: Wyświetlanie liczby przypisanych pracowników
                 if assignedWorkersCount > 0 {
                     HStack(spacing: 4) {
                         Image(systemName: "person.2.fill")
@@ -998,7 +1133,7 @@ struct ManagerDashboardSections {
                 
                 Spacer()
                 
-                // ZMNIEJSZONY Action button
+                // Action button
                 Button {
                     showWorkPlanCreator = true
                 } label: {
@@ -1136,42 +1271,6 @@ struct ManagerDashboardSections {
             }
         }
     }
-    
-    // MARK: - Compact Week Row
-    struct CompactWeekRow: View {
-        let taskWeekEntry: ManagerDashboardViewModel.TaskWeekEntry
-        @Environment(\.colorScheme) private var colorScheme
-        
-        var body: some View {
-            let totalHours = taskWeekEntry.entries.reduce(0.0) { sum, entry in
-                guard let start = entry.start_time, let end = entry.end_time else { return sum }
-                let interval = end.timeIntervalSince(start)
-                let pauseSeconds = Double(entry.pause_minutes ?? 0) * 60
-                return sum + max(0, (interval - pauseSeconds) / 3600)
-            }
-            
-            HStack {
-                Image(systemName: "calendar.badge.clock")
-                    .font(.system(size: 12))
-                    .foregroundColor(Color.ksrWarning)
-                Text("Week \(taskWeekEntry.weekNumber), \(taskWeekEntry.year)")
-                    .font(.caption)
-                    .fontWeight(.medium)
-                    .foregroundColor(colorScheme == .dark ? .white : Color.ksrDarkGray)
-                Spacer()
-                Text("\(taskWeekEntry.entries.count) entries, \(String(format: "%.1f", totalHours))h")
-                    .font(.caption)
-                    .foregroundColor(Color.ksrWarning)
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 12))
-                    .foregroundColor(Color.ksrWarning)
-            }
-            .padding(.vertical, 6)
-            .padding(.horizontal, 8)
-            .background(
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(colorScheme == .dark ? Color(.systemGray5).opacity(0.3) : Color(.systemBackground))
-            )
-        }
-    }
 }
+
+// Extensions już istnieją w WorkHourEntry+Extensions.swift

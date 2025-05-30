@@ -7,6 +7,122 @@ import SwiftUI
 import UIKit
 import PDFKit
 
+// MARK: - Missing Supporting Components (local versions to avoid conflicts)
+
+struct TimeFilterChip: View {
+    let text: String
+    let icon: String
+    let isSelected: Bool
+    let color: Color
+    let action: () -> Void
+    
+    @Environment(\.colorScheme) private var colorScheme
+    
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 6) {
+                Image(systemName: icon)
+                    .font(.system(size: 12, weight: .medium))
+                
+                Text(text)
+                    .font(.caption)
+                    .fontWeight(.medium)
+            }
+            .foregroundColor(isSelected ? .white : (colorScheme == .dark ? .white : .primary))
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(isSelected ? color : (colorScheme == .dark ? Color(.systemGray5) : Color(.systemGray6)))
+            )
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+}
+
+struct TimesheetTabButton: View {
+    let tab: TimesheetReportsView.TimesheetTab
+    let isSelected: Bool
+    let action: () -> Void
+    
+    @Environment(\.colorScheme) private var colorScheme
+    
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 8) {
+                Image(systemName: tab.icon)
+                    .font(.system(size: 14, weight: .medium))
+                
+                Text(tab.rawValue)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+            }
+            .foregroundColor(isSelected ? .white : (colorScheme == .dark ? .white : .primary))
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(isSelected ? tab.color : (colorScheme == .dark ? Color(.systemGray5) : Color(.systemGray6)))
+            )
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+}
+
+struct TimesheetsLoadingView: View {
+    let message: String
+    
+    init(message: String = "Loading timesheets...") {
+        self.message = message
+    }
+    
+    var body: some View {
+        VStack(spacing: 16) {
+            ProgressView()
+                .scaleEffect(1.2)
+            
+            Text(message)
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+        }
+        .frame(maxWidth: .infinity, minHeight: 200)
+    }
+}
+
+struct TimesheetsEmptyStateView: View {
+    let hasTimesheets: Bool
+    
+    @Environment(\.colorScheme) private var colorScheme
+    
+    var body: some View {
+        VStack(spacing: 20) {
+            Image(systemName: hasTimesheets ? "magnifyingglass" : "doc.text.magnifyingglass")
+                .font(.system(size: 48, weight: .light))
+                .foregroundColor(.secondary)
+            
+            VStack(spacing: 8) {
+                Text(hasTimesheets ? "No timesheets found" : "No timesheets available")
+                    .font(.title3)
+                    .fontWeight(.semibold)
+                    .foregroundColor(colorScheme == .dark ? .white : .primary)
+                
+                Text(hasTimesheets ?
+                    "No timesheets match your current search or filter criteria." :
+                    "Signed timesheets will appear here once they're processed."
+                )
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal)
+            }
+        }
+        .frame(maxWidth: .infinity, minHeight: 300)
+        .padding(.vertical, 40)
+    }
+}
+
+// MARK: - Main View
+
 struct TimesheetReportsView: View {
     @StateObject private var viewModel = TimesheetReportsViewModel()
     @Environment(\.colorScheme) private var colorScheme
@@ -15,7 +131,7 @@ struct TimesheetReportsView: View {
     @State private var searchText = ""
     @State private var selectedFilter: TimeFilter = .all
     
-    enum TimesheetTab: String, TabProtocol {
+    enum TimesheetTab: String, CaseIterable {
         case tasks = "By Tasks"
         case workers = "By Workers"
         
@@ -132,7 +248,7 @@ struct TimesheetReportsView: View {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button {
                         withAnimation(.easeInOut(duration: 0.3)) {
-                            viewModel.loadData()
+                            viewModel.loadTimesheets()
                         }
                     } label: {
                         Image(systemName: "arrow.clockwise")
@@ -143,11 +259,11 @@ struct TimesheetReportsView: View {
                 }
             }
             .onAppear {
-                viewModel.loadData()
+                viewModel.loadTimesheets()
             }
             .refreshable {
                 await withCheckedContinuation { continuation in
-                    viewModel.loadData()
+                    viewModel.loadTimesheets()
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                         continuation.resume()
                     }
@@ -186,21 +302,21 @@ struct TimesheetReportsView: View {
     
     private var headerStatsSection: some View {
         HStack(spacing: 16) {
-            TimesheetStatCard(
+            ManagerTimesheetStatCard(
                 title: "Total Timesheets",
                 value: "\(viewModel.timesheets.count)",
                 icon: "doc.text.fill",
                 color: .ksrYellow
             )
             
-            TimesheetStatCard(
+            ManagerTimesheetStatCard(
                 title: "This Week",
                 value: "\(thisWeekCount)",
                 icon: "calendar.badge.clock",
                 color: .ksrSuccess
             )
             
-            TimesheetStatCard(
+            ManagerTimesheetStatCard(
                 title: "Active Tasks",
                 value: "\(uniqueTasksCount)",
                 icon: "folder.fill",
@@ -237,7 +353,7 @@ struct TimesheetReportsView: View {
                 if !searchText.isEmpty {
                     Button {
                         searchText = ""
-                        UIApplication.shared.hideKeyboard()
+                        // Remove UIApplication.shared.hideKeyboard() call as it conflicts with existing implementation
                     } label: {
                         Image(systemName: "xmark.circle.fill")
                             .foregroundColor(.secondary)
@@ -255,8 +371,10 @@ struct TimesheetReportsView: View {
                 HStack(spacing: 12) {
                     ForEach(TimeFilter.allCases, id: \.id) { filter in
                         TimeFilterChip(
-                            filter: filter,
-                            isSelected: selectedFilter == filter
+                            text: filter.rawValue,
+                            icon: filter.icon,
+                            isSelected: selectedFilter == filter,
+                            color: filter.color
                         ) {
                             withAnimation(.easeInOut(duration: 0.2)) {
                                 selectedFilter = filter
@@ -272,7 +390,7 @@ struct TimesheetReportsView: View {
     private var tabSelectionSection: some View {
         HStack(spacing: 12) {
             ForEach(TimesheetTab.allCases, id: \.id) { tab in
-                TabButton(
+                TimesheetTabButton(
                     tab: tab,
                     isSelected: selectedTab == tab
                 ) {
@@ -310,7 +428,7 @@ struct TimesheetReportsView: View {
         LazyVStack(spacing: 20) {
             ForEach(groupedByTasks.keys.sorted(), id: \.self) { taskId in
                 if let timesheets = groupedByTasks[taskId] {
-                    TimesheetGroupCard(
+                    ManagerTimesheetGroupCard(
                         title: timesheets.first?.Tasks?.title ?? "Unknown Task",
                         subtitle: "Task ID: \(taskId)",
                         icon: "folder.fill",
@@ -332,8 +450,9 @@ struct TimesheetReportsView: View {
         LazyVStack(spacing: 20) {
             ForEach(groupedByWorkers.keys.sorted(), id: \.self) { employeeId in
                 if let timesheets = groupedByWorkers[employeeId] {
-                    TimesheetGroupCard(
-                        title: timesheets.first?.Employees?.name ?? "Unknown Worker",
+                    let workerName = timesheets.first?.Employees?.name ?? ""
+                    ManagerTimesheetGroupCard(
+                        title: workerName.isEmpty ? "Unknown Worker" : workerName,
                         subtitle: "Employee ID: \(employeeId)",
                         icon: "person.fill",
                         color: .ksrInfo,
@@ -351,9 +470,9 @@ struct TimesheetReportsView: View {
     }
 }
 
-// MARK: - Supporting Views
+// MARK: - Manager-specific Supporting Views
 
-struct TimesheetStatCard: View {
+struct ManagerTimesheetStatCard: View {
     let title: String
     let value: String
     let icon: String
@@ -394,37 +513,7 @@ struct TimesheetStatCard: View {
     }
 }
 
-struct TimeFilterChip: View {
-    let filter: TimesheetReportsView.TimeFilter
-    let isSelected: Bool
-    let action: () -> Void
-    
-    @Environment(\.colorScheme) private var colorScheme
-    
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: 6) {
-                Image(systemName: filter.icon)
-                    .font(.system(size: 12, weight: .medium))
-                
-                Text(filter.rawValue)
-                    .font(.subheadline)
-                    .fontWeight(.medium)
-            }
-            .foregroundColor(isSelected ? .white : (colorScheme == .dark ? .white : .primary))
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
-            .background(
-                RoundedRectangle(cornerRadius: 20)
-                    .fill(isSelected ? filter.color : (colorScheme == .dark ? Color(.systemGray5) : Color(.systemGray6)))
-            )
-            .scaleEffect(isSelected ? 1.05 : 1.0)
-        }
-        .buttonStyle(PlainButtonStyle())
-    }
-}
-
-struct TimesheetGroupCard: View {
+struct ManagerTimesheetGroupCard: View {
     let title: String
     let subtitle: String
     let icon: String
@@ -489,7 +578,7 @@ struct TimesheetGroupCard: View {
                     
                     LazyVStack(spacing: 12) {
                         ForEach(timesheets.prefix(10)) { timesheet in
-                            TimesheetListItem(timesheet: timesheet) {
+                            ManagerTimesheetListItem(timesheet: timesheet) {
                                 onSelect(timesheet)
                             }
                         }
@@ -551,7 +640,7 @@ struct TimesheetStatItem: View {
     }
 }
 
-struct TimesheetListItem: View {
+struct ManagerTimesheetListItem: View {
     let timesheet: ManagerAPIService.Timesheet
     let onTap: () -> Void
     
@@ -592,51 +681,6 @@ struct TimesheetListItem: View {
             .padding(.vertical, 8)
         }
         .buttonStyle(PlainButtonStyle())
-    }
-}
-
-struct TimesheetsLoadingView: View {
-    var body: some View {
-        VStack(spacing: 16) {
-            ProgressView()
-                .scaleEffect(1.2)
-            
-            Text("Loading timesheets...")
-                .font(.subheadline)
-                .foregroundColor(.secondary)
-        }
-        .frame(maxWidth: .infinity, minHeight: 200)
-    }
-}
-
-struct TimesheetsEmptyStateView: View {
-    let hasTimesheets: Bool
-    @Environment(\.colorScheme) private var colorScheme
-    
-    var body: some View {
-        VStack(spacing: 20) {
-            Image(systemName: hasTimesheets ? "magnifyingglass" : "doc.text.magnifyingglass")
-                .font(.system(size: 48, weight: .light))
-                .foregroundColor(.secondary)
-            
-            VStack(spacing: 8) {
-                Text(hasTimesheets ? "No timesheets found" : "No signed timesheets")
-                    .font(.title3)
-                    .fontWeight(.semibold)
-                    .foregroundColor(colorScheme == .dark ? .white : .primary)
-                
-                Text(hasTimesheets ?
-                     "No timesheets match your current search or filter criteria." :
-                     "No signed timesheets are available for your projects yet."
-                )
-                .font(.subheadline)
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal)
-            }
-        }
-        .frame(maxWidth: .infinity, minHeight: 300)
-        .padding(.vertical, 40)
     }
 }
 
@@ -828,6 +872,10 @@ struct PDFViewerWithActions: View {
     }
 }
 
+// MARK: - UIApplication Extension removed to avoid conflicts
+// (hideKeyboard functionality should be defined elsewhere in the project)
+
+// MARK: - Preview
 struct TimesheetReportsView_Previews: PreviewProvider {
     static var previews: some View {
         Group {

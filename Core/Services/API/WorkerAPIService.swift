@@ -12,7 +12,85 @@ final class WorkerAPIService: BaseAPIService {
     private override init() {
         super.init()
     }
+    // Dodaj te metody i struktury na końcu pliku WorkerAPIService.swift po istniejących metodach
 
+    // MARK: - Timesheet Methods for Workers
+
+    /// Pobiera timesheety dla danego pracownika
+    func fetchWorkerTimesheets(employeeId: String) -> AnyPublisher<[WorkerTimesheet], APIError> {
+        let endpoint = "/api/app/worker/timesheets?employee_id=\(employeeId)&cacheBust=\(Int(Date().timeIntervalSince1970))"
+        return makeRequest(endpoint: endpoint, method: "GET", body: Optional<String>.none)
+            .decode(type: [WorkerTimesheet].self, decoder: jsonDecoder())
+            .mapError { error in
+                #if DEBUG
+                print("[WorkerAPIService] Fetch worker timesheets error: \(error)")
+                #endif
+                return (error as? APIError) ?? .decodingError(error)
+            }
+            .map { timesheets in
+                #if DEBUG
+                print("[WorkerAPIService] Loaded \(timesheets.count) timesheets for worker \(employeeId)")
+                #endif
+                return timesheets
+            }
+            .eraseToAnyPublisher()
+    }
+
+    /// Pobiera statystyki timesheetów dla pracownika
+    func fetchWorkerTimesheetStats(employeeId: String) -> AnyPublisher<WorkerTimesheetStats, APIError> {
+        let endpoint = "/api/app/worker/timesheets/stats?employee_id=\(employeeId)&cacheBust=\(Int(Date().timeIntervalSince1970))"
+        return makeRequest(endpoint: endpoint, method: "GET", body: Optional<String>.none)
+            .decode(type: WorkerTimesheetStats.self, decoder: jsonDecoder())
+            .mapError { ($0 as? APIError) ?? .decodingError($0) }
+            .eraseToAnyPublisher()
+    }
+
+    // MARK: - Worker Timesheet Models (dodaj te struktury na końcu extension WorkerAPIService)
+
+    struct WorkerTimesheet: Codable, Identifiable {
+        let id: Int
+        let task_id: Int
+        let employee_id: Int
+        let weekNumber: Int
+        let year: Int
+        let timesheetUrl: String
+        let created_at: Date
+        let updated_at: Date?
+        let Tasks: Task?
+        
+        private enum CodingKeys: String, CodingKey {
+            case id, task_id, employee_id, weekNumber, year, timesheetUrl, created_at, updated_at, Tasks
+        }
+    }
+
+    struct WorkerTimesheetStats: Codable {
+        let totalTimesheets: Int
+        let thisWeekTimesheets: Int
+        let thisMonthTimesheets: Int
+        let uniqueTasks: Int
+        let oldestTimesheet: OldestNewestTimesheet?
+        let newestTimesheet: OldestNewestTimesheet?
+        let currentWeekStats: WeekStats?
+        let currentMonthStats: MonthStats?
+        
+        struct OldestNewestTimesheet: Codable {
+            let weekNumber: Int
+            let year: Int
+            let date: String?
+        }
+        
+        struct WeekStats: Codable {
+            let entries: Int
+            let totalKm: Double
+            let totalPauseMinutes: Int
+        }
+        
+        struct MonthStats: Codable {
+            let entries: Int
+            let totalKm: Double
+            let totalPauseMinutes: Int
+        }
+    }
     // MARK: - Notification Methods
 
     /// Pobiera powiadomienia dla pracownika z rozszerzonymi parametrami

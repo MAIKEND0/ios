@@ -7,6 +7,9 @@ final class WorkerWorkHoursViewModel: ObservableObject {
     @Published var selectedTaskId: Int = 0 // 0 indicates no task selected
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
+    @Published var showAlert: Bool = false
+    @Published var alertTitle: String = ""
+    @Published var alertMessage: String = ""
     @Published var startDate: Date = {
         let now = Date()
         let cal = Calendar.current
@@ -53,6 +56,9 @@ final class WorkerWorkHoursViewModel: ObservableObject {
                 self?.isLoading = false
                 if case .failure(let error) = completion {
                     self?.errorMessage = error.localizedDescription
+                    self?.showAlert = true
+                    self?.alertTitle = "Error Loading Tasks"
+                    self?.alertMessage = error.localizedDescription
                     #if DEBUG
                     print("[WorkerWorkHoursViewModel] Failed to load tasks: \(error.localizedDescription)")
                     #endif
@@ -107,6 +113,9 @@ final class WorkerWorkHoursViewModel: ObservableObject {
                     if case let .failure(err) = completion {
                         DispatchQueue.main.async {
                             self?.errorMessage = err.localizedDescription
+                            self?.showAlert = true
+                            self?.alertTitle = "Error Loading Work Hours"
+                            self?.alertMessage = err.localizedDescription
                             #if DEBUG
                             print("[WorkerWorkHoursViewModel] Error fetching entries for week starting \(mondayStr): \(err.localizedDescription)")
                             #endif

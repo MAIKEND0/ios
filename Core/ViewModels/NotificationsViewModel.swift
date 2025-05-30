@@ -1,10 +1,4 @@
-//
-//  NotificationsViewModel.swift
-//  KSR Cranes App
-//
-//  Created by System on 26/05/2025.
-//
-
+// NotificationsViewModel.swift
 import Foundation
 import Combine
 import SwiftUI
@@ -12,7 +6,6 @@ import SwiftUI
 final class NotificationsViewModel: ObservableObject {
     
     // MARK: - Published Properties
-    
     @Published var filteredNotifications: [AppNotification] = []
     @Published var selectedCategory: NotificationCategory? = nil
     @Published var selectedPriority: NotificationPriority? = nil
@@ -22,13 +15,11 @@ final class NotificationsViewModel: ObservableObject {
     @Published var lastError: NotificationError?
     
     // MARK: - Private Properties
-    
     private let notificationService: NotificationService
     private var cancellables = Set<AnyCancellable>()
     private var allNotifications: [AppNotification] = []
     
     // MARK: - Computed Properties
-    
     var hasActiveFilters: Bool {
         selectedCategory != nil || selectedPriority != nil || showUnreadOnly || !searchText.isEmpty
     }
@@ -46,7 +37,6 @@ final class NotificationsViewModel: ObservableObject {
     }
     
     // MARK: - Initialization
-    
     init(notificationService: NotificationService = NotificationService.shared) {
         self.notificationService = notificationService
         setupBindings()
@@ -54,7 +44,6 @@ final class NotificationsViewModel: ObservableObject {
     }
     
     // MARK: - Public Methods
-    
     func loadNotifications() {
         isLoading = true
         lastError = nil
@@ -85,7 +74,6 @@ final class NotificationsViewModel: ObservableObject {
     }
     
     // MARK: - Filter Methods
-    
     func setCategory(_ category: NotificationCategory?) {
         selectedCategory = category
         filterNotifications()
@@ -107,7 +95,6 @@ final class NotificationsViewModel: ObservableObject {
     }
     
     // MARK: - Utility Methods
-    
     func getNotificationsRequiringAction() -> [AppNotification] {
         return displayedNotifications.filter { $0.requiresAction && !$0.isRead }
     }
@@ -125,7 +112,6 @@ final class NotificationsViewModel: ObservableObject {
     }
     
     // MARK: - Navigation Helpers
-    
     func handleNotificationTap(_ notification: AppNotification) -> NotificationAction? {
         // Mark as read if unread
         if !notification.isRead {
@@ -135,6 +121,18 @@ final class NotificationsViewModel: ObservableObject {
         // Determine action based on notification type
         switch notification.type {
         case .hoursRejected:
+            // Check if it's a week rejection notification
+            if let metadata = notification.metadata,
+               let entryIdsJson = metadata["entryIds"],
+               let entryIdsData = entryIdsJson.data(using: .utf8),
+               let entryIds = try? JSONDecoder().decode([Int].self, from: entryIdsData),
+               let firstEntryId = entryIds.first {
+                return .navigateToWorkEntry(
+                    taskId: notification.taskId,
+                    workEntryId: firstEntryId
+                )
+            }
+            // Fallback to single entry rejection
             return .navigateToWorkEntry(
                 taskId: notification.taskId,
                 workEntryId: notification.workEntryId
@@ -154,7 +152,6 @@ final class NotificationsViewModel: ObservableObject {
     }
     
     // MARK: - Private Methods
-    
     private func setupBindings() {
         // Bind to notification service
         notificationService.$notifications
@@ -242,7 +239,6 @@ final class NotificationsViewModel: ObservableObject {
 }
 
 // MARK: - Notification Actions
-
 enum NotificationAction {
     case navigateToWorkEntry(taskId: Int?, workEntryId: Int?)
     case navigateToTask(taskId: Int?)
@@ -252,21 +248,42 @@ enum NotificationAction {
 }
 
 // MARK: - Extensions
-
 extension NotificationsViewModel {
     
     // MARK: - Quick Actions
-    
     func getQuickActions(for notification: AppNotification) -> [QuickAction] {
         switch notification.type {
         case .hoursRejected:
+            // Check if it's a week rejection notification
+            if let metadata = notification.metadata,
+               let weekNumber = metadata["weekNumber"],
+               let _ = metadata["entryIds"] {
+                return [
+                    QuickAction(
+                        title: "Fix & Resubmit Week",
+                        icon: "pencil.circle.fill",
+                        color: .blue,
+                        action: { [weak self] in
+                            self?.handleWeekResubmit(notification)
+                        }
+                    ),
+                    QuickAction(
+                        title: "View Week Entries",
+                        icon: "eye.fill",
+                        color: .gray,
+                        action: { [weak self] in
+                            _ = self?.handleNotificationTap(notification)
+                        }
+                    )
+                ]
+            }
+            // Single entry rejection
             return [
                 QuickAction(
                     title: "Fix & Resubmit",
                     icon: "pencil.circle.fill",
                     color: .blue,
                     action: { [weak self] in
-                        // Handle quick resubmit action
                         self?.handleQuickResubmit(notification)
                     }
                 ),
@@ -275,7 +292,7 @@ extension NotificationsViewModel {
                     icon: "eye.fill",
                     color: .gray,
                     action: { [weak self] in
-                        self?.handleNotificationTap(notification)
+                        _ = self?.handleNotificationTap(notification)
                     }
                 )
             ]
@@ -286,7 +303,7 @@ extension NotificationsViewModel {
                     icon: "briefcase.fill",
                     color: .green,
                     action: { [weak self] in
-                        self?.handleNotificationTap(notification)
+                        _ = self?.handleNotificationTap(notification)
                     }
                 ),
                 QuickAction(
@@ -316,6 +333,35 @@ extension NotificationsViewModel {
         )
     }
     
+    private func handleWeekResubmit(_ notification: AppNotification) {
+        markAsRead(notification)
+        // Extract entryIds from metadata
+        if let metadata = notification.metadata,
+           let entryIdsJson = metadata["entryIds"],
+           let entryIdsData = entryIdsJson.data(using: .utf8),
+           let entryIds = try? JSONDecoder().decode([Int].self, from: entryIdsData),
+           let firstEntryId = entryIds.first {
+            NotificationCenter.default.post(
+                name: .openWorkEntryForm,
+                object: nil,
+                userInfo: [
+                    "taskId": notification.taskId ?? 0,
+                    "workEntryId": firstEntryId
+                ]
+            )
+        } else {
+            // Fallback to single entry if metadata parsing fails
+            NotificationCenter.default.post(
+                name: .openWorkEntryForm,
+                object: nil,
+                userInfo: [
+                    "taskId": notification.taskId ?? 0,
+                    "workEntryId": notification.workEntryId ?? 0
+                ]
+            )
+        }
+    }
+    
     private func handleTaskAcceptance(_ notification: AppNotification) {
         markAsRead(notification)
         // Handle task acceptance logic
@@ -324,7 +370,6 @@ extension NotificationsViewModel {
 }
 
 // MARK: - Quick Action Model
-
 struct QuickAction {
     let title: String
     let icon: String
@@ -333,7 +378,6 @@ struct QuickAction {
 }
 
 // MARK: - Additional Notification Names
-
 extension Notification.Name {
     static let openWorkEntryForm = Notification.Name("openWorkEntryForm")
     static let openTaskDetails = Notification.Name("openTaskDetails")

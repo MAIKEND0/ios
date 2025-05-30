@@ -17,7 +17,7 @@ class ManagerDashboardViewModel: ObservableObject {
     @Published var alertMessage: String = ""
     @Published var showAllPendingEntries: Bool = true
     
-    // DODANE: Przechowywanie informacji o pracownikach i ich przypisaniach
+    // DADANE: Przechowywanie informacji o pracownikach i ich przypisaniach
     @Published var assignedWorkers: [ManagerAPIService.Worker] = []
     private var taskWorkerAssignments: [Int: [String]] = [:] // taskId -> [workerNames]
 
@@ -124,9 +124,6 @@ class ManagerDashboardViewModel: ObservableObject {
             // DODANE: Budowanie mapowania task -> workers
             self.buildTaskWorkerAssignments()
             
-            // DODANE: Budowanie mapowania task -> workers
-            self.buildTaskWorkerAssignments()
-            
             let pendingWeekEntries = weekEntries.filter { $0.confirmation_status != "confirmed" }
             let weekGrouped = Dictionary(grouping: pendingWeekEntries) { $0.task_id }
             self.pendingEntriesByTask = weekGrouped.map { taskId, entries in
@@ -228,6 +225,97 @@ class ManagerDashboardViewModel: ObservableObject {
             selectedMonday = newMonday
             loadData()
         }
+    }
+    
+    // MARK: - UPDATED: Week Rejection with Problematic Days Marking
+
+    // ZAKTUALIZOWANA METODA: Odrzucanie całego tygodnia z oznaczeniem problematycznych dni
+    func rejectTaskWeek(_ taskWeek: TaskWeekEntry, problematicEntryIds: [Int], rejectionReason: String) {
+        isLoading = true
+        
+        #if DEBUG
+        print("[ManagerDashboardViewModel] 🔄 Rejecting entire week for task \(taskWeek.taskId), week \(taskWeek.weekNumber)/\(taskWeek.year)")
+        print("[ManagerDashboardViewModel] Total entries to reject: \(taskWeek.entries.count)")
+        print("[ManagerDashboardViewModel] Problematic entries marked: \(problematicEntryIds.count)")
+        print("[ManagerDashboardViewModel] Rejection reason: \(rejectionReason)")
+        #endif
+        
+        // Budowanie szczegółowego powodu odrzucenia z oznaczonymi dniami
+        var detailedReason = rejectionReason
+        
+        if !problematicEntryIds.isEmpty {
+            let problematicDays = taskWeek.entries
+                .filter { problematicEntryIds.contains($0.entry_id) }
+                .map { entry in
+                    let formatter = DateFormatter()
+                    formatter.dateFormat = "EEEE, MMM d"
+                    return formatter.string(from: entry.work_date)
+                }
+                .joined(separator: ", ")
+            
+            detailedReason += "\n\nProblematic days marked: \(problematicDays)"
+            
+            #if DEBUG
+            print("[ManagerDashboardViewModel] Detailed reason with problematic days: \(detailedReason)")
+            #endif
+        }
+        
+        let updateRequests = taskWeek.entries.map { entry in
+            ManagerAPIService.UpdateWorkEntryRequest(
+                entry_id: entry.entry_id,
+                confirmation_status: "rejected",
+                work_date: entry.work_date,
+                task_id: entry.task_id,
+                employee_id: entry.employee_id,
+                rejection_reason: detailedReason, // Używamy szczegółowego powodu
+                km: entry.km,
+                status: "pending",      // Ustawienie statusu na "pending"
+                is_draft: true          // Ustawienie is_draft na true
+            )
+        }
+        
+        // Używamy grupowego API call dla wszystkich wpisów z tygodnia
+        managerService.rejectWeekEntries(entries: updateRequests, rejectionReason: detailedReason)
+            .receive(on: DispatchQueue.main)
+            .sink(receiveCompletion: { [weak self] completionStatus in
+                guard let self = self, self.isViewActive else { return }
+                self.isLoading = false
+                
+                if case .failure(let error) = completionStatus {
+                    self.showAlert = true
+                    self.alertTitle = "Error"
+                    self.alertMessage = "Failed to reject week: \(error.localizedDescription)"
+                    #if DEBUG
+                    print("[ManagerDashboardViewModel] ❌ Week rejection failed: \(error.localizedDescription)")
+                    #endif
+                } else {
+                    #if DEBUG
+                    print("[ManagerDashboardViewModel] ✅ Week rejected successfully")
+                    #endif
+                    
+                    // Pokaż szczegółowe potwierdzenie
+                    let problematicCount = problematicEntryIds.count
+                    let message = problematicCount > 0
+                        ? "Week \(taskWeek.weekNumber)/\(taskWeek.year) has been rejected. \(problematicCount) problematic days were specifically marked for the employee's attention."
+                        : "Week \(taskWeek.weekNumber)/\(taskWeek.year) has been rejected and returned to the employee for corrections."
+                    
+                    self.alertTitle = "Week Rejected"
+                    self.alertMessage = message
+                    self.showAlert = true
+                }
+            }, receiveValue: { [weak self] response in
+                guard let self = self, self.isViewActive else { return }
+                #if DEBUG
+                print("[ManagerDashboardViewModel] 🔄 Reloading data after week rejection...")
+                #endif
+                self.loadData()
+            })
+            .store(in: &cancellables)
+    }
+
+    // ZACHOWANA dla kompatybilności (stara metoda bez problematic days)
+    func rejectTaskWeek(_ taskWeek: TaskWeekEntry, rejectionReason: String) {
+        rejectTaskWeek(taskWeek, problematicEntryIds: [], rejectionReason: rejectionReason)
     }
 
     func approveTaskWeekWithSignature(_ taskWeek: TaskWeekEntry, signatureImage: UIImage, completionHandler: @escaping (String?) -> Void) {
@@ -605,23 +693,46 @@ class ManagerDashboardViewModel: ObservableObject {
         }
     }
 
+    // STARA METODA - zachowana dla kompatybilności (ale już nie używana)
     func rejectEntry(_ entry: ManagerAPIService.WorkHourEntry, rejectionReason: String) {
         isLoading = true
-        managerService.updateWorkEntryStatus(entry: entry, confirmationStatus: "rejected", rejectionReason: rejectionReason)
-            .receive(on: DispatchQueue.main)
-            .sink(receiveCompletion: { [weak self] completionStatus in
-                guard let self = self, self.isViewActive else { return }
-                self.isLoading = false
-                if case .failure(let error) = completionStatus {
-                    self.showAlert = true
-                    self.alertTitle = "Error"
-                    self.alertMessage = "Failed to reject entry: \(error.localizedDescription)"
-                }
-            }, receiveValue: { [weak self] _ in
-                guard let self = self, self.isViewActive else { return }
-                self.loadData()
-            })
-            .store(in: &cancellables)
+        
+        #if DEBUG
+        print("[ManagerDashboardViewModel] 🔄 Rejecting entry \(entry.entry_id) with reason: \(rejectionReason)")
+        print("[ManagerDashboardViewModel] Setting: confirmation_status='rejected', status='pending', is_draft=true")
+        #endif
+        
+        managerService.updateWorkEntryStatus(
+            entry: entry,
+            confirmationStatus: "rejected",
+            rejectionReason: rejectionReason,
+            status: "pending",      // POPRAWIONE: Ustawienie statusu na "pending"
+            isDraft: true          // POPRAWIONE: Ustawienie is_draft na true
+        )
+        .receive(on: DispatchQueue.main)
+        .sink(receiveCompletion: { [weak self] completionStatus in
+            guard let self = self, self.isViewActive else { return }
+            self.isLoading = false
+            if case .failure(let error) = completionStatus {
+                self.showAlert = true
+                self.alertTitle = "Error"
+                self.alertMessage = "Failed to reject entry: \(error.localizedDescription)"
+                #if DEBUG
+                print("[ManagerDashboardViewModel] ❌ Rejection failed: \(error.localizedDescription)")
+                #endif
+            } else {
+                #if DEBUG
+                print("[ManagerDashboardViewModel] ✅ Entry rejected successfully")
+                #endif
+            }
+        }, receiveValue: { [weak self] _ in
+            guard let self = self, self.isViewActive else { return }
+            #if DEBUG
+            print("[ManagerDashboardViewModel] 🔄 Reloading data after rejection...")
+            #endif
+            self.loadData()
+        })
+        .store(in: &cancellables)
     }
 
     private func updateSummaryStats() {

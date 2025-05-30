@@ -1,4 +1,3 @@
-
 //
 //  TimesheetReportsViewModel.swift
 //  KSR Cranes App
@@ -20,10 +19,10 @@ final class TimesheetReportsViewModel: ObservableObject {
     private var lastLoadTime: Date?
     
     init() {
-        loadData()
+        loadTimesheets()
     }
     
-    func loadData() {
+    func loadTimesheets() {
         guard lastLoadTime == nil || Date().timeIntervalSince(lastLoadTime!) > 5 else {
             #if DEBUG
             print("[TimesheetReportsViewModel] Skipped data load due to recent refresh")
@@ -48,6 +47,11 @@ final class TimesheetReportsViewModel: ObservableObject {
                 self?.isLoading = false
             }
         }
+    }
+    
+    // Alias for loadTimesheets to maintain compatibility
+    func loadData() {
+        loadTimesheets()
     }
     
     private func fetchTimesheets(supervisorId: Int) {

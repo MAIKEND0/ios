@@ -8,82 +8,28 @@ struct ManagerDashboardView: View {
     @State private var hasAppeared = false
     @State private var showSignatureModal = false
     @State private var showReceiptView = false
-    @State private var showRejectionReasonModal = false
-    @State private var rejectionReason = ""
+    @State private var showWeekDetailsModal = false
     @State private var selectedTaskWeek: ManagerDashboardViewModel.TaskWeekEntry?
-    @State private var selectedEntry: ManagerAPIService.WorkHourEntry?
     @State private var timesheetUrl: String?
     @State private var signatureImage: UIImage?
     @Environment(\.colorScheme) private var colorScheme
-    @FocusState private var isRejectionReasonFocused: Bool
     @State private var isPulsing = false
 
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    // Quick Stats Header
-                    ManagerDashboardSections.SummaryCardsSection(viewModel: viewModel)
-                    
-                    // Compact Pending Approvals - only prominent when there are items
-                    ManagerDashboardSections.CompactPendingSection(
-                        viewModel: viewModel,
-                        isPulsing: isPulsing,
-                        onSelectTaskWeek: { taskWeek in
-                            selectedTaskWeek = taskWeek
-                            showSignatureModal = true
-                        },
-                        onSelectEntry: { entry in
-                            selectedEntry = entry
-                            showRejectionReasonModal = true
-                        }
-                    )
-                    
-                    // Navigation Cards Row
-                    navigationCardsSection
-                    
-                    // Week Selector (Compact)
-                    ManagerDashboardSections.CompactWeekSelectorSection(viewModel: viewModel)
-                    
-                    // Tasks Section (Enhanced but less overwhelming)
-                    ManagerDashboardSections.TasksSection(viewModel: viewModel)
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
+                mainContentView
             }
             .background(dashboardBackground)
             .navigationTitle("Manager Dashboard")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    HStack(spacing: 12) {
-                        Button {
-                            withAnimation(.easeInOut(duration: 0.3)) {
-                                viewModel.loadData()
-                            }
-                        } label: {
-                            Image(systemName: "arrow.clockwise")
-                                .foregroundColor(colorScheme == .dark ? .white : Color.ksrDarkGray)
-                                .font(.system(size: 16, weight: .medium))
-                        }
-                        .disabled(viewModel.isLoading)
-                        
-                        Button {
-                            // Obsługa powiadomień (do rozbudowy)
-                        } label: {
-                            Image(systemName: "bell")
-                                .foregroundColor(colorScheme == .dark ? .white : Color.ksrDarkGray)
-                        }
-                    }
+                    toolbarContent
                 }
             }
             .onAppear {
-                viewModel.viewAppeared()
-                hasAppeared = true
-                updatePulsingState()
-                #if DEBUG
-                print("[ManagerDashboardView] View appeared, initial entries count: \(viewModel.allPendingEntriesByTask.count)")
-                #endif
+                handleViewAppear()
             }
             .onDisappear {
                 viewModel.viewDisappeared()
@@ -108,99 +54,165 @@ struct ManagerDashboardView: View {
                 }
             }
             .refreshable {
-                await withCheckedContinuation { continuation in
-                    viewModel.loadData()
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                        continuation.resume()
-                    }
-                }
+                await refreshData()
             }
             .alert(viewModel.alertTitle, isPresented: $viewModel.showAlert) {
                 Button("OK", role: .cancel) {}
             } message: {
                 Text(viewModel.alertMessage)
             }
+            .sheet(isPresented: $showWeekDetailsModal) {
+                weekDetailsModalContent
+            }
             .fullScreenCover(isPresented: $showSignatureModal) {
-                SignatureModalViewController(
-                    isPresented: $showSignatureModal,
-                    content: SignatureModalView(isPresented: $showSignatureModal) { signatureImage in
-                        if let taskWeek = selectedTaskWeek, let image = signatureImage {
-                            self.signatureImage = image
-                            self.showSignatureModal = false
-                            viewModel.approveTaskWeekWithSignature(taskWeek, signatureImage: image) { url in
-                                self.timesheetUrl = url
-                                #if DEBUG
-                                print("[ManagerDashboardView] Timesheet URL: \(url ?? "nil")")
-                                #endif
-                                self.showReceiptView = url != nil
-                            }
-                        }
+                signatureModalContent
+            }
+            .sheet(isPresented: $showReceiptView) {
+                receiptViewContent
+            }
+        }
+    }
+    
+    // MARK: - Main Content
+    private var mainContentView: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            // Quick Stats Header
+            ManagerDashboardSections.SummaryCardsSection(viewModel: viewModel)
+            
+            // Compact Pending Approvals
+            ManagerDashboardSections.CompactPendingSection(
+                viewModel: viewModel,
+                isPulsing: isPulsing,
+                onViewWeekDetails: { taskWeek in
+                    selectedTaskWeek = taskWeek
+                    showWeekDetailsModal = true
+                }
+            )
+            
+            // Navigation Cards Row
+            navigationCardsSection
+            
+            // Week Selector (Compact)
+            ManagerDashboardSections.CompactWeekSelectorSection(viewModel: viewModel)
+            
+            // Tasks Section (Enhanced but less overwhelming)
+            ManagerDashboardSections.TasksSection(viewModel: viewModel)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+    }
+    
+    // MARK: - Toolbar Content
+    private var toolbarContent: some View {
+        HStack(spacing: 12) {
+            Button {
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    viewModel.loadData()
+                }
+            } label: {
+                Image(systemName: "arrow.clockwise")
+                    .foregroundColor(colorScheme == .dark ? .white : Color.ksrDarkGray)
+                    .font(.system(size: 16, weight: .medium))
+            }
+            .disabled(viewModel.isLoading)
+            
+            Button {
+                // Obsługa powiadomień (do rozbudowy)
+            } label: {
+                Image(systemName: "bell")
+                    .foregroundColor(colorScheme == .dark ? .white : Color.ksrDarkGray)
+            }
+        }
+    }
+    
+    // MARK: - Modal Contents
+    private var weekDetailsModalContent: some View {
+        Group {
+            if let taskWeek = selectedTaskWeek {
+                WeekDetailsModal(
+                    taskWeekEntry: taskWeek,
+                    isPresented: $showWeekDetailsModal,
+                    onApproveWeek: {
+                        // Zatwierdzenie całego tygodnia z podpisem
+                        showSignatureModal = true
+                    },
+                    onRejectWeek: { problematicEntryIds, rejectionReason in
+                        // Odrzucenie całego tygodnia z oznaczonymi problematycznymi dniami
+                        viewModel.rejectTaskWeek(taskWeek, problematicEntryIds: problematicEntryIds, rejectionReason: rejectionReason)
                     }
                 )
             }
-            .sheet(isPresented: $showReceiptView) {
-                if let url = timesheetUrl, let fileURL = URL(string: url), let data = try? Data(contentsOf: fileURL), let signature = signatureImage {
-                    TimesheetReceiptView(entry: selectedEntry, timesheetData: data, signatureImage: signature)
-                        .onAppear {
-                            #if DEBUG
-                            print("[ManagerDashboardView] TimesheetReceiptView opened with URL: \(url)")
-                            #endif
-                        }
-                } else {
-                    VStack {
-                        Text("Failed to load PDF")
-                            .font(.headline)
-                            .foregroundColor(.red)
-                        Button("Close") {
-                            showReceiptView = false
-                            timesheetUrl = nil
-                        }
-                        .padding()
-                        .background(Color.ksrYellow)
-                        .foregroundColor(.black)
-                        .cornerRadius(10)
-                    }
-                    .onAppear {
-                        #if DEBUG
-                        print("[ManagerDashboardView] Failed to load PDF")
-                        #endif
+        }
+    }
+    
+    private var signatureModalContent: some View {
+        SignatureModalViewController(
+            isPresented: $showSignatureModal,
+            content: SignatureModalView(isPresented: $showSignatureModal) { signatureImage in
+                if let image = signatureImage, let taskWeek = selectedTaskWeek {
+                    self.signatureImage = image
+                    self.showSignatureModal = false
+                    
+                    // Zawsze zatwierdzamy cały tydzień
+                    viewModel.approveTaskWeekWithSignature(taskWeek, signatureImage: image) { url in
+                        self.timesheetUrl = url
+                        self.showReceiptView = url != nil
                     }
                 }
             }
-            .sheet(isPresented: $showRejectionReasonModal) {
-                VStack(spacing: 20) {
-                    Text("Reason for Rejection")
-                        .font(.headline)
-                    TextEditor(text: $rejectionReason)
-                        .frame(height: 100)
-                        .border(Color.gray, width: 1)
-                        .padding()
-                        .focused($isRejectionReasonFocused)
-                        .keyboardType(.default)
-                        .autocapitalization(.sentences)
-                        .disableAutocorrection(true)
-                    HStack(spacing: 20) {
-                        Button("Cancel") {
-                            showRejectionReasonModal = false
-                            rejectionReason = ""
-                            isRejectionReasonFocused = false
-                        }
-                        .foregroundColor(.red)
-                        Button("Submit") {
-                            if let entry = selectedEntry {
-                                viewModel.rejectEntry(entry, rejectionReason: rejectionReason)
-                                showRejectionReasonModal = false
-                                rejectionReason = ""
-                                isRejectionReasonFocused = false
-                            }
-                        }
-                        .disabled(rejectionReason.isEmpty)
+        )
+    }
+    
+    private var receiptViewContent: some View {
+        Group {
+            if let url = timesheetUrl,
+               let fileURL = URL(string: url),
+               let data = try? Data(contentsOf: fileURL),
+               let signature = signatureImage {
+                TimesheetReceiptView(entry: nil, timesheetData: data, signatureImage: signature)
+                    .onAppear {
+                        #if DEBUG
+                        print("[ManagerDashboardView] TimesheetReceiptView opened with URL: \(url)")
+                        #endif
                     }
+            } else {
+                VStack {
+                    Text("Failed to load PDF")
+                        .font(.headline)
+                        .foregroundColor(.red)
+                    Button("Close") {
+                        showReceiptView = false
+                        timesheetUrl = nil
+                    }
+                    .padding()
+                    .background(Color.ksrYellow)
+                    .foregroundColor(.black)
+                    .cornerRadius(10)
                 }
-                .padding()
                 .onAppear {
-                    isRejectionReasonFocused = true
+                    #if DEBUG
+                    print("[ManagerDashboardView] Failed to load PDF")
+                    #endif
                 }
+            }
+        }
+    }
+    
+    // MARK: - Helper Methods
+    private func handleViewAppear() {
+        viewModel.viewAppeared()
+        hasAppeared = true
+        updatePulsingState()
+        #if DEBUG
+        print("[ManagerDashboardView] View appeared, initial entries count: \(viewModel.allPendingEntriesByTask.count)")
+        #endif
+    }
+    
+    private func refreshData() async {
+        await withCheckedContinuation { continuation in
+            viewModel.loadData()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                continuation.resume()
             }
         }
     }

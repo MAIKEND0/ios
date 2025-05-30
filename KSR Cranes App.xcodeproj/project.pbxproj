@@ -63,7 +63,6 @@
 		1B71F02F2DD4A49100731223 /* WorkHourEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B71F02E2DD4A48F00731223 /* WorkHourEntry.swift */; };
 		1B71F0322DD4A4BB00731223 /* WorkHoursViewModeltemp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B71F0312DD4A4B400731223 /* WorkHoursViewModeltemp.swift */; };
 		1B71F0352DD4AA0C00731223 /* DateFormatter+ISO.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B71F0342DD4A4E000731223 /* DateFormatter+ISO.swift */; };
-		1B71F0382DD4B29A00731223 /* WorkerDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B71F0362DD4AF7200731223 /* WorkerDashboardView.swift */; };
 		1B71F03A2DD4B53C00731223 /* WorkerDashboardViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B71F0392DD4B53700731223 /* WorkerDashboardViewModel.swift */; };
 		1B71F03C2DD4BA2F00731223 /* WeeklyWorkEntryForm.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B71F03B2DD4BA2900731223 /* WeeklyWorkEntryForm.swift */; };
 		1B71F03E2DD4BBC400731223 /* Calendar+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B71F03D2DD4BBC300731223 /* Calendar+Extensions.swift */; };
@@ -71,7 +70,14 @@
 		1B71F0422DD4BE9200731223 /* AuthInterceptor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B71F0412DD4BE9100731223 /* AuthInterceptor.swift */; };
 		1B71F0452DD4C41400731223 /* AuthDebugger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B71F0442DD4C40B00731223 /* AuthDebugger.swift */; };
 		1B71F0482DD4C44900731223 /* AuthenticationHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B71F0472DD4C43D00731223 /* AuthenticationHandler.swift */; };
-		1B779BB22DE4BD9400947C94 /* NotificationsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B779BB12DE4BD9400947C94 /* NotificationsViewModel.swift */; };
+		1B779BD72DE5927100947C94 /* WorkerDashboardComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B779BD62DE5926F00947C94 /* WorkerDashboardComponents.swift */; };
+		1B779BD92DE5D25400947C94 /* WeekDetailsModal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B779BD82DE5D25200947C94 /* WeekDetailsModal.swift */; };
+		1B779BDC2DE6035600947C94 /* NotificationsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B779BDB2DE6034D00947C94 /* NotificationsViewModel.swift */; };
+		1B779BE22DE604DF00947C94 /* WorkerProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B779BE12DE604D600947C94 /* WorkerProfileView.swift */; };
+		1B779BE42DE604F600947C94 /* WorkerProfileViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B779BE32DE604E900947C94 /* WorkerProfileViewModel.swift */; };
+		1B779BE62DE6050200947C94 /* WorkerkProfileComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B779BE52DE604FD00947C94 /* WorkerkProfileComponents.swift */; };
+		1B779BF92DE60B4500947C94 /* WorkerProfileApiService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B779BF82DE60B3F00947C94 /* WorkerProfileApiService.swift */; };
+		1B779BFE2DE614C400947C94 /* WorkerDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B779BFD2DE614C000947C94 /* WorkerDashboardView.swift */; };
 		1B7A27782DD6032F004FFF06 /* Notifications.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B7A27772DD6032B004FFF06 /* Notifications.swift */; };
 		1B7D9B2E2DE45F9A00D39069 /* AppNotification.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B7D9B2D2DE45F9300D39069 /* AppNotification.swift */; };
 		1B7D9B322DE4600300D39069 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B7D9B312DE4600100D39069 /* NotificationService.swift */; };
@@ -83,6 +89,12 @@
 		1BA25FFA2DE248F300501208 /* SupervisorProfileApiService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BA25FF92DE248E600501208 /* SupervisorProfileApiService.swift */; };
 		1BA25FFC2DE24C4900501208 /* ProfilePictureView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BA25FFB2DE24C4200501208 /* ProfilePictureView.swift */; };
 		1BA25FFE2DE272F700501208 /* TabButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BA25FFD2DE272ED00501208 /* TabButton.swift */; };
+		1BD0F7F92DE8E036002DEDFA /* WorkerDashboardSections.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BD0F7F82DE8E02F002DEDFA /* WorkerDashboardSections.swift */; };
+		1BD0F7FB2DE8E21F002DEDFA /* EntryStatus+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BD0F7FA2DE8E219002DEDFA /* EntryStatus+Extensions.swift */; };
+		1BD0F7FD2DE8EFD0002DEDFA /* WorkHoursUtilities.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BD0F7FC2DE8EFCB002DEDFA /* WorkHoursUtilities.swift */; };
+		1BD0F7FF2DE8FBB0002DEDFA /* WorkerTimesheetReportsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BD0F7FE2DE8FBAF002DEDFA /* WorkerTimesheetReportsViewModel.swift */; };
+		1BD0F8042DE8FC05002DEDFA /* WorkerTimesheetReportsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BD0F8032DE8FC03002DEDFA /* WorkerTimesheetReportsView.swift */; };
+		1BD0F8082DE90403002DEDFA /* SharedTimesheetComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BD0F8072DE90402002DEDFA /* SharedTimesheetComponents.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -162,7 +174,6 @@
 		1B71F02E2DD4A48F00731223 /* WorkHourEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkHourEntry.swift; sourceTree = "<group>"; };
 		1B71F0312DD4A4B400731223 /* WorkHoursViewModeltemp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkHoursViewModeltemp.swift; sourceTree = "<group>"; };
 		1B71F0342DD4A4E000731223 /* DateFormatter+ISO.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DateFormatter+ISO.swift"; sourceTree = "<group>"; };
-		1B71F0362DD4AF7200731223 /* WorkerDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkerDashboardView.swift; sourceTree = "<group>"; };
 		1B71F0392DD4B53700731223 /* WorkerDashboardViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkerDashboardViewModel.swift; sourceTree = "<group>"; };
 		1B71F03B2DD4BA2900731223 /* WeeklyWorkEntryForm.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyWorkEntryForm.swift; sourceTree = "<group>"; };
 		1B71F03D2DD4BBC300731223 /* Calendar+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Calendar+Extensions.swift"; sourceTree = "<group>"; };
@@ -170,7 +181,14 @@
 		1B71F0412DD4BE9100731223 /* AuthInterceptor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthInterceptor.swift; sourceTree = "<group>"; };
 		1B71F0442DD4C40B00731223 /* AuthDebugger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthDebugger.swift; sourceTree = "<group>"; };
 		1B71F0472DD4C43D00731223 /* AuthenticationHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthenticationHandler.swift; sourceTree = "<group>"; };
-		1B779BB12DE4BD9400947C94 /* NotificationsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationsViewModel.swift; sourceTree = SOURCE_ROOT; };
+		1B779BD62DE5926F00947C94 /* WorkerDashboardComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkerDashboardComponents.swift; sourceTree = "<group>"; };
+		1B779BD82DE5D25200947C94 /* WeekDetailsModal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeekDetailsModal.swift; sourceTree = "<group>"; };
+		1B779BDB2DE6034D00947C94 /* NotificationsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationsViewModel.swift; sourceTree = "<group>"; };
+		1B779BE12DE604D600947C94 /* WorkerProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkerProfileView.swift; sourceTree = "<group>"; };
+		1B779BE32DE604E900947C94 /* WorkerProfileViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkerProfileViewModel.swift; sourceTree = "<group>"; };
+		1B779BE52DE604FD00947C94 /* WorkerkProfileComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkerkProfileComponents.swift; sourceTree = "<group>"; };
+		1B779BF82DE60B3F00947C94 /* WorkerProfileApiService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkerProfileApiService.swift; sourceTree = "<group>"; };
+		1B779BFD2DE614C000947C94 /* WorkerDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkerDashboardView.swift; sourceTree = "<group>"; };
 		1B7A27772DD6032B004FFF06 /* Notifications.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notifications.swift; sourceTree = "<group>"; };
 		1B7D9B2D2DE45F9300D39069 /* AppNotification.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppNotification.swift; sourceTree = "<group>"; };
 		1B7D9B302DE45FC500D39069 /* NotificationResponse.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationResponse.swift; sourceTree = "<group>"; };
@@ -182,6 +200,12 @@
 		1BA25FF92DE248E600501208 /* SupervisorProfileApiService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupervisorProfileApiService.swift; sourceTree = "<group>"; };
 		1BA25FFB2DE24C4200501208 /* ProfilePictureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfilePictureView.swift; sourceTree = "<group>"; };
 		1BA25FFD2DE272ED00501208 /* TabButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabButton.swift; sourceTree = "<group>"; };
+		1BD0F7F82DE8E02F002DEDFA /* WorkerDashboardSections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkerDashboardSections.swift; sourceTree = "<group>"; };
+		1BD0F7FA2DE8E219002DEDFA /* EntryStatus+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "EntryStatus+Extensions.swift"; sourceTree = "<group>"; };
+		1BD0F7FC2DE8EFCB002DEDFA /* WorkHoursUtilities.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkHoursUtilities.swift; sourceTree = "<group>"; };
+		1BD0F7FE2DE8FBAF002DEDFA /* WorkerTimesheetReportsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkerTimesheetReportsViewModel.swift; sourceTree = "<group>"; };
+		1BD0F8032DE8FC03002DEDFA /* WorkerTimesheetReportsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkerTimesheetReportsView.swift; sourceTree = "<group>"; };
+		1BD0F8072DE90402002DEDFA /* SharedTimesheetComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedTimesheetComponents.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -304,6 +328,7 @@
 		1B6FB0092DD79DE8007B2C9E /* ViewModels */ = {
 			isa = PBXGroup;
 			children = (
+				1B779BD82DE5D25200947C94 /* WeekDetailsModal.swift */,
 				1BA25FF52DE227E600501208 /* ManagerProfileViewModel.swift */,
 				1B45148B2DDC5A440020443F /* EditWorkPlanViewModel.swift */,
 				1B4514872DDC5A1A0020443F /* ManagerWorkPlansViewModel.swift */,
@@ -319,6 +344,7 @@
 		1B6FB0112DD7ADC3007B2C9E /* API */ = {
 			isa = PBXGroup;
 			children = (
+				1B779BF82DE60B3F00947C94 /* WorkerProfileApiService.swift */,
 				1BA25FF92DE248E600501208 /* SupervisorProfileApiService.swift */,
 				1B45147D2DDC58150020443F /* WorkPlanAPIService.swift */,
 				1B6FB00D2DD7A817007B2C9E /* BaseAPIService.swift */,
@@ -331,12 +357,9 @@
 		1B71EF452DD3102000731223 = {
 			isa = PBXGroup;
 			children = (
-				1B7D9B2F2DE45FBF00D39069 /* Models */,
 				1B71F0432DD4C3C600731223 /* Debug */,
 				1B71F0332DD4A4D900731223 /* Utils */,
-				1B71EFB02DD3170F00731223 /* ViewModels */,
 				1B71EFAA2DD315B000731223 /* Extensions */,
-				1B71EF8E2DD3121800731223 /* Resources */,
 				1B71EF892DD311FA00731223 /* UI */,
 				1B71EF792DD3112300731223 /* Core */,
 				1B71EF502DD3102000731223 /* KSR Cranes App */,
@@ -344,7 +367,6 @@
 				1B71EF682DD3102300731223 /* KSR Cranes AppUITests */,
 				1B71EF4F2DD3102000731223 /* Products */,
 				1B71EF7E2DD3115400731223 /* Features */,
-				D6DA9B9AC9F577E1E87424F7 /* Pods */,
 			);
 			sourceTree = "<group>";
 		};
@@ -361,8 +383,8 @@
 		1B71EF792DD3112300731223 /* Core */ = {
 			isa = PBXGroup;
 			children = (
+				1B779BDA2DE6025100947C94 /* ViewModels */,
 				1B71EF912DD3125500731223 /* Models */,
-				1B71EF932DD3126A00731223 /* Extensions */,
 				1B71EF922DD3126700731223 /* Utilities */,
 				1B71EF942DD3126E00731223 /* Services */,
 			);
@@ -375,7 +397,6 @@
 				1B6FB0052DD79D7F007B2C9E /* Manager */,
 				1B71EF9C2DD3128300731223 /* Chef */,
 				1B71EFA02DD3128600731223 /* Worker */,
-				1B71EFA12DD3128C00731223 /* Auth */,
 			);
 			path = Features;
 			sourceTree = "<group>";
@@ -391,18 +412,13 @@
 			path = UI;
 			sourceTree = "<group>";
 		};
-		1B71EF8E2DD3121800731223 /* Resources */ = {
-			isa = PBXGroup;
-			children = (
-				1B71EF982DD3127600731223 /* Assets */,
-			);
-			path = Resources;
-			sourceTree = "<group>";
-		};
 		1B71EF912DD3125500731223 /* Models */ = {
 			isa = PBXGroup;
 			children = (
 				1B71EFC82DD3318C00731223 /* Announcement.swift */,
+				1B7D9B362DE49BDA00D39069 /* NotificationsView.swift */,
+				1B7D9B302DE45FC500D39069 /* NotificationResponse.swift */,
+				1B7D9B2D2DE45F9300D39069 /* AppNotification.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -413,13 +429,6 @@
 				1B71EFD02DD33C9B00731223 /* Configuration.swift */,
 			);
 			path = Utilities;
-			sourceTree = "<group>";
-		};
-		1B71EF932DD3126A00731223 /* Extensions */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = Extensions;
 			sourceTree = "<group>";
 		};
 		1B71EF942DD3126E00731223 /* Services */ = {
@@ -463,13 +472,6 @@
 			path = Views;
 			sourceTree = "<group>";
 		};
-		1B71EF982DD3127600731223 /* Assets */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = Assets;
-			sourceTree = "<group>";
-		};
 		1B71EF9B2DD3128300731223 /* Dashboard */ = {
 			isa = PBXGroup;
 			children = (
@@ -485,23 +487,11 @@
 			path = Chef;
 			sourceTree = "<group>";
 		};
-		1B71EF9D2DD3128600731223 /* Dashboard */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = Dashboard;
-			sourceTree = "<group>";
-		};
-		1B71EF9E2DD3128600731223 /* Notifications */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = Notifications;
-			sourceTree = "<group>";
-		};
 		1B71EF9F2DD3128600731223 /* WorkHours */ = {
 			isa = PBXGroup;
 			children = (
+				1BD0F7FC2DE8EFCB002DEDFA /* WorkHoursUtilities.swift */,
+				1B71EFB22DD3180700731223 /* WorkerWorkHoursView.swift */,
 			);
 			path = WorkHours;
 			sourceTree = "<group>";
@@ -509,25 +499,18 @@
 		1B71EFA02DD3128600731223 /* Worker */ = {
 			isa = PBXGroup;
 			children = (
+				1BD0F8012DE8FBF0002DEDFA /* Timesheet */,
+				1BD0F7FA2DE8E219002DEDFA /* EntryStatus+Extensions.swift */,
+				1B779BE02DE604D000947C94 /* Profile */,
+				1B779BDF2DE6037900947C94 /* Dashboard */,
 				1B71F02E2DD4A48F00731223 /* WorkHourEntry.swift */,
 				1B71F03F2DD4BBF900731223 /* WorkHourEntry+Extensions.swift */,
 				1B71F03B2DD4BA2900731223 /* WeeklyWorkEntryForm.swift */,
-				1B71F0362DD4AF7200731223 /* WorkerDashboardView.swift */,
 				1B71F0302DD4A4A600731223 /* ViewModels */,
 				1B71F02C2DD4A10100731223 /* EditableWorkEntry.swift */,
-				1B71EFB22DD3180700731223 /* WorkerWorkHoursView.swift */,
-				1B71EF9D2DD3128600731223 /* Dashboard */,
-				1B71EF9E2DD3128600731223 /* Notifications */,
 				1B71EF9F2DD3128600731223 /* WorkHours */,
 			);
 			path = Worker;
-			sourceTree = "<group>";
-		};
-		1B71EFA12DD3128C00731223 /* Auth */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = Auth;
 			sourceTree = "<group>";
 		};
 		1B71EFAA2DD315B000731223 /* Extensions */ = {
@@ -537,14 +520,6 @@
 				1B71EFAB2DD315C200731223 /* Color+Extensions.swift */,
 			);
 			path = Extensions;
-			sourceTree = "<group>";
-		};
-		1B71EFB02DD3170F00731223 /* ViewModels */ = {
-			isa = PBXGroup;
-			children = (
-				1B779BB12DE4BD9400947C94 /* NotificationsViewModel.swift */,
-			);
-			path = ViewModels;
 			sourceTree = "<group>";
 		};
 		1B71EFBC2DD3259C00731223 /* Main */ = {
@@ -609,6 +584,7 @@
 		1B71F0302DD4A4A600731223 /* ViewModels */ = {
 			isa = PBXGroup;
 			children = (
+				1BD0F7FE2DE8FBAF002DEDFA /* WorkerTimesheetReportsViewModel.swift */,
 				1B71EFC32DD3307300731223 /* WeeklyWorkEntryViewModel.swift */,
 				1B71F0202DD4972000731223 /* WorkerWorkHoursViewModel.swift */,
 				1B71F0392DD4B53700731223 /* WorkerDashboardViewModel.swift */,
@@ -640,14 +616,32 @@
 			path = Debug;
 			sourceTree = "<group>";
 		};
-		1B7D9B2F2DE45FBF00D39069 /* Models */ = {
+		1B779BDA2DE6025100947C94 /* ViewModels */ = {
 			isa = PBXGroup;
 			children = (
-				1B7D9B362DE49BDA00D39069 /* NotificationsView.swift */,
-				1B7D9B302DE45FC500D39069 /* NotificationResponse.swift */,
-				1B7D9B2D2DE45F9300D39069 /* AppNotification.swift */,
+				1B779BDB2DE6034D00947C94 /* NotificationsViewModel.swift */,
 			);
-			path = Models;
+			path = ViewModels;
+			sourceTree = "<group>";
+		};
+		1B779BDF2DE6037900947C94 /* Dashboard */ = {
+			isa = PBXGroup;
+			children = (
+				1BD0F7F82DE8E02F002DEDFA /* WorkerDashboardSections.swift */,
+				1B779BFD2DE614C000947C94 /* WorkerDashboardView.swift */,
+				1B779BD62DE5926F00947C94 /* WorkerDashboardComponents.swift */,
+			);
+			path = Dashboard;
+			sourceTree = "<group>";
+		};
+		1B779BE02DE604D000947C94 /* Profile */ = {
+			isa = PBXGroup;
+			children = (
+				1B779BE52DE604FD00947C94 /* WorkerkProfileComponents.swift */,
+				1B779BE32DE604E900947C94 /* WorkerProfileViewModel.swift */,
+				1B779BE12DE604D600947C94 /* WorkerProfileView.swift */,
+			);
+			path = Profile;
 			sourceTree = "<group>";
 		};
 		1BA25FF22DE227CA00501208 /* Profile */ = {
@@ -660,11 +654,13 @@
 			path = Profile;
 			sourceTree = "<group>";
 		};
-		D6DA9B9AC9F577E1E87424F7 /* Pods */ = {
+		1BD0F8012DE8FBF0002DEDFA /* Timesheet */ = {
 			isa = PBXGroup;
 			children = (
+				1BD0F8072DE90402002DEDFA /* SharedTimesheetComponents.swift */,
+				1BD0F8032DE8FC03002DEDFA /* WorkerTimesheetReportsView.swift */,
 			);
-			path = Pods;
+			path = Timesheet;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -806,6 +802,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				1B4514992DDDA5880020443F /* WorkPlanPreviewView.swift in Sources */,
+				1B779BE42DE604F600947C94 /* WorkerProfileViewModel.swift in Sources */,
 				1B71EFC92DD3318F00731223 /* Announcement.swift in Sources */,
 				1B71EFBE2DD325AB00731223 /* MainTabView.swift in Sources */,
 				1B71EFB32DD3182200731223 /* WorkerWorkHoursView.swift in Sources */,
@@ -825,6 +822,7 @@
 				1B71F0402DD4BBFB00731223 /* WorkHourEntry+Extensions.swift in Sources */,
 				1B3600DA2DDA56E700943E5B /* TimesheetReportsViewModel.swift in Sources */,
 				1B6FB0082DD79DD1007B2C9E /* ManagerDashboardView.swift in Sources */,
+				1BD0F7FF2DE8FBB0002DEDFA /* WorkerTimesheetReportsViewModel.swift in Sources */,
 				1BA25FFC2DE24C4900501208 /* ProfilePictureView.swift in Sources */,
 				1B71EFAC2DD315C900731223 /* Color+Extensions.swift in Sources */,
 				1BA25FF62DE227F000501208 /* ManagerProfileViewModel.swift in Sources */,
@@ -834,6 +832,7 @@
 				1B3600D22DDA3A8000943E5B /* AppDelegate.swift in Sources */,
 				1B63CC562DD86240005F598D /* ManagerProjectsViewModel.swift in Sources */,
 				1B4514972DDC8E410020443F /* WorkPlanCreatorView.swift in Sources */,
+				1B779BF92DE60B4500947C94 /* WorkerProfileApiService.swift in Sources */,
 				1B71F03C2DD4BA2F00731223 /* WeeklyWorkEntryForm.swift in Sources */,
 				1B63CC542DD8620D005F598D /* ManagerProjectsView.swift in Sources */,
 				1B3600D42DDA3AF900943E5B /* SignatureModalViewController.swift in Sources */,
@@ -846,16 +845,22 @@
 				1B71EFEB2DD3624500731223 /* ProfileView.swift in Sources */,
 				1B71F0172DD4952100731223 /* WorkerTaskDetailView.swift in Sources */,
 				1B71F0212DD4972200731223 /* WorkerWorkHoursViewModel.swift in Sources */,
+				1BD0F7FD2DE8EFD0002DEDFA /* WorkHoursUtilities.swift in Sources */,
 				1B4514862DDC5A0D0020443F /* ManagerWorkPlansView.swift in Sources */,
 				1B71EFE82DD3617200731223 /* LoginView.swift in Sources */,
+				1B779BDC2DE6035600947C94 /* NotificationsViewModel.swift in Sources */,
 				1B7D9B322DE4600300D39069 /* NotificationService.swift in Sources */,
 				1B71F02F2DD4A49100731223 /* WorkHourEntry.swift in Sources */,
 				1B71F0352DD4AA0C00731223 /* DateFormatter+ISO.swift in Sources */,
+				1B779BD92DE5D25400947C94 /* WeekDetailsModal.swift in Sources */,
 				1B71EFC22DD32A6500731223 /* SplashScreenView.swift in Sources */,
+				1B779BFE2DE614C400947C94 /* WorkerDashboardView.swift in Sources */,
+				1BD0F8042DE8FC05002DEDFA /* WorkerTimesheetReportsView.swift in Sources */,
 				1BA25FF42DE227D300501208 /* ManagerProfileView.swift in Sources */,
 				1B3600D62DDA3B1500943E5B /* OrientationManager.swift in Sources */,
 				1B71F03A2DD4B53C00731223 /* WorkerDashboardViewModel.swift in Sources */,
 				1B71F02D2DD4A10200731223 /* EditableWorkEntry.swift in Sources */,
+				1BD0F8082DE90403002DEDFA /* SharedTimesheetComponents.swift in Sources */,
 				1B71EFCF2DD3355400731223 /* AuthService.swift in Sources */,
 				1B71F00D2DD46AEC00731223 /* UIApplication+Extensions.swift in Sources */,
 				1B71EFED2DD3636000731223 /* LoginViewModel.swift in Sources */,
@@ -866,11 +871,13 @@
 				1B63CC512DD8602A005F598D /* ManagerWorkersViewModel.swift in Sources */,
 				1BA25FF82DE22FE400501208 /* ManagerProfileComponent.swift in Sources */,
 				1B71F0482DD4C44900731223 /* AuthenticationHandler.swift in Sources */,
-				1B71F0382DD4B29A00731223 /* WorkerDashboardView.swift in Sources */,
 				1B63CC5E2DD867E3005F598D /* TimesheetReceiptView.swift in Sources */,
-				1B779BB22DE4BD9400947C94 /* NotificationsViewModel.swift in Sources */,
+				1B779BE62DE6050200947C94 /* WorkerkProfileComponents.swift in Sources */,
+				1BD0F7F92DE8E036002DEDFA /* WorkerDashboardSections.swift in Sources */,
+				1B779BD72DE5927100947C94 /* WorkerDashboardComponents.swift in Sources */,
 				1B63CC6D2DD91CE7005F598D /* ManagerDashboardComponents.swift in Sources */,
 				1B71F0452DD4C41400731223 /* AuthDebugger.swift in Sources */,
+				1BD0F7FB2DE8E21F002DEDFA /* EntryStatus+Extensions.swift in Sources */,
 				1B7D9B332DE46CDE00D39069 /* NotificationResponse.swift in Sources */,
 				1B7D9B2E2DE45F9A00D39069 /* AppNotification.swift in Sources */,
 				1B7D9B372DE49BDC00D39069 /* NotificationsView.swift in Sources */,
@@ -878,6 +885,7 @@
 				1B45147E2DDC58180020443F /* WorkPlanAPIService.swift in Sources */,
 				1B4514802DDC588D0020443F /* CreateWorkPlanViewModel.swift in Sources */,
 				1B71EFC42DD3307700731223 /* WeeklyWorkEntryViewModel.swift in Sources */,
+				1B779BE22DE604DF00947C94 /* WorkerProfileView.swift in Sources */,
 				1B4514A92DDF373B0020443F /* WeekUtils.swift in Sources */,
 				1B71EFF32DD3A06800731223 /* tempAPIError.swift in Sources */,
 				1B6FB00E2DD7A81C007B2C9E /* BaseAPIService.swift in Sources */,

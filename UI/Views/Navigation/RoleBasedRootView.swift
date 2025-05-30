@@ -1,9 +1,5 @@
-//
-//  RoleBasedRootView.swift (Updated)
-//  KSR Cranes App
-//
-//  Created by Maksymilian Marcinowski on 13/05/2025.
-//  Updated to use role-specific profile views
+// UI/Views/Navigation/RoleBasedRootView.swift - AKTUALIZACJA
+// Znajdź struct WorkerMainView i zastąp ProfileView() na WorkerProfileView()
 
 import SwiftUI
 
@@ -32,7 +28,7 @@ struct RoleBasedRootView: View {
     }
 }
 
-// Worker's main view - this is your existing MainTabView
+// Worker's main view - AKTUALIZOWANY
 struct WorkerMainView: View {
     var body: some View {
         TabView {
@@ -51,7 +47,7 @@ struct WorkerMainView: View {
                     Label("Tasks", systemImage: "list.bullet")
                 }
             
-            ProfileView()  // Standard profile for workers
+            WorkerProfileView()  // ✨ ZMIENIONE Z ProfileView() NA WorkerProfileView()
                 .tabItem {
                     Label("Profile", systemImage: "person.fill")
                 }
