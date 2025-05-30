@@ -111,7 +111,7 @@ struct ManagerDashboardView: View {
                 }
             } label: {
                 Image(systemName: "arrow.clockwise")
-                    .foregroundColor(colorScheme == .dark ? .white : Color.ksrDarkGray)
+                    .foregroundColor(Color.ksrTextPrimary)
                     .font(.system(size: 16, weight: .medium))
             }
             .disabled(viewModel.isLoading)
@@ -120,7 +120,7 @@ struct ManagerDashboardView: View {
                 // Obsługa powiadomień (do rozbudowy)
             } label: {
                 Image(systemName: "bell")
-                    .foregroundColor(colorScheme == .dark ? .white : Color.ksrDarkGray)
+                    .foregroundColor(Color.ksrTextPrimary)
             }
         }
     }
@@ -186,7 +186,7 @@ struct ManagerDashboardView: View {
                     }
                     .padding()
                     .background(Color.ksrYellow)
-                    .foregroundColor(.black)
+                    .foregroundColor(.white)
                     .cornerRadius(10)
                 }
                 .onAppear {
@@ -219,15 +219,8 @@ struct ManagerDashboardView: View {
     
     // MARK: - Dashboard Background
     private var dashboardBackground: some View {
-        LinearGradient(
-            gradient: Gradient(colors: [
-                colorScheme == .dark ? Color.black : Color(.systemBackground),
-                colorScheme == .dark ? Color(.systemGray6).opacity(0.2) : Color(.systemGray6).opacity(0.3)
-            ]),
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
-        .ignoresSafeArea()
+        Color.backgroundGradient
+            .ignoresSafeArea()
     }
     
     // MARK: - Navigation Cards Section
@@ -296,11 +289,11 @@ struct NavigationCard: View {
                 Text(title)
                     .font(.subheadline)
                     .fontWeight(.bold)
-                    .foregroundColor(colorScheme == .dark ? .white : .primary)
+                    .foregroundColor(Color.ksrTextPrimary)
                 
                 Text(subtitle)
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(Color.ksrTextSecondary)
             }
         }
         .frame(maxWidth: .infinity)
@@ -308,7 +301,7 @@ struct NavigationCard: View {
         .padding(.horizontal, 8)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(colorScheme == .dark ? Color(.systemGray6).opacity(0.3) : Color.white)
+                .fill(Color.ksrMediumGray)
                 .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.2 : 0.05), radius: 3, x: 0, y: 2)
         )
         .overlay(

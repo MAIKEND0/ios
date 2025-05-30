@@ -31,6 +31,12 @@ struct ManagerMainTabView: View {
                 .tabItem {
                     Label("Work Plans", systemImage: "calendar")
                 }
+            
+            // 🆕 DODANY TAB Z PROFILEM
+            ManagerProfileView()
+                .tabItem {
+                    Label("Profile", systemImage: "person.fill")
+                }
         }
         .accentColor(Color.ksrYellow)
     }

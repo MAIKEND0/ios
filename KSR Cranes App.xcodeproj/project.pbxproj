@@ -95,6 +95,9 @@
 		1BD0F7FF2DE8FBB0002DEDFA /* WorkerTimesheetReportsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BD0F7FE2DE8FBAF002DEDFA /* WorkerTimesheetReportsViewModel.swift */; };
 		1BD0F8042DE8FC05002DEDFA /* WorkerTimesheetReportsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BD0F8032DE8FC03002DEDFA /* WorkerTimesheetReportsView.swift */; };
 		1BD0F8082DE90403002DEDFA /* SharedTimesheetComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BD0F8072DE90402002DEDFA /* SharedTimesheetComponents.swift */; };
+		1BD0F80B2DE9A5DE002DEDFA /* ProfileImageCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BD0F80A2DE9A5DC002DEDFA /* ProfileImageCache.swift */; };
+		1BD0F80E2DE9AE09002DEDFA /* CachedProfileImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BD0F80D2DE9AE08002DEDFA /* CachedProfileImageView.swift */; };
+		1BD0F8112DE9B81C002DEDFA /* AppStateManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BD0F8102DE9B81A002DEDFA /* AppStateManager.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -206,6 +209,9 @@
 		1BD0F7FE2DE8FBAF002DEDFA /* WorkerTimesheetReportsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkerTimesheetReportsViewModel.swift; sourceTree = "<group>"; };
 		1BD0F8032DE8FC03002DEDFA /* WorkerTimesheetReportsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkerTimesheetReportsView.swift; sourceTree = "<group>"; };
 		1BD0F8072DE90402002DEDFA /* SharedTimesheetComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedTimesheetComponents.swift; sourceTree = "<group>"; };
+		1BD0F80A2DE9A5DC002DEDFA /* ProfileImageCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileImageCache.swift; sourceTree = "<group>"; };
+		1BD0F80D2DE9AE08002DEDFA /* CachedProfileImageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CachedProfileImageView.swift; sourceTree = "<group>"; };
+		1BD0F8102DE9B81A002DEDFA /* AppStateManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStateManager.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -383,6 +389,9 @@
 		1B71EF792DD3112300731223 /* Core */ = {
 			isa = PBXGroup;
 			children = (
+				1BD0F80F2DE9B813002DEDFA /* Managers */,
+				1BD0F80C2DE9AB97002DEDFA /* Components */,
+				1BD0F8092DE9A5CE002DEDFA /* Cache */,
 				1B779BDA2DE6025100947C94 /* ViewModels */,
 				1B71EF912DD3125500731223 /* Models */,
 				1B71EF922DD3126700731223 /* Utilities */,
@@ -663,6 +672,30 @@
 			path = Timesheet;
 			sourceTree = "<group>";
 		};
+		1BD0F8092DE9A5CE002DEDFA /* Cache */ = {
+			isa = PBXGroup;
+			children = (
+				1BD0F80A2DE9A5DC002DEDFA /* ProfileImageCache.swift */,
+			);
+			path = Cache;
+			sourceTree = "<group>";
+		};
+		1BD0F80C2DE9AB97002DEDFA /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				1BD0F80D2DE9AE08002DEDFA /* CachedProfileImageView.swift */,
+			);
+			path = Components;
+			sourceTree = "<group>";
+		};
+		1BD0F80F2DE9B813002DEDFA /* Managers */ = {
+			isa = PBXGroup;
+			children = (
+				1BD0F8102DE9B81A002DEDFA /* AppStateManager.swift */,
+			);
+			path = Managers;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -811,6 +844,7 @@
 				1B45148E2DDC5AF90020443F /* ManagerMainTabView.swift in Sources */,
 				1B71F0322DD4A4BB00731223 /* WorkHoursViewModeltemp.swift in Sources */,
 				1B4514902DDC5D230020443F /* WorkPlanComponents.swift in Sources */,
+				1BD0F80E2DE9AE09002DEDFA /* CachedProfileImageView.swift in Sources */,
 				1B4514AB2DDF83260020443F /* ToastView.swift in Sources */,
 				1BA25FFA2DE248F300501208 /* SupervisorProfileApiService.swift in Sources */,
 				1B4514882DDC5A290020443F /* ManagerWorkPlansViewModel.swift in Sources */,
@@ -843,10 +877,12 @@
 				1B6FB0102DD7A850007B2C9E /* ManagerAPIService.swift in Sources */,
 				1B71EFF12DD371D700731223 /* KeychainService.swift in Sources */,
 				1B71EFEB2DD3624500731223 /* ProfileView.swift in Sources */,
+				1BD0F8112DE9B81C002DEDFA /* AppStateManager.swift in Sources */,
 				1B71F0172DD4952100731223 /* WorkerTaskDetailView.swift in Sources */,
 				1B71F0212DD4972200731223 /* WorkerWorkHoursViewModel.swift in Sources */,
 				1BD0F7FD2DE8EFD0002DEDFA /* WorkHoursUtilities.swift in Sources */,
 				1B4514862DDC5A0D0020443F /* ManagerWorkPlansView.swift in Sources */,
+				1BD0F80B2DE9A5DE002DEDFA /* ProfileImageCache.swift in Sources */,
 				1B71EFE82DD3617200731223 /* LoginView.swift in Sources */,
 				1B779BDC2DE6035600947C94 /* NotificationsViewModel.swift in Sources */,
 				1B7D9B322DE4600300D39069 /* NotificationService.swift in Sources */,

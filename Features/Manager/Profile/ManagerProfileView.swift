@@ -1,4 +1,4 @@
-// ManagerProfileView.swift - KOMPLETNY KOD Z DZIAŁAJĄCYM LOGOUT
+// ManagerProfileView.swift - KOMPLETNY PLIK Z WSZYSTKIMI KOMPONENTAMI
 import SwiftUI
 import PhotosUI
 
@@ -42,21 +42,21 @@ struct ManagerProfileView: View {
         }
     }
     
+    // MARK: - Body
+    
     var body: some View {
         NavigationStack {
             ScrollView(.vertical, showsIndicators: true) {
                 VStack(spacing: 0) {
-                    externalManagerHeaderSection
-                    
+                    managerHeaderSection
                     tabNavigationSection
-                    
                     tabContentSection
                         .padding(.horizontal, 16)
                         .padding(.bottom, 20)
                 }
             }
             .background(backgroundGradient)
-            .navigationTitle("External Manager")
+            .navigationTitle("Manager Profile")
             .navigationBarTitleDisplayMode(.inline)
             .navigationBarItems(trailing:
                 HStack(spacing: 12) {
@@ -102,7 +102,7 @@ struct ManagerProfileView: View {
                 LoginView()
             }
             .sheet(isPresented: $showEditProfile) {
-                ExternalManagerEditProfileView(viewModel: viewModel)
+                ManagerEditProfileView(viewModel: viewModel)
             }
             .photosPicker(
                 isPresented: $showingImagePicker,
@@ -126,146 +126,19 @@ struct ManagerProfileView: View {
                     }
                 }
             }
-            // LOGOUT CONFIRMATION DIALOG - KLUCZOWE!
             .confirmationDialog("Logout", isPresented: $showingLogoutConfirmation) {
                 Button("Logout", role: .destructive) {
-                    print("🔴 LOGOUT CONFIRMED - WYLOGOWYWANIE...")
                     performLogout()
                 }
-                Button("Cancel", role: .cancel) {
-                    print("✅ Logout cancelled")
-                }
+                Button("Cancel", role: .cancel) { }
             } message: {
                 Text("Are you sure you want to logout?")
             }
         }
     }
     
-    // Zamień funkcję performLogout() w ManagerProfileView.swift na tę:
-
-    private func performLogout() {
-        print("🔄 Starting logout process...")
-        
-        // 1. NAJPIERW - Wywołaj AuthService.logout() (to jest kluczowe!)
-        AuthService.shared.logout()
-        print("✅ AuthService.logout() called")
-        
-        // 2. Dodatkowe czyszczenie UserDefaults (dla pewności)
-        let keysToRemove = [
-            "isLoggedIn", "userToken", "employeeId", "employeeName", "userRole",
-            "loginTimestamp", "lastApiCall", "authToken", "refreshToken",
-            "userSession", "currentUser", "loginCredentials"
-        ]
-        
-        for key in keysToRemove {
-            UserDefaults.standard.removeObject(forKey: key)
-        }
-        UserDefaults.standard.synchronize()
-        print("✅ UserDefaults cleared")
-        
-        // 3. Wyczyść wszystkie możliwe Keychain entries z poprawnymi kluczami
-        let keychainQueries = [
-            // Główny klucz z Configuration
-            [
-                kSecClass as String: kSecClassGenericPassword,
-                kSecAttrService as String: "KSRCranes",
-                kSecAttrAccount as String: Configuration.StorageKeys.authToken
-            ],
-            // Backup klucz (jeśli był używany wcześniej)
-            [
-                kSecClass as String: kSecClassGenericPassword,
-                kSecAttrService as String: "KSRCranes",
-                kSecAttrAccount as String: "authToken"
-            ],
-            // Wszystkie możliwe warianty
-            [
-                kSecClass as String: kSecClassGenericPassword,
-                kSecAttrService as String: "AuthService"
-            ]
-        ]
-        
-        for query in keychainQueries {
-            let deleteStatus = SecItemDelete(query as CFDictionary)
-            print("🔑 Keychain delete status: \(deleteStatus)")
-        }
-        
-        // 4. Wymuś reset tokenów w APIService (dla pewności)
-        ManagerAPIService.shared.authToken = nil
-        WorkerAPIService.shared.authToken = nil
-        print("✅ API tokens cleared")
-        
-        // 5. Reset view model
-        DispatchQueue.main.async {
-            self.viewModel.profileData = ExternalManagerProfileData()
-            self.viewModel.managementStats = ExternalManagerStats()
-            
-            print("🚀 Navigating to LoginView...")
-            self.navigateToLogin = true
-        }
-        
-        print("✅ Complete logout process finished!")
-    }
-
-    // ALTERNATYWNIE - jeśli nadal nie działa, użyj tej wersji:
-
-    private func performAggressiveLogout() {
-        print("🔄 Starting AGGRESSIVE logout process...")
-        
-        // 1. Wywołaj AuthService.logout()
-        AuthService.shared.logout()
-        
-        // 2. Wymuś usunięcie WSZYSTKICH danych Keychain dla tej aplikacji
-        let secClasses = [
-            kSecClassGenericPassword,
-            kSecClassInternetPassword,
-            kSecClassCertificate,
-            kSecClassKey,
-            kSecClassIdentity
-        ]
-        
-        for secClass in secClasses {
-            let query: [String: Any] = [kSecClass as String: secClass]
-            let status = SecItemDelete(query as CFDictionary)
-            print("🔑 Deleted \(secClass): \(status)")
-        }
-        
-        // 3. Wyczyść WSZYSTKIE UserDefaults
-        if let bundleID = Bundle.main.bundleIdentifier {
-            UserDefaults.standard.removePersistentDomain(forName: bundleID)
-            UserDefaults.standard.synchronize()
-            print("✅ All UserDefaults cleared")
-        }
-        
-        // 4. Wymuś reset aplikacji
-        DispatchQueue.main.async {
-            // Resetuj view model
-            self.viewModel.profileData = ExternalManagerProfileData()
-            self.viewModel.managementStats = ExternalManagerStats()
-            
-            // Wymuś nawigację do LoginView
-            self.navigateToLogin = true
-            
-            // Dodatkowy reset po małym opóźnieniu
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                self.navigateToLogin = false
-                self.navigateToLogin = true
-            }
-        }
-        
-        print("✅ AGGRESSIVE logout completed!")
-    }
-
-    // DODAJ TAKŻE - sprawdzenie stanu po wylogowaniu:
-
-    private func debugLogoutState() {
-        print("🔍 === LOGOUT DEBUG STATE ===")
-        print("AuthService.isLoggedIn: \(AuthService.shared.isLoggedIn)")
-        print("Keychain token exists: \(KeychainService.shared.tokenExists())")
-        print("Keychain token value: \(KeychainService.shared.getToken()?.prefix(20) ?? "nil")")
-        print("ManagerAPIService token: \(ManagerAPIService.shared.authToken?.prefix(20) ?? "nil")")
-        print("WorkerAPIService token: \(WorkerAPIService.shared.authToken?.prefix(20) ?? "nil")")
-        print("=========================")
-    }
+    // MARK: - Private Views
+    
     private var backgroundGradient: some View {
         LinearGradient(
             gradient: Gradient(colors: [
@@ -278,9 +151,10 @@ struct ManagerProfileView: View {
         .ignoresSafeArea()
     }
     
-    private var externalManagerHeaderSection: some View {
+    private var managerHeaderSection: some View {
         VStack(spacing: 20) {
             HStack(spacing: 20) {
+                // Profile Picture with Cache
                 ZStack {
                     Circle()
                         .fill(Color.ksrLightGray)
@@ -290,25 +164,32 @@ struct ManagerProfileView: View {
                                 .stroke(Color.ksrYellow, lineWidth: 2)
                         )
                     
-                    if let profilePictureUrl = viewModel.profileData.profilePictureUrl,
-                       !profilePictureUrl.isEmpty,
-                       let url = URL(string: profilePictureUrl) {
-                        AsyncImage(url: url) { image in
-                            image
+                    // Profile Image
+                    Group {
+                        if let profileImage = viewModel.profileImage {
+                            // Cache'owane zdjęcie z ViewModel
+                            Image(uiImage: profileImage)
                                 .resizable()
                                 .aspectRatio(contentMode: .fill)
                                 .frame(width: 75, height: 75)
                                 .clipShape(Circle())
-                        } placeholder: {
-                            ProgressView()
-                                .scaleEffect(0.6)
+                        } else if let profilePictureUrl = viewModel.profileData.profilePictureUrl,
+                                  !profilePictureUrl.isEmpty {
+                            // Używaj ManagerCachedProfileImage dla loading
+                            ManagerCachedProfileImage(
+                                employeeId: AuthService.shared.getEmployeeId() ?? "",
+                                currentImageUrl: profilePictureUrl,
+                                size: 75
+                            )
+                        } else {
+                            // Placeholder
+                            Image(systemName: "person.circle.fill")
+                                .font(.system(size: 40))
+                                .foregroundColor(.ksrSecondary)
                         }
-                    } else {
-                        Image(systemName: "person.circle.fill")
-                            .font(.system(size: 40))
-                            .foregroundColor(.ksrSecondary)
                     }
                     
+                    // Plus button overlay
                     VStack {
                         Spacer()
                         HStack {
@@ -323,6 +204,7 @@ struct ManagerProfileView: View {
                     }
                     .frame(width: 80, height: 80)
                     
+                    // Upload progress overlay
                     if viewModel.isUploadingImage {
                         Circle()
                             .fill(Color.black.opacity(0.5))
@@ -344,6 +226,12 @@ struct ManagerProfileView: View {
                             Label("Remove Picture", systemImage: "trash")
                         }
                     }
+                    
+                    Button {
+                        viewModel.refreshProfileImage()
+                    } label: {
+                        Label("Refresh Picture", systemImage: "arrow.clockwise")
+                    }
                 }
                 
                 VStack(alignment: .leading, spacing: 8) {
@@ -357,7 +245,7 @@ struct ManagerProfileView: View {
                             .foregroundColor(Color.ksrYellow)
                             .font(.system(size: 14))
                         
-                        Text("External Manager")
+                        Text("Manager")
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                     }
@@ -381,22 +269,22 @@ struct ManagerProfileView: View {
             .padding(.horizontal, 20)
             
             HStack(spacing: 16) {
-                ExternalManagerStatCard(
-                    title: "Assigned Projects",
+                ManagerStatCard(
+                    title: "Projects",
                     value: "\(viewModel.managementStats.assignedProjects)",
                     icon: "folder.fill",
                     color: .ksrInfo
                 )
                 
-                ExternalManagerStatCard(
-                    title: "Managed Workers",
+                ManagerStatCard(
+                    title: "Workers",
                     value: "\(viewModel.managementStats.totalWorkers)",
                     icon: "person.3.fill",
                     color: .ksrSuccess
                 )
                 
-                ExternalManagerStatCard(
-                    title: "Pending Approvals",
+                ManagerStatCard(
+                    title: "Pending",
                     value: "\(viewModel.managementStats.pendingApprovals)",
                     icon: "clock.badge.exclamationmark",
                     color: .ksrWarning
@@ -443,13 +331,13 @@ struct ManagerProfileView: View {
         Group {
             switch selectedTab {
             case .overview:
-                ExternalManagerOverviewTab(viewModel: viewModel)
+                ManagerOverviewTab(viewModel: viewModel)
             case .projects:
-                ExternalManagerProjectsTab(viewModel: viewModel)
+                ManagerProjectsTab(viewModel: viewModel)
             case .team:
-                ExternalManagerTeamTab(viewModel: viewModel)
+                ManagerTeamTab(viewModel: viewModel)
             case .performance:
-                ExternalManagerPerformanceTab(viewModel: viewModel)
+                ManagerPerformanceTab(viewModel: viewModel)
             case .settings:
                 SettingsTabContent(showingLogoutConfirmation: $showingLogoutConfirmation)
             }
@@ -459,9 +347,42 @@ struct ManagerProfileView: View {
             removal: .opacity.combined(with: .move(edge: .leading))
         ))
     }
+    
+    // MARK: - Private Methods
+    
+    private func performLogout() {
+        print("🔄 Starting logout process...")
+        
+        AuthService.shared.logout()
+        
+        let keysToRemove = [
+            "isLoggedIn", "userToken", "employeeId", "employeeName", "userRole",
+            "loginTimestamp", "lastApiCall", "authToken", "refreshToken"
+        ]
+        
+        for key in keysToRemove {
+            UserDefaults.standard.removeObject(forKey: key)
+        }
+        UserDefaults.standard.synchronize()
+        
+        ManagerAPIService.shared.authToken = nil
+        WorkerAPIService.shared.authToken = nil
+        
+        viewModel.profileData = ManagerProfileData()  // 🔥 ZMIENIONY TYP
+        viewModel.managementStats = ManagerStats()     // 🔥 ZMIENIONY TYP
+        viewModel.profileImage = nil
+        
+        ProfileImageCache.shared.clearCache()
+        
+        DispatchQueue.main.async {
+            self.navigateToLogin = true
+        }
+    }
 }
 
-struct ExternalManagerStatCard: View {
+// MARK: - Manager Stat Card
+
+struct ManagerStatCard: View {
     let title: String
     let value: String
     let icon: String
@@ -497,7 +418,9 @@ struct ExternalManagerStatCard: View {
     }
 }
 
-struct ExternalManagerOverviewTab: View {
+// MARK: - Manager Overview Tab
+
+struct ManagerOverviewTab: View {
     @ObservedObject var viewModel: ManagerProfileViewModel
     @Environment(\.colorScheme) private var colorScheme
     
@@ -564,41 +487,20 @@ struct ExternalManagerOverviewTab: View {
                 }
             }
             
-            ProfileSectionCard(title: "Quick Actions", icon: "bolt.fill", color: .ksrYellow) {
-                LazyVGrid(columns: [
-                    GridItem(.flexible()),
-                    GridItem(.flexible())
-                ], spacing: 12) {
-                    QuickActionButton(
-                        title: "Review Hours",
-                        icon: "clock.badge.checkmark",
-                        color: .ksrWarning
-                    ) {
-                        // Navigate to pending approvals
-                    }
-                    
-                    QuickActionButton(
-                        title: "Project Status",
-                        icon: "folder.badge.gearshape",
-                        color: .ksrInfo
-                    ) {
-                        // Navigate to projects
-                    }
-                    
-                    QuickActionButton(
-                        title: "Team Overview",
-                        icon: "person.3.sequence",
-                        color: .ksrSuccess
-                    ) {
-                        // Navigate to team view
-                    }
-                    
-                    QuickActionButton(
-                        title: "Performance",
-                        icon: "chart.line.uptrend.xyaxis",
-                        color: .ksrPrimary
-                    ) {
-                        // Navigate to performance
+            // 🔥 ZMIENIONE - używa CertificationCard zamiast ExternalCertificationCard
+            if !viewModel.profileData.certifications.isEmpty {
+                ProfileSectionCard(title: "Certifications", icon: "award.fill", color: .ksrWarning) {
+                    LazyVStack(spacing: 12) {
+                        ForEach(viewModel.profileData.certifications.prefix(3)) { cert in
+                            CertificationCard(certification: cert)  // 🔥 ZMIENIONA NAZWA
+                        }
+                        
+                        if viewModel.profileData.certifications.count > 3 {
+                            Text("and \(viewModel.profileData.certifications.count - 3) more certifications...")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                                .padding(.top, 8)
+                        }
                     }
                 }
             }
@@ -607,7 +509,9 @@ struct ExternalManagerOverviewTab: View {
     }
 }
 
-struct ExternalManagerProjectsTab: View {
+// MARK: - Manager Projects Tab
+
+struct ManagerProjectsTab: View {
     @ObservedObject var viewModel: ManagerProfileViewModel
     
     var body: some View {
@@ -634,13 +538,6 @@ struct ExternalManagerProjectsTab: View {
                         icon: "checkmark.circle.fill",
                         color: .ksrSuccess
                     )
-                    
-                    ProjectSummaryRow(
-                        label: "Avg. Duration",
-                        value: "\(Int(viewModel.managementStats.averageProjectDuration)) days",
-                        icon: "calendar.circle",
-                        color: .ksrWarning
-                    )
                 }
             }
             
@@ -665,7 +562,9 @@ struct ExternalManagerProjectsTab: View {
     }
 }
 
-struct ExternalManagerTeamTab: View {
+// MARK: - Manager Team Tab
+
+struct ManagerTeamTab: View {
     @ObservedObject var viewModel: ManagerProfileViewModel
     
     var body: some View {
@@ -716,7 +615,9 @@ struct ExternalManagerTeamTab: View {
     }
 }
 
-struct ExternalManagerPerformanceTab: View {
+// MARK: - Manager Performance Tab
+
+struct ManagerPerformanceTab: View {
     @ObservedObject var viewModel: ManagerProfileViewModel
     
     var body: some View {
@@ -742,32 +643,75 @@ struct ExternalManagerPerformanceTab: View {
                     )
                 }
             }
-            
-            ProfileSectionCard(title: "Contract KPIs", icon: "chart.line.uptrend.xyaxis", color: .ksrSuccess) {
-                VStack(alignment: .leading, spacing: 12) {
-                    ContractKPIRow(
-                        label: "Projects Completed On Time",
-                        percentage: Int(viewModel.managementStats.projectSuccessRate),
-                        color: .ksrSuccess
-                    )
-                    
-                    ContractKPIRow(
-                        label: "Quality Standards Met",
-                        percentage: 95,
-                        color: .ksrSuccess
-                    )
-                    
-                    ContractKPIRow(
-                        label: "Client Satisfaction",
-                        percentage: 88,
-                        color: .ksrInfo
-                    )
-                }
-            }
         }
         .padding(.top, 20)
     }
 }
+
+// MARK: - Manager Edit Profile View
+
+struct ManagerEditProfileView: View {
+    @ObservedObject var viewModel: ManagerProfileViewModel
+    @Environment(\.dismiss) private var dismiss
+    @State private var editableData: ManagerProfileData  // 🔥 ZMIENIONY TYP
+    @State private var isUpdating = false
+    
+    init(viewModel: ManagerProfileViewModel) {
+        self.viewModel = viewModel
+        self._editableData = State(initialValue: viewModel.profileData)
+    }
+    
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section(header: Text("Contact Information")) {
+                    TextField("Email", text: $editableData.email)
+                        .keyboardType(.emailAddress)
+                        .autocapitalization(.none)
+                    
+                    TextField("Phone Number", text: Binding(
+                        get: { editableData.phoneNumber ?? "" },
+                        set: { editableData.phoneNumber = $0.isEmpty ? nil : $0 }
+                    ))
+                }
+                
+                Section(header: Text("Manager Details")) {
+                    HStack {
+                        Text("Employee ID")
+                        Spacer()
+                        Text(editableData.employeeId)
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    HStack {
+                        Text("Role")
+                        Spacer()
+                        Text(editableData.role)
+                            .foregroundColor(.secondary)
+                    }
+                }
+            }
+            .navigationTitle("Edit Profile")
+            .navigationBarTitleDisplayMode(.inline)
+            .navigationBarItems(
+                leading: Button("Cancel") { dismiss() },
+                trailing: Button("Save") { saveChanges() }.disabled(isUpdating)
+            )
+        }
+    }
+    
+    private func saveChanges() {
+        isUpdating = true
+        viewModel.updateProfile(editableData)
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            isUpdating = false
+            dismiss()
+        }
+    }
+}
+
+// MARK: - Supporting Components
 
 struct ContractStatusRow: View {
     let label: String
@@ -984,152 +928,20 @@ struct PerformanceMetricRow: View {
     }
 }
 
-struct ContractKPIRow: View {
-    let label: String
-    let percentage: Int
-    let color: Color
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text(label)
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                
-                Spacer()
-                
-                Text("\(percentage)%")
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
-                    .foregroundColor(color)
-            }
-            
-            ProgressView(value: Double(percentage), total: 100)
-                .progressViewStyle(LinearProgressViewStyle(tint: color))
-                .scaleEffect(x: 1, y: 0.8)
+// MARK: - Extensions for Project Status Colors
+
+extension ManagerAPIService.Project {
+    var statusColor: Color {
+        switch status {
+        case .aktiv: return .ksrSuccess
+        case .afsluttet: return .ksrMediumGray
+        case .afventer: return .ksrWarning
+        case .none: return .ksrMediumGray
         }
     }
 }
 
-struct ExternalManagerEditProfileView: View {
-    @ObservedObject var viewModel: ManagerProfileViewModel
-    @Environment(\.dismiss) private var dismiss
-    @Environment(\.colorScheme) private var colorScheme
-    
-    @State private var editableData: ExternalManagerProfileData
-    @State private var isUpdating = false
-    
-    init(viewModel: ManagerProfileViewModel) {
-        self.viewModel = viewModel
-        self._editableData = State(initialValue: viewModel.profileData)
-    }
-    
-    var body: some View {
-        NavigationStack {
-            Form {
-                Section(header: Text("Contact Information")) {
-                    TextField("Email", text: $editableData.email)
-                        .keyboardType(.emailAddress)
-                        .autocapitalization(.none)
-                    
-                    TextField("Phone Number", text: Binding(
-                        get: { editableData.phoneNumber ?? "" },
-                        set: { editableData.phoneNumber = $0.isEmpty ? nil : $0 }
-                    ))
-                    
-                    TextField("Address", text: Binding(
-                        get: { editableData.address ?? "" },
-                        set: { editableData.address = $0.isEmpty ? nil : $0 }
-                    ))
-                    
-                    TextField("Emergency Contact", text: Binding(
-                        get: { editableData.emergencyContact ?? "" },
-                        set: { editableData.emergencyContact = $0.isEmpty ? nil : $0 }
-                    ))
-                }
-                
-                Section(header: Text("Manager Details")) {
-                    HStack {
-                        Text("Employee ID")
-                        Spacer()
-                        Text(editableData.employeeId)
-                            .foregroundColor(.secondary)
-                    }
-                    
-                    HStack {
-                        Text("Role")
-                        Spacer()
-                        Text(editableData.role)
-                            .foregroundColor(.secondary)
-                    }
-                    
-                    HStack {
-                        Text("Contract Type")
-                        Spacer()
-                        Text(editableData.contractType)
-                            .foregroundColor(.secondary)
-                    }
-                    
-                    HStack {
-                        Text("Assigned Since")
-                        Spacer()
-                        Text(DateFormatter.mediumDate.string(from: editableData.assignedSince))
-                            .foregroundColor(.secondary)
-                    }
-                }
-                
-                Section(header: Text("Account Status")) {
-                    HStack {
-                        Text("Account Status")
-                        Spacer()
-                        HStack(spacing: 6) {
-                            Circle()
-                                .fill(editableData.isActivated ? Color.ksrSuccess : Color.ksrError)
-                                .frame(width: 8, height: 8)
-                            Text(editableData.isActivated ? "Active" : "Inactive")
-                                .foregroundColor(editableData.isActivated ? Color.ksrSuccess : Color.ksrError)
-                                .font(.subheadline)
-                        }
-                    }
-                }
-                
-                if !editableData.specializations.isEmpty {
-                    Section(header: Text("Specializations")) {
-                        ForEach(editableData.specializations, id: \.self) { specialization in
-                            Text(specialization)
-                        }
-                    }
-                }
-            }
-            .navigationTitle("Edit Profile")
-            .navigationBarTitleDisplayMode(.inline)
-            .navigationBarItems(
-                leading: Button("Cancel") { dismiss() },
-                trailing: Button("Save") { saveChanges() }.disabled(isUpdating)
-            )
-            .disabled(isUpdating)
-            .overlay(
-                Group {
-                    if isUpdating {
-                        ProgressView("Updating...")
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                            .background(Color.black.opacity(0.3))
-                    }
-                }
-            )
-        }
-    }
-    
-    private func saveChanges() {
-        isUpdating = true
-        viewModel.updateProfile(editableData)
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-            isUpdating = false
-            dismiss()
-        }
-    }
-}
+// MARK: - Preview
 
 struct ManagerProfileView_Previews: PreviewProvider {
     static var previews: some View {
@@ -1138,18 +950,6 @@ struct ManagerProfileView_Previews: PreviewProvider {
                 .preferredColorScheme(.light)
             ManagerProfileView()
                 .preferredColorScheme(.dark)
-        }
-    }
-}
-
-// MARK: - Extensions
-extension ManagerAPIService.Project {
-    var statusColor: Color {
-        switch status {
-        case .aktiv: return .ksrSuccess
-        case .afsluttet: return .ksrMediumGray
-        case .afventer: return .ksrWarning
-        case .none: return .ksrMediumGray
         }
     }
 }

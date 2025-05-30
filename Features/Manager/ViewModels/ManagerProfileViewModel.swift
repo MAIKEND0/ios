@@ -1,11 +1,12 @@
-// ManagerProfileViewModel.swift
+// Features/Manager/Profile/ManagerProfileViewModel.swift
 import SwiftUI
 import Combine
 import Foundation
 
 class ManagerProfileViewModel: ObservableObject {
-    @Published var profileData = ExternalManagerProfileData()
-    @Published var managementStats = ExternalManagerStats()
+    @Published var profileData = ManagerProfileData()
+    @Published var managementStats = ManagerStats()
+    @Published var profileImage: UIImage? = nil
     @Published var isLoading = false
     @Published var isUploadingImage = false
     @Published var showAlert = false
@@ -14,13 +15,14 @@ class ManagerProfileViewModel: ObservableObject {
     
     private var cancellables = Set<AnyCancellable>()
     private let apiService = ManagerAPIService.shared
-    private let profileApiService = SupervisorProfileAPIService.shared
+    private let supervisorApiService = SupervisorProfileAPIService.shared
+    private let imageCache = ProfileImageCache.shared
     
-    // DODANE: Computed property dla klienta supervisora
     var assignedCustomer: ManagerAPIService.Project.Customer? {
-        // Supervisor ma zadania tylko od jednego klienta
         return profileData.assignedProjects.first?.customer
     }
+    
+    // MARK: - Main Load Data Method
     
     func loadData() {
         isLoading = true
@@ -37,36 +39,117 @@ class ManagerProfileViewModel: ObservableObject {
             return
         }
         
-        Publishers.CombineLatest3(
+        #if DEBUG
+        print("🔍 [ManagerProfileViewModel] Starting loadData() for manager ID: \(managerIdString)")
+        #endif
+        
+        // 🔥 POPRAWKA: Dodaj loadCurrentProfilePicture do kombinacji
+        Publishers.CombineLatest4(
             loadBasicProfileData(),
             loadDashboardStats(managerId: managerIdString),
-            loadAssignedProjectsAndWorkers(managerId: managerId)
+            loadAssignedProjectsAndWorkers(managerId: managerId),
+            loadCurrentProfilePicturePublisher() // 🆕 Dodane!
         )
         .receive(on: DispatchQueue.main)
         .sink(
             receiveCompletion: { [weak self] completion in
                 self?.isLoading = false
                 if case .failure(let error) = completion {
+                    print("❌ [ManagerProfileViewModel] Load failed: \(error)")
                     self?.showError("Failed to load profile data: \(error.localizedDescription)")
                 }
             },
-            receiveValue: { [weak self] (basicData, dashboardStats, projectsAndWorkers) in
-                self?.profileData = basicData
-                self?.managementStats = dashboardStats
-                self?.profileData.assignedProjects = projectsAndWorkers.projects
-                self?.profileData.managedWorkers = projectsAndWorkers.workers
+            receiveValue: { [weak self] (basicData, dashboardStats, projectsAndWorkers, profilePictureUrl) in
+                guard let self = self else { return }
                 
-                // Load profile picture separately (non-blocking)
-                self?.loadCurrentProfilePicture()
+                print("✅ [ManagerProfileViewModel] All data loaded successfully")
+                
+                self.profileData = basicData
+                self.managementStats = dashboardStats
+                self.profileData.assignedProjects = projectsAndWorkers.projects
+                self.profileData.managedWorkers = projectsAndWorkers.workers
+                
+                // 🆕 Set profile picture URL from supervisor API
+                if let pictureUrl = profilePictureUrl, !pictureUrl.isEmpty {
+                    self.profileData.profilePictureUrl = pictureUrl
+                    print("✅ [ManagerProfileViewModel] Profile picture URL set: \(pictureUrl)")
+                } else {
+                    print("⚠️ [ManagerProfileViewModel] No profile picture URL")
+                }
+                
+                // Load profile picture using cache
+                self.loadProfileImageWithCache()
             }
         )
         .store(in: &cancellables)
     }
     
-    private func loadDashboardStats(managerId: String) -> AnyPublisher<ExternalManagerStats, Error> {
+    // MARK: - Profile Picture Loading
+    
+    // 🆕 Publisher version of loadCurrentProfilePicture
+    private func loadCurrentProfilePicturePublisher() -> AnyPublisher<String?, Error> {
+        guard let managerIdString = AuthService.shared.getEmployeeId() else {
+            return Just(nil).setFailureType(to: Error.self).eraseToAnyPublisher()
+        }
+        
+        print("🔍 [ManagerProfileViewModel] Loading current profile picture for manager: \(managerIdString)")
+        
+        return supervisorApiService.getProfilePicture(supervisorId: managerIdString)
+            .map { response -> String? in
+                print("✅ [ManagerProfileViewModel] Profile picture response:")
+                print("   - Success: \(response.success)")
+                print("   - Profile Picture URL: \(response.data.profilePictureUrl ?? "NIL")")
+                
+                return response.success ? response.data.profilePictureUrl : nil
+            }
+            .catch { error -> AnyPublisher<String?, Error> in
+                print("⚠️ [ManagerProfileViewModel] Profile picture load failed: \(error)")
+                return Just(nil).setFailureType(to: Error.self).eraseToAnyPublisher()
+            }
+            .eraseToAnyPublisher()
+    }
+    
+    private func loadProfileImageWithCache(forceRefresh: Bool = false) {
+        guard let managerIdString = AuthService.shared.getEmployeeId() else {
+            print("❌ [ManagerProfileViewModel] No manager ID for cache loading")
+            return
+        }
+        
+        let currentUrl = profileData.profilePictureUrl
+        
+        print("🔍 [ManagerProfileViewModel] Loading profile image with cache:")
+        print("   - Manager ID: \(managerIdString)")
+        print("   - Current URL: \(currentUrl ?? "NIL")")
+        print("   - Force Refresh: \(forceRefresh)")
+        
+        imageCache.getManagerProfileImage(
+            employeeId: managerIdString,
+            currentImageUrl: currentUrl,
+            forceRefresh: forceRefresh
+        )
+        .receive(on: DispatchQueue.main)
+        .sink { [weak self] image in
+            if let image = image {
+                print("✅ [ManagerProfileViewModel] Profile image loaded from cache successfully")
+                self?.profileImage = image
+            } else {
+                print("⚠️ [ManagerProfileViewModel] Profile image cache returned nil")
+            }
+        }
+        .store(in: &cancellables)
+    }
+    
+    func refreshProfileImage() {
+        print("[ManagerProfileViewModel] 🔄 Refreshing profile image...")
+        loadProfileImageWithCache(forceRefresh: true)
+    }
+    
+    // MARK: - Data Loading Methods
+    
+    private func loadDashboardStats(managerId: String) -> AnyPublisher<ManagerStats, Error> {
         return apiService.fetchManagerDashboardStats(managerId: managerId)
             .map { response in
-                ExternalManagerStats(
+                ManagerStats(
                     assignedProjects: response.assignedProjects,
                     activeProjects: response.activeProjects,
                     totalWorkers: response.totalWorkers,
@@ -83,21 +166,17 @@ class ManagerProfileViewModel: ObservableObject {
                     workPlansCreated: response.workPlansCreated
                 )
             }
-            .catch { error -> AnyPublisher<ExternalManagerStats, Error> in
-                #if DEBUG
+            .catch { error -> AnyPublisher<ManagerStats, Error> in
                 print("[ManagerProfileViewModel] Dashboard stats API failed, using fallback: \(error)")
-                #endif
                 return Publishers.CombineLatest3(
-                    self.apiService.fetchProjects()
-                        .replaceError(with: []),
-                    self.apiService.fetchAssignedWorkers(supervisorId: Int(managerId) ?? 0)
-                        .replaceError(with: []),
+                    self.apiService.fetchProjects().replaceError(with: []),
+                    self.apiService.fetchAssignedWorkers(supervisorId: Int(managerId) ?? 0).replaceError(with: []),
                     self.apiService.fetchAllPendingWorkEntriesForManager(isDraft: false)
                         .map { entries in entries.filter { $0.confirmation_status == "pending" }.count }
                         .replaceError(with: 0)
                 )
                 .map { projects, workers, pendingCount in
-                    ExternalManagerStats(
+                    ManagerStats(
                         assignedProjects: projects.count,
                         activeProjects: projects.filter { $0.status == .aktiv }.count,
                         totalWorkers: workers.count,
@@ -125,15 +204,14 @@ class ManagerProfileViewModel: ObservableObject {
         .eraseToAnyPublisher()
     }
     
-    private func loadBasicProfileData() -> AnyPublisher<ExternalManagerProfileData, Error> {
+    private func loadBasicProfileData() -> AnyPublisher<ManagerProfileData, Error> {
         guard let managerIdString = AuthService.shared.getEmployeeId() else {
-            return Fail(error: APIError.invalidURL as Error)
-                .eraseToAnyPublisher()
+            return Fail(error: APIError.invalidURL as Error).eraseToAnyPublisher()
         }
         
         return apiService.fetchExternalManagerProfile(managerId: managerIdString)
             .map { response in
-                ExternalManagerProfileData(
+                ManagerProfileData(
                     employeeId: response.employeeId,
                     name: response.name,
                     email: response.email,
@@ -142,7 +220,7 @@ class ManagerProfileViewModel: ObservableObject {
                     contractType: response.contractType,
                     specializations: response.specializations,
                     certifications: response.certifications.map { cert in
-                        ExternalCertification(
+                        ManagerCertification(
                             name: cert.name,
                             issuingOrganization: cert.issuingOrganization,
                             issueDate: cert.issueDate.toDate() ?? Date(),
@@ -163,11 +241,9 @@ class ManagerProfileViewModel: ObservableObject {
                     preferredProjectTypes: response.preferredProjectTypes
                 )
             }
-            .catch { error -> AnyPublisher<ExternalManagerProfileData, Error> in
-                #if DEBUG
+            .catch { error -> AnyPublisher<ManagerProfileData, Error> in
                 print("[ManagerProfileViewModel] API call failed, using fallback data: \(error)")
-                #endif
-                let fallbackData = ExternalManagerProfileData(
+                let fallbackData = ManagerProfileData(
                     employeeId: managerIdString,
                     name: AuthService.shared.getEmployeeName() ?? "",
                     email: "supervisor@ksrcranes.dk",
@@ -192,7 +268,9 @@ class ManagerProfileViewModel: ObservableObject {
         return completedProjects.isEmpty ? 0 : completedProjects.reduce(0, +) / Double(completedProjects.count)
     }
     
-    func updateProfile(_ updatedData: ExternalManagerProfileData) {
+    // MARK: - Profile Updates
+    
+    func updateProfile(_ updatedData: ManagerProfileData) {
         isLoading = true
         
         guard let managerIdString = AuthService.shared.getEmployeeId() else {
@@ -231,9 +309,8 @@ class ManagerProfileViewModel: ObservableObject {
     
     func loadProjectDetails(projectId: Int) -> AnyPublisher<ManagerAPIService.Project?, Error> {
         guard let managerIdString = AuthService.shared.getEmployeeId(),
-              let managerId = Int(managerIdString) else {
-            return Fail(error: APIError.invalidURL as Error)
-                .eraseToAnyPublisher()
+              let _ = Int(managerIdString) else {
+            return Fail(error: APIError.invalidURL as Error).eraseToAnyPublisher()
         }
         
         return apiService.fetchProjects()
@@ -286,21 +363,39 @@ class ManagerProfileViewModel: ObservableObject {
         
         isUploadingImage = true
         
-        profileApiService.uploadProfilePicture(supervisorId: managerIdString, image: image)
+        print("📸 [ManagerProfileViewModel] Uploading profile picture via supervisor API for manager: \(managerIdString)")
+        
+        supervisorApiService.uploadProfilePicture(supervisorId: managerIdString, image: image)
             .receive(on: DispatchQueue.main)
             .sink(
                 receiveCompletion: { [weak self] completion in
-                    self?.isUploadingImage = false
+                    guard let self = self else { return }
+                    self.isUploadingImage = false
                     if case .failure(let error) = completion {
-                        self?.showError("Failed to upload profile picture: \(error.localizedDescription)")
+                        print("❌ [ManagerProfileViewModel] Upload failed: \(error)")
+                        self.showError("Failed to upload profile picture: \(error.localizedDescription)")
                     }
                 },
                 receiveValue: { [weak self] response in
+                    guard let self = self else { return }
+                    
+                    print("✅ [ManagerProfileViewModel] Upload response:")
+                    print("   - Success: \(response.success)")
+                    print("   - New URL: \(response.data?.profilePictureUrl ?? "NIL")")
+                    
                     if response.success, let data = response.data {
-                        self?.profileData.profilePictureUrl = data.profilePictureUrl
-                        self?.showSuccess("Profile picture updated successfully")
+                        self.profileData.profilePictureUrl = data.profilePictureUrl
+                        
+                        self.imageCache.markImageAsUpdated(
+                            employeeId: managerIdString,
+                            userType: .manager,
+                            newImageUrl: data.profilePictureUrl
+                        )
+                        
+                        self.profileImage = image
+                        self.showSuccess("Profile picture updated successfully")
                     } else {
-                        self?.showError(response.message)
+                        self.showError(response.message)
                     }
                 }
             )
@@ -312,20 +407,23 @@ class ManagerProfileViewModel: ObservableObject {
             return
         }
         
-        profileApiService.getProfilePicture(supervisorId: managerIdString)
+        supervisorApiService.getProfilePicture(supervisorId: managerIdString)
             .receive(on: DispatchQueue.main)
             .sink(
-                receiveCompletion: { [weak self] completion in
+                receiveCompletion: { completion in
                     if case .failure(let error) = completion {
-                        #if DEBUG
                         print("[ManagerProfileViewModel] Failed to load profile picture: \(error)")
-                        #endif
-                        // Don't show error to user for this, it's not critical
                     }
                 },
                 receiveValue: { [weak self] response in
+                    guard let self = self else { return }
                     if response.success {
-                        self?.profileData.profilePictureUrl = response.data.profilePictureUrl
+                        let oldUrl = self.profileData.profilePictureUrl
+                        self.profileData.profilePictureUrl = response.data.profilePictureUrl
+                        
+                        if oldUrl != response.data.profilePictureUrl {
+                            self.loadProfileImageWithCache(forceRefresh: true)
+                        }
                     }
                 }
             )
@@ -340,26 +438,43 @@ class ManagerProfileViewModel: ObservableObject {
         
         isUploadingImage = true
         
-        profileApiService.deleteProfilePicture(supervisorId: managerIdString)
+        print("🗑️ [ManagerProfileViewModel] Deleting profile picture via supervisor API for manager: \(managerIdString)")
+        
+        supervisorApiService.deleteProfilePicture(supervisorId: managerIdString)
             .receive(on: DispatchQueue.main)
             .sink(
                 receiveCompletion: { [weak self] completion in
-                    self?.isUploadingImage = false
+                    guard let self = self else { return }
+                    self.isUploadingImage = false
                     if case .failure(let error) = completion {
-                        self?.showError("Failed to delete profile picture: \(error.localizedDescription)")
+                        print("❌ [ManagerProfileViewModel] Delete failed: \(error)")
+                        self.showError("Failed to delete profile picture: \(error.localizedDescription)")
                     }
                 },
                 receiveValue: { [weak self] response in
+                    guard let self = self else { return }
+                    
+                    print("✅ [ManagerProfileViewModel] Delete response: \(response.success)")
+                    
                     if response.success {
-                        self?.profileData.profilePictureUrl = nil
-                        self?.showSuccess("Profile picture removed successfully")
+                        self.profileData.profilePictureUrl = nil
+                        
+                        self.imageCache.removeProfileImage(
+                            employeeId: managerIdString,
+                            userType: .manager
+                        )
+                        
+                        self.profileImage = nil
+                        self.showSuccess("Profile picture removed successfully")
                     } else {
-                        self?.showError(response.message)
+                        self.showError(response.message)
                     }
                 }
             )
             .store(in: &cancellables)
     }
+    
+    // MARK: - Helper Methods
     
     func showError(_ message: String) {
         alertTitle = "Error"
@@ -374,8 +489,32 @@ class ManagerProfileViewModel: ObservableObject {
     }
 }
 
-// Reszta struktur danych pozostaje bez zmian
-struct ExternalManagerProfileData: Codable {
+// MARK: - ProfilePictureUploadable conformance
+extension ManagerProfileViewModel: ProfilePictureUploadable {
+    var profilePictureUrl: String? {
+        return profileData.profilePictureUrl
+    }
+}
+
+// MARK: - Extension dla ProfileImageCache - Manager support
+extension ProfileImageCache {
+    func getManagerProfileImage(
+        employeeId: String,
+        currentImageUrl: String?,
+        forceRefresh: Bool = false
+    ) -> AnyPublisher<UIImage?, Never> {
+        return getProfileImage(
+            employeeId: employeeId,
+            userType: .manager,
+            currentImageUrl: currentImageUrl,
+            forceRefresh: forceRefresh
+        )
+    }
+}
+
+// MARK: - Data Models (bez "External" prefiksu)
+
+struct ManagerProfileData: Codable {
     var employeeId: String = ""
     var name: String = ""
     var email: String = ""
@@ -385,7 +524,7 @@ struct ExternalManagerProfileData: Codable {
     var assignedProjects: [ManagerAPIService.Project] = []
     var managedWorkers: [ManagerAPIService.Worker] = []
     var specializations: [String] = []
-    var certifications: [ExternalCertification] = []
+    var certifications: [ManagerCertification] = []
     
     var address: String?
     var phoneNumber: String?
@@ -394,7 +533,7 @@ struct ExternalManagerProfileData: Codable {
     var isActivated: Bool = true
     var createdAt: Date?
     
-    var companyName: String? = "KSR Cranes (External)"
+    var companyName: String? = "KSR Cranes"
     var contractEndDate: Date?
     var hourlyRate: Decimal?
     var maxProjectsAllowed: Int = 10
@@ -412,7 +551,7 @@ struct ExternalManagerProfileData: Codable {
     var operatorWeekendRate: Decimal?
 }
 
-struct ExternalManagerStats: Codable {
+struct ManagerStats: Codable {
     var assignedProjects: Int = 0
     var activeProjects: Int = 0
     var totalWorkers: Int = 0
@@ -432,7 +571,7 @@ struct ExternalManagerStats: Codable {
     var workPlansCreated: Int = 0
 }
 
-struct ExternalCertification: Codable, Identifiable {
+struct ManagerCertification: Codable, Identifiable {
     var id = UUID()
     let name: String
     let issuingOrganization: String
@@ -498,7 +637,9 @@ struct CraneTypeCertification: Codable {
     let certificationDate: Date?
 }
 
-extension ExternalManagerProfileData {
+// MARK: - Convenience Initializers
+
+extension ManagerProfileData {
     init(
         employeeId: String,
         name: String,
@@ -507,14 +648,14 @@ extension ExternalManagerProfileData {
         assignedSince: Date,
         contractType: String,
         specializations: [String] = [],
-        certifications: [ExternalCertification] = [],
+        certifications: [ManagerCertification] = [],
         address: String? = nil,
         phoneNumber: String? = nil,
         emergencyContact: String? = nil,
         profilePictureUrl: String? = nil,
         isActivated: Bool = true,
         createdAt: Date? = nil,
-        companyName: String? = "KSR Cranes (External)",
+        companyName: String? = "KSR Cranes",
         contractEndDate: Date? = nil,
         hourlyRate: Decimal? = nil,
         maxProjectsAllowed: Int = 10,
@@ -555,7 +696,7 @@ extension ExternalManagerProfileData {
     }
 }
 
-extension ExternalManagerStats {
+extension ManagerStats {
     init(
         assignedProjects: Int,
         activeProjects: Int,

@@ -106,7 +106,7 @@ struct WorkerDashboardView: View {
                 }
             } label: {
                 Image(systemName: "arrow.clockwise")
-                    .foregroundColor(colorScheme == .dark ? .white : Color.ksrDarkGray)
+                    .foregroundColor(Color.ksrTextPrimary)
                     .font(.system(size: 16, weight: .medium))
             }
             .disabled(viewModel.tasksViewModel.isLoading || viewModel.hoursViewModel.isLoading)
@@ -115,7 +115,7 @@ struct WorkerDashboardView: View {
                 // Handle notifications
             } label: {
                 Image(systemName: "bell")
-                    .foregroundColor(colorScheme == .dark ? .white : Color.ksrDarkGray)
+                    .foregroundColor(Color.ksrTextPrimary)
             }
         }
     }
@@ -175,15 +175,8 @@ struct WorkerDashboardView: View {
     
     // MARK: - Dashboard Background
     private var dashboardBackground: some View {
-        LinearGradient(
-            gradient: Gradient(colors: [
-                colorScheme == .dark ? Color.black : Color(.systemBackground),
-                colorScheme == .dark ? Color(.systemGray6).opacity(0.2) : Color(.systemGray6).opacity(0.3)
-            ]),
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
-        .ignoresSafeArea()
+        Color.backgroundGradient
+            .ignoresSafeArea()
     }
 }
 
@@ -205,11 +198,11 @@ struct QuickActionCard: View {
                 Text(title)
                     .font(.subheadline)
                     .fontWeight(.bold)
-                    .foregroundColor(colorScheme == .dark ? .white : .primary)
+                    .foregroundColor(Color.ksrTextPrimary)
                 
                 Text(subtitle)
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(Color.ksrTextSecondary)
             }
         }
         .frame(maxWidth: .infinity)
@@ -217,7 +210,7 @@ struct QuickActionCard: View {
         .padding(.horizontal, 8)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(colorScheme == .dark ? Color(.systemGray6).opacity(0.3) : Color.white)
+                .fill(Color.ksrMediumGray)
                 .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.2 : 0.05), radius: 3, x: 0, y: 2)
         )
         .overlay(
@@ -242,13 +235,7 @@ struct FloatingLogHoursButton: View {
         }) {
             ZStack {
                 Circle()
-                    .fill(
-                        LinearGradient(
-                            colors: [Color.ksrYellow, Color.ksrPrimary],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
+                    .fill(Color.primaryGradient)
                     .frame(width: 56, height: 56)
                     .shadow(
                         color: Color.ksrYellow.opacity(0.3),
@@ -291,7 +278,7 @@ struct WeekProgressIndicator: View {
                 Text("Week Progress")
                     .font(.caption)
                     .fontWeight(.medium)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(Color.ksrTextSecondary)
                 
                 Spacer()
                 
@@ -318,7 +305,7 @@ struct WeekProgressIndicator: View {
             HStack {
                 Text(String(format: "%.1fh of %.0fh", currentHours, targetHours))
                     .font(.caption2)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(Color.ksrTextSecondary)
                 
                 Spacer()
                 
@@ -333,7 +320,7 @@ struct WeekProgressIndicator: View {
         .padding(12)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(colorScheme == .dark ? Color(.systemGray6).opacity(0.2) : Color(.systemGray6))
+                .fill(Color.ksrMediumGray)
         )
     }
 }
@@ -351,7 +338,7 @@ struct StatsOverview: View {
             Text("Quick Stats")
                 .font(.title3)
                 .fontWeight(.bold)
-                .foregroundColor(colorScheme == .dark ? .white : Color.ksrDarkGray)
+                .foregroundColor(Color.ksrTextPrimary)
             
             LazyVGrid(columns: [
                 GridItem(.flexible()),
@@ -387,7 +374,7 @@ struct StatsOverview: View {
         .padding(16)
         .background(
             RoundedRectangle(cornerRadius: 16)
-                .fill(colorScheme == .dark ? Color(.systemGray6).opacity(0.3) : Color.white)
+                .fill(Color.ksrMediumGray)
                 .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.3 : 0.08), radius: 8, x: 0, y: 4)
         )
     }
@@ -408,7 +395,7 @@ struct StatItem: View {
             
             Text(label)
                 .font(.caption2)
-                .foregroundColor(.secondary)
+                .foregroundColor(Color.ksrTextSecondary)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 8)
@@ -443,11 +430,11 @@ struct AchievementIndicator: View {
                 Text(title)
                     .font(.subheadline)
                     .fontWeight(.semibold)
-                    .foregroundColor(colorScheme == .dark ? .white : .primary)
+                    .foregroundColor(Color.ksrTextPrimary)
                 
                 Text(description)
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(Color.ksrTextSecondary)
                     .lineLimit(2)
             }
             
@@ -456,7 +443,7 @@ struct AchievementIndicator: View {
         .padding(12)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(colorScheme == .dark ? Color(.systemGray6).opacity(0.2) : Color(.systemGray6).opacity(0.5))
+                .fill(Color.ksrMediumGray)
         )
         .opacity(isUnlocked ? 1.0 : 0.6)
     }

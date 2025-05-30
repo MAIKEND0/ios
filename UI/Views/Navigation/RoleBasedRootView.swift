@@ -1,6 +1,4 @@
-// UI/Views/Navigation/RoleBasedRootView.swift - AKTUALIZACJA
-// Znajdź struct WorkerMainView i zastąp ProfileView() na WorkerProfileView()
-
+// UI/Views/Navigation/RoleBasedRootView.swift
 import SwiftUI
 
 /// View that directs users to different main views based on their role

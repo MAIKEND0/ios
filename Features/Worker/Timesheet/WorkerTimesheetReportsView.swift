@@ -99,7 +99,7 @@ struct WorkerTimesheetReportsView: View {
                         }
                     } label: {
                         Image(systemName: "arrow.clockwise")
-                            .foregroundColor(colorScheme == .dark ? .white : Color.primary)
+                            .foregroundColor(Color.ksrTextPrimary)
                             .font(.system(size: 16, weight: .medium))
                     }
                     .disabled(viewModel.isLoading)
@@ -138,15 +138,8 @@ struct WorkerTimesheetReportsView: View {
     
     // MARK: - Background
     private var backgroundGradient: some View {
-        LinearGradient(
-            gradient: Gradient(colors: [
-                colorScheme == .dark ? Color.black : Color(.systemBackground),
-                colorScheme == .dark ? Color(.systemGray6).opacity(0.3) : Color(.systemGray6).opacity(0.5)
-            ]),
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
-        .ignoresSafeArea()
+        Color.backgroundGradient
+            .ignoresSafeArea()
     }
     
     // MARK: - Header Stats Section
@@ -155,7 +148,7 @@ struct WorkerTimesheetReportsView: View {
             Text("Overview")
                 .font(.title3)
                 .fontWeight(.bold)
-                .foregroundColor(colorScheme == .dark ? .white : Color.ksrDarkGray)
+                .foregroundColor(Color.ksrTextPrimary)
             
             LazyVGrid(columns: [
                 GridItem(.flexible(), spacing: 12),
@@ -193,7 +186,7 @@ struct WorkerTimesheetReportsView: View {
         .padding(20)
         .background(
             RoundedRectangle(cornerRadius: 16)
-                .fill(colorScheme == .dark ? Color(.systemGray6).opacity(0.3) : Color.white)
+                .fill(Color.ksrMediumGray)
                 .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.3 : 0.1), radius: 8, x: 0, y: 4)
         )
         .overlay(
@@ -208,11 +201,12 @@ struct WorkerTimesheetReportsView: View {
             // Search Bar
             HStack {
                 Image(systemName: "magnifyingglass")
-                    .foregroundColor(.secondary)
+                    .foregroundColor(Color.ksrTextSecondary)
                     .font(.system(size: 16))
                 
                 TextField("Search timesheets, tasks...", text: $searchText)
                     .textFieldStyle(PlainTextFieldStyle())
+                    .foregroundColor(Color.ksrTextPrimary)
                 
                 if !searchText.isEmpty {
                     Button {
@@ -220,7 +214,7 @@ struct WorkerTimesheetReportsView: View {
                         UIApplication.shared.hideKeyboard()
                     } label: {
                         Image(systemName: "xmark.circle.fill")
-                            .foregroundColor(.secondary)
+                            .foregroundColor(Color.ksrTextSecondary)
                     }
                 }
             }
@@ -228,7 +222,7 @@ struct WorkerTimesheetReportsView: View {
             .padding(.vertical, 12)
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(colorScheme == .dark ? Color(.systemGray5) : Color(.systemGray6))
+                    .fill(Color.ksrLightGray)
             )
             
             // Time Filter
@@ -278,13 +272,13 @@ struct WorkerTimesheetReportsView: View {
                 Text("Signed Timesheets")
                     .font(.title3)
                     .fontWeight(.bold)
-                    .foregroundColor(colorScheme == .dark ? .white : Color.ksrDarkGray)
+                    .foregroundColor(Color.ksrTextPrimary)
                 
                 Spacer()
                 
                 Text("\(filteredTimesheets.count) items")
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(Color.ksrTextSecondary)
             }
             
             Group {
@@ -307,7 +301,7 @@ struct WorkerTimesheetReportsView: View {
         .padding(20)
         .background(
             RoundedRectangle(cornerRadius: 16)
-                .fill(colorScheme == .dark ? Color(.systemGray6).opacity(0.3) : Color.white)
+                .fill(Color.ksrMediumGray)
                 .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.3 : 0.1), radius: 8, x: 0, y: 4)
         )
         .overlay(
@@ -403,12 +397,12 @@ struct WorkerTimeFilterChip: View {
                     .font(.caption)
                     .fontWeight(.medium)
             }
-            .foregroundColor(isSelected ? .white : (colorScheme == .dark ? .white : .primary))
+            .foregroundColor(isSelected ? .white : Color.ksrTextPrimary)
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
             .background(
                 RoundedRectangle(cornerRadius: 16)
-                    .fill(isSelected ? color : (colorScheme == .dark ? Color(.systemGray5) : Color(.systemGray6)))
+                    .fill(isSelected ? color : Color.ksrLightGray)
             )
         }
         .buttonStyle(PlainButtonStyle())
@@ -426,10 +420,11 @@ struct WorkerTimesheetsLoadingView: View {
         VStack(spacing: 16) {
             ProgressView()
                 .scaleEffect(1.2)
+                .tint(Color.ksrPrimary)
             
             Text(message)
                 .font(.subheadline)
-                .foregroundColor(.secondary)
+                .foregroundColor(Color.ksrTextSecondary)
         }
         .frame(maxWidth: .infinity, minHeight: 200)
     }
@@ -444,20 +439,20 @@ struct WorkerTimesheetsEmptyStateView: View {
         VStack(spacing: 20) {
             Image(systemName: hasTimesheets ? "magnifyingglass" : "doc.text.magnifyingglass")
                 .font(.system(size: 48, weight: .light))
-                .foregroundColor(.secondary)
+                .foregroundColor(Color.ksrTextSecondary)
             
             VStack(spacing: 8) {
                 Text(hasTimesheets ? "No timesheets found" : "No timesheets available")
                     .font(.title3)
                     .fontWeight(.semibold)
-                    .foregroundColor(colorScheme == .dark ? .white : .primary)
+                    .foregroundColor(Color.ksrTextPrimary)
                 
                 Text(hasTimesheets ?
                     "No timesheets match your current search or filter criteria." :
                     "Your approved timesheets will appear here once they're processed by your manager."
                 )
                 .font(.subheadline)
-                .foregroundColor(.secondary)
+                .foregroundColor(Color.ksrTextSecondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
             }
@@ -487,12 +482,12 @@ struct WorkerTimesheetStatCard: View {
                 Text(value)
                     .font(.title3)
                     .fontWeight(.bold)
-                    .foregroundColor(colorScheme == .dark ? .white : .primary)
+                    .foregroundColor(Color.ksrTextPrimary)
             }
             
             Text(title)
                 .font(.caption)
-                .foregroundColor(.secondary)
+                .foregroundColor(Color.ksrTextSecondary)
                 .lineLimit(1)
         }
         .padding(16)
@@ -524,12 +519,12 @@ struct ViewTypeChip: View {
                     .font(.caption)
                     .fontWeight(.medium)
             }
-            .foregroundColor(isSelected ? .white : (colorScheme == .dark ? .white : .primary))
+            .foregroundColor(isSelected ? .white : Color.ksrTextPrimary)
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
             .background(
                 RoundedRectangle(cornerRadius: 16)
-                    .fill(isSelected ? viewType.color : (colorScheme == .dark ? Color(.systemGray5) : Color(.systemGray6)))
+                    .fill(isSelected ? viewType.color : Color.ksrLightGray)
             )
         }
         .buttonStyle(PlainButtonStyle())
@@ -564,13 +559,13 @@ struct WorkerTimesheetListItem: View {
                         Text("Week \(timesheet.weekNumber), \(timesheet.year)")
                             .font(.subheadline)
                             .fontWeight(.semibold)
-                            .foregroundColor(colorScheme == .dark ? .white : .primary)
+                            .foregroundColor(Color.ksrTextPrimary)
                         
                         Spacer()
                         
                         Text(dateFormatter.string(from: timesheet.created_at))
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(Color.ksrTextSecondary)
                     }
                     
                     if let taskTitle = timesheet.Tasks?.title {
@@ -589,7 +584,7 @@ struct WorkerTimesheetListItem: View {
             .padding(16)
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(colorScheme == .dark ? Color(.systemGray5).opacity(0.3) : Color(.systemGray6).opacity(0.5))
+                    .fill(Color.ksrLightGray)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
@@ -620,12 +615,12 @@ struct WorkerTimesheetGroupCard: View {
                         Text(title)
                             .font(.headline)
                             .fontWeight(.bold)
-                            .foregroundColor(colorScheme == .dark ? .white : .primary)
+                            .foregroundColor(Color.ksrTextPrimary)
                             .lineLimit(2)
                         
                         Text(subtitle)
                             .font(.subheadline)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(Color.ksrTextSecondary)
                     }
                     
                     Spacer()
@@ -643,7 +638,7 @@ struct WorkerTimesheetGroupCard: View {
                         } label: {
                             Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
                                 .font(.system(size: 14, weight: .medium))
-                                .foregroundColor(.secondary)
+                                .foregroundColor(Color.ksrTextSecondary)
                         }
                     }
                 }
@@ -666,7 +661,7 @@ struct WorkerTimesheetGroupCard: View {
                         if timesheets.count > 10 {
                             Text("and \(timesheets.count - 10) more...")
                                 .font(.caption)
-                                .foregroundColor(.secondary)
+                                .foregroundColor(Color.ksrTextSecondary)
                                 .padding(.horizontal, 20)
                         }
                     }
@@ -681,7 +676,7 @@ struct WorkerTimesheetGroupCard: View {
         }
         .background(
             RoundedRectangle(cornerRadius: 16)
-                .fill(colorScheme == .dark ? Color(.systemGray6).opacity(0.3) : Color.white)
+                .fill(Color.ksrMediumGray)
                 .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.3 : 0.1), radius: 8, x: 0, y: 4)
         )
         .overlay(

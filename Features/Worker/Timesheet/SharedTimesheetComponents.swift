@@ -38,7 +38,7 @@ struct TimesheetPDFViewer: View {
                     .padding(24)
                     .background(
                         RoundedRectangle(cornerRadius: 12)
-                            .fill(colorScheme == .dark ? Color(.systemGray6).opacity(0.9) : Color(.systemGray5).opacity(0.9))
+                            .fill(Color.ksrMediumGray.opacity(0.9))
                     )
                 }
             }
@@ -95,14 +95,14 @@ struct TimesheetPDFViewer: View {
                         
                         if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
                            let window = windowScene.windows.first,
-                           let rootVC = window.rootViewController {
+                           let rootViewController = window.rootViewController {
                             
-                            var topVC = rootVC
-                            while let presentedVC = topVC.presentedViewController {
-                                topVC = presentedVC
+                            var topViewController = rootViewController
+                            while let presentedViewController = topViewController.presentedViewController {
+                                topViewController = presentedViewController
                             }
                             
-                            topVC.present(activityVC, animated: true)
+                            topViewController.present(activityVC, animated: true)
                         }
                         
                     } catch {

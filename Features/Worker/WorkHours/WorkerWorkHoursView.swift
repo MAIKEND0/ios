@@ -32,18 +32,18 @@ struct LocalStatsCard: View {
                     Text(String(format: "%.1f", value))
                         .font(.title3)
                         .fontWeight(.bold)
-                        .foregroundColor(colorScheme == .dark ? .white : .primary)
+                        .foregroundColor(Color.ksrTextPrimary)
                     
                     Text(unit)
                         .font(.caption)
                         .fontWeight(.medium)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(Color.ksrTextSecondary)
                 }
             }
             
             Text(title)
                 .font(.caption)
-                .foregroundColor(.secondary)
+                .foregroundColor(Color.ksrTextSecondary)
                 .lineLimit(1)
         }
         .padding(16)
@@ -76,12 +76,12 @@ struct LocalPeriodFilterChip: View {
                     .font(.caption)
                     .fontWeight(.medium)
             }
-            .foregroundColor(isSelected ? .white : (colorScheme == .dark ? .white : .primary))
+            .foregroundColor(isSelected ? .white : Color.ksrTextPrimary)
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
             .background(
                 RoundedRectangle(cornerRadius: 16)
-                    .fill(isSelected ? Color.ksrPrimary : (colorScheme == .dark ? Color(.systemGray5) : Color(.systemGray6)))
+                    .fill(isSelected ? Color.ksrPrimary : Color.ksrLightGray)
             )
         }
         .buttonStyle(PlainButtonStyle())
@@ -124,12 +124,12 @@ struct LocalWorkEntryCard: View {
                     Text(formattedDate)
                         .font(.subheadline)
                         .fontWeight(.semibold)
-                        .foregroundColor(colorScheme == .dark ? .white : .primary)
+                        .foregroundColor(Color.ksrTextPrimary)
                     
                     if let task = entry.tasks {
                         Text(task.title)
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(Color.ksrTextSecondary)
                             .lineLimit(1)
                     }
                 }
@@ -158,15 +158,15 @@ struct LocalWorkEntryCard: View {
                 HStack(spacing: 4) {
                     Image(systemName: "clock.fill")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(Color.ksrTextSecondary)
                     
                     Text(timeRange)
                         .font(.caption)
-                        .foregroundColor(.primary)
+                        .foregroundColor(Color.ksrTextPrimary)
                     
                     Text("(\(String(format: "%.1fh", hoursWorked)))")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(Color.ksrTextSecondary)
                 }
                 
                 // Break
@@ -174,11 +174,11 @@ struct LocalWorkEntryCard: View {
                     HStack(spacing: 4) {
                         Image(systemName: "pause.circle.fill")
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(Color.ksrTextSecondary)
                         
                         Text("\(pauseMinutes)m")
                             .font(.caption)
-                            .foregroundColor(.primary)
+                            .foregroundColor(Color.ksrTextPrimary)
                     }
                 }
                 
@@ -187,11 +187,11 @@ struct LocalWorkEntryCard: View {
                     HStack(spacing: 4) {
                         Image(systemName: "car.fill")
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(Color.ksrTextSecondary)
                         
                         Text(String(format: "%.1f km", km))
                             .font(.caption)
-                            .foregroundColor(.primary)
+                            .foregroundColor(Color.ksrTextPrimary)
                     }
                 }
                 
@@ -202,7 +202,7 @@ struct LocalWorkEntryCard: View {
             if let description = entry.description, !description.isEmpty {
                 Text(description)
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(Color.ksrTextSecondary)
                     .lineLimit(2)
                     .padding(.top, 4)
             }
@@ -210,7 +210,7 @@ struct LocalWorkEntryCard: View {
         .padding(16)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(colorScheme == .dark ? Color(.systemGray5).opacity(0.3) : Color(.systemGray6).opacity(0.5))
+                .fill(Color.ksrLightGray)
         )
         .overlay(
             RoundedRectangle(cornerRadius: 12)
@@ -244,7 +244,7 @@ struct LocalWorkEntryCard: View {
 struct LocalDashboardStyles {
     static func cardBackground(colorScheme: ColorScheme) -> some View {
         RoundedRectangle(cornerRadius: 16)
-            .fill(colorScheme == .dark ? Color(.systemGray6).opacity(0.3) : Color.white)
+            .fill(Color.ksrMediumGray)
             .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.3 : 0.1), radius: 8, x: 0, y: 4)
     }
     
@@ -508,13 +508,13 @@ struct WorkerWorkHoursView: View {
                 Text("Overview")
                     .font(.title3)
                     .fontWeight(.bold)
-                    .foregroundColor(colorScheme == .dark ? .white : Color.ksrDarkGray)
+                    .foregroundColor(Color.ksrTextPrimary)
                 
                 Spacer()
                 
                 Text(periodDisplayText)
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(Color.ksrTextSecondary)
             }
             .padding(.horizontal, 4)
             
@@ -567,7 +567,7 @@ struct WorkerWorkHoursView: View {
                 Text("Filters")
                     .font(.title3)
                     .fontWeight(.bold)
-                    .foregroundColor(colorScheme == .dark ? .white : Color.ksrDarkGray)
+                    .foregroundColor(Color.ksrTextPrimary)
                 
                 Spacer()
                 
@@ -604,7 +604,7 @@ struct WorkerWorkHoursView: View {
             Text("Time Period")
                 .font(.subheadline)
                 .fontWeight(.semibold)
-                .foregroundColor(.secondary)
+                .foregroundColor(Color.ksrTextSecondary)
             
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
@@ -634,7 +634,7 @@ struct WorkerWorkHoursView: View {
             Text("Task")
                 .font(.caption)
                 .fontWeight(.semibold)
-                .foregroundColor(.secondary)
+                .foregroundColor(Color.ksrTextSecondary)
             
             Menu {
                 Button("All Tasks") {
@@ -650,19 +650,19 @@ struct WorkerWorkHoursView: View {
                 HStack {
                     Text(taskFilterDisplayText)
                         .font(.subheadline)
-                        .foregroundColor(colorScheme == .dark ? .white : .primary)
+                        .foregroundColor(Color.ksrTextPrimary)
                     
                     Spacer()
                     
                     Image(systemName: "chevron.down")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(Color.ksrTextSecondary)
                 }
                 .padding(.horizontal, 12)
                 .padding(.vertical, 10)
                 .background(
                     RoundedRectangle(cornerRadius: 8)
-                        .fill(colorScheme == .dark ? Color(.systemGray5) : Color(.systemGray6))
+                        .fill(Color.ksrLightGray)
                 )
             }
         }
@@ -675,7 +675,7 @@ struct WorkerWorkHoursView: View {
             Text("Status")
                 .font(.caption)
                 .fontWeight(.semibold)
-                .foregroundColor(.secondary)
+                .foregroundColor(Color.ksrTextSecondary)
             
             Menu {
                 ForEach(StatusFilter.allCases, id: \.self) { status in
@@ -689,7 +689,7 @@ struct WorkerWorkHoursView: View {
                 HStack {
                     Text(selectedStatusFilter.rawValue)
                         .font(.subheadline)
-                        .foregroundColor(colorScheme == .dark ? .white : .primary)
+                        .foregroundColor(Color.ksrTextPrimary)
                     
                     Spacer()
                     
@@ -699,13 +699,13 @@ struct WorkerWorkHoursView: View {
                     
                     Image(systemName: "chevron.down")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(Color.ksrTextSecondary)
                 }
                 .padding(.horizontal, 12)
                 .padding(.vertical, 10)
                 .background(
                     RoundedRectangle(cornerRadius: 8)
-                        .fill(colorScheme == .dark ? Color(.systemGray5) : Color(.systemGray6))
+                        .fill(Color.ksrLightGray)
                 )
             }
         }
@@ -716,16 +716,17 @@ struct WorkerWorkHoursView: View {
     private var searchBarSection: some View {
         HStack {
             Image(systemName: "magnifyingglass")
-                .foregroundColor(.secondary)
+                .foregroundColor(Color.ksrTextSecondary)
             
             TextField("Search notes, tasks...", text: $searchText)
                 .textFieldStyle(PlainTextFieldStyle())
+                .foregroundColor(Color.ksrTextPrimary)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
         .background(
             RoundedRectangle(cornerRadius: 8)
-                .fill(colorScheme == .dark ? Color(.systemGray5) : Color(.systemGray6))
+                .fill(Color.ksrLightGray)
         )
     }
     
@@ -736,13 +737,13 @@ struct WorkerWorkHoursView: View {
                 Text("Work Entries")
                     .font(.title3)
                     .fontWeight(.bold)
-                    .foregroundColor(colorScheme == .dark ? .white : Color.ksrDarkGray)
+                    .foregroundColor(Color.ksrTextPrimary)
                 
                 Spacer()
                 
                 Text("\(filteredEntries.count) entries")
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(Color.ksrTextSecondary)
             }
             .padding(.horizontal, 4)
             
@@ -856,7 +857,7 @@ struct WorkerWorkHoursView: View {
             
             Text("Loading work hours...")
                 .font(.subheadline)
-                .foregroundColor(.secondary)
+                .foregroundColor(Color.ksrTextSecondary)
         }
         .frame(maxWidth: .infinity, minHeight: 120)
     }
@@ -865,17 +866,17 @@ struct WorkerWorkHoursView: View {
         VStack(spacing: 20) {
             Image(systemName: "clock.badge.xmark")
                 .font(.system(size: 48, weight: .light))
-                .foregroundColor(.secondary)
+                .foregroundColor(Color.ksrTextSecondary)
             
             VStack(spacing: 8) {
                 Text("No work entries found")
                     .font(.title3)
                     .fontWeight(.semibold)
-                    .foregroundColor(colorScheme == .dark ? .white : .primary)
+                    .foregroundColor(Color.ksrTextPrimary)
                 
                 Text("Try adjusting your filters or check the Dashboard to add work hours")
                     .font(.subheadline)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(Color.ksrTextSecondary)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal)
             }
@@ -918,15 +919,8 @@ struct WorkerWorkHoursView: View {
     }
     
     private var dashboardBackground: some View {
-        LinearGradient(
-            gradient: Gradient(colors: [
-                colorScheme == .dark ? Color.black : Color(.systemBackground),
-                colorScheme == .dark ? Color(.systemGray6).opacity(0.2) : Color(.systemGray6).opacity(0.3)
-            ]),
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
-        .ignoresSafeArea()
+        Color.backgroundGradient
+            .ignoresSafeArea()
     }
     
     private func handleViewAppear() {
@@ -1050,7 +1044,7 @@ struct WeeklyWorkHoursCard: View {
         }
         .background(
             RoundedRectangle(cornerRadius: 16)
-                .fill(colorScheme == .dark ? Color(.systemGray6).opacity(0.3) : Color.white)
+                .fill(Color.ksrMediumGray)
                 .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.3 : 0.08), radius: 8, x: 0, y: 4)
         )
         .overlay(
@@ -1067,11 +1061,11 @@ struct WeeklyWorkHoursCard: View {
                     Text("Week \(weekInfo.weekNumber), \(weekInfo.year)")
                         .font(.headline)
                         .fontWeight(.bold)
-                        .foregroundColor(colorScheme == .dark ? .white : Color.ksrDarkGray)
+                        .foregroundColor(Color.ksrTextPrimary)
                     
                     Text(weekInfo.displayTitle)
                         .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(Color.ksrTextSecondary)
                 }
                 
                 Spacer()
@@ -1086,7 +1080,7 @@ struct WeeklyWorkHoursCard: View {
                         if workDays > 0 {
                             Label("\(workDays) days", systemImage: "calendar")
                                 .font(.caption)
-                                .foregroundColor(.secondary)
+                                .foregroundColor(Color.ksrTextSecondary)
                         }
                         
                         Button {
@@ -1094,11 +1088,11 @@ struct WeeklyWorkHoursCard: View {
                         } label: {
                             Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
                                 .font(.system(size: 14, weight: .medium))
-                                .foregroundColor(.secondary)
+                                .foregroundColor(Color.ksrTextSecondary)
                                 .frame(width: 24, height: 24)
                                 .background(
                                     Circle()
-                                        .fill(colorScheme == .dark ? Color(.systemGray5) : Color(.systemGray6))
+                                        .fill(Color.ksrLightGray)
                                 )
                         }
                     }
@@ -1114,7 +1108,7 @@ struct WeeklyWorkHoursCard: View {
                     
                     Text("\(confirmedCount) confirmed")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(Color.ksrTextSecondary)
                 }
                 
                 if totalKm > 0 {
@@ -1125,7 +1119,7 @@ struct WeeklyWorkHoursCard: View {
                         
                         Text(String(format: "%.1f km", totalKm))
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(Color.ksrTextSecondary)
                     }
                 }
                 

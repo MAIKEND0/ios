@@ -13,7 +13,7 @@ struct WorkerDashboardSections {
     // MARK: - Consistent Card Style
     static func cardBackground(colorScheme: ColorScheme) -> some View {
         RoundedRectangle(cornerRadius: 16)
-            .fill(colorScheme == .dark ? Color(.systemGray6).opacity(0.3) : Color.white)
+            .fill(Color.ksrMediumGray)
             .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.3 : 0.08), radius: 8, x: 0, y: 4)
     }
     
@@ -32,7 +32,7 @@ struct WorkerDashboardSections {
                 Text("Your Stats")
                     .font(.title3)
                     .fontWeight(.bold)
-                    .foregroundColor(colorScheme == .dark ? .white : Color.ksrDarkGray)
+                    .foregroundColor(Color.ksrTextPrimary)
                     .padding(.horizontal, 4)
                 
                 LazyVGrid(columns: [
@@ -209,11 +209,11 @@ struct WorkerDashboardSections {
                     Text("My Tasks")
                         .font(.title3)
                         .fontWeight(.bold)
-                        .foregroundColor(colorScheme == .dark ? .white : Color.ksrDarkGray)
+                        .foregroundColor(Color.ksrTextPrimary)
                     
                     Text("\(viewModel.tasksViewModel.tasks.count) tasks assigned")
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(Color.ksrTextSecondary)
                 }
                 
                 Spacer()
@@ -223,7 +223,7 @@ struct WorkerDashboardSections {
                     VStack(alignment: .trailing, spacing: 2) {
                         Text("This Week")
                             .font(.caption2)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(Color.ksrTextSecondary)
                         
                         Text(String(format: "%.1fh", viewModel.totalWeeklyHours))
                             .font(.headline)
@@ -239,7 +239,7 @@ struct WorkerDashboardSections {
                 .padding(.vertical, 8)
                 .background(
                     RoundedRectangle(cornerRadius: 12)
-                        .fill(colorScheme == .dark ? Color(.systemGray5).opacity(0.3) : Color.white.opacity(0.8))
+                        .fill(Color.ksrLightGray)
                 )
             }
         }
@@ -267,12 +267,12 @@ struct WorkerDashboardSections {
                             .font(.caption)
                             .fontWeight(.medium)
                     }
-                    .foregroundColor(colorScheme == .dark ? .white : .primary)
+                    .foregroundColor(Color.ksrTextPrimary)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 8)
                     .background(
                         RoundedRectangle(cornerRadius: 8)
-                            .fill(colorScheme == .dark ? Color(.systemGray5) : Color(.systemGray6))
+                            .fill(Color.ksrLightGray)
                     )
                 }
                 
@@ -422,13 +422,13 @@ struct WorkerDashboardSections {
                     Text(task.title)
                         .font(.headline)
                         .fontWeight(.bold)
-                        .foregroundColor(colorScheme == .dark ? .white : Color.ksrDarkGray)
+                        .foregroundColor(Color.ksrTextPrimary)
                         .lineLimit(1)
                     
                     if let project = task.project {
                         Label(project.title, systemImage: "building.2")
                             .font(.subheadline)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(Color.ksrTextSecondary)
                             .lineLimit(1)
                     }
                     
@@ -458,11 +458,11 @@ struct WorkerDashboardSections {
                 } label: {
                     Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
                         .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(.secondary)
+                        .foregroundColor(Color.ksrTextSecondary)
                         .frame(width: 32, height: 32)
                         .background(
                             Circle()
-                                .fill(colorScheme == .dark ? Color(.systemGray5) : Color(.systemGray6))
+                                .fill(Color.ksrLightGray)
                         )
                 }
             }
@@ -482,11 +482,11 @@ struct WorkerDashboardSections {
                             Text("Description")
                                 .font(.subheadline)
                                 .fontWeight(.semibold)
-                                .foregroundColor(.secondary)
+                                .foregroundColor(Color.ksrTextSecondary)
                             
                             Text(description)
                                 .font(.subheadline)
-                                .foregroundColor(colorScheme == .dark ? .white.opacity(0.8) : .primary)
+                                .foregroundColor(Color.ksrTextPrimary)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
                     }
@@ -497,7 +497,7 @@ struct WorkerDashboardSections {
                             Text("Recent Activity")
                                 .font(.subheadline)
                                 .fontWeight(.semibold)
-                                .foregroundColor(.secondary)
+                                .foregroundColor(Color.ksrTextSecondary)
                             
                             ForEach(weekStatuses.prefix(3)) { weekStatus in
                                 WeekStatusRow(weekStatus: weekStatus)
@@ -506,7 +506,7 @@ struct WorkerDashboardSections {
                             if weekStatuses.count > 3 {
                                 Text("and \(weekStatuses.count - 3) more weeks...")
                                     .font(.caption)
-                                    .foregroundColor(.secondary)
+                                    .foregroundColor(Color.ksrTextSecondary)
                                     .italic()
                                     .padding(.leading, 12)
                             }
@@ -537,13 +537,7 @@ struct WorkerDashboardSections {
                     .foregroundColor(.white)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 12)
-                    .background(
-                        LinearGradient(
-                            colors: [Color.ksrYellow, Color.ksrPrimary],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
-                    )
+                    .background(Color.primaryGradient)
                     .clipShape(RoundedRectangle(cornerRadius: 10))
                 }
                 .padding(.trailing, 20)
@@ -566,7 +560,7 @@ struct WorkerDashboardSections {
                     Text("Recent Hours")
                         .font(.title3)
                         .fontWeight(.bold)
-                        .foregroundColor(colorScheme == .dark ? .white : Color.ksrDarkGray)
+                        .foregroundColor(Color.ksrTextPrimary)
                     
                     Spacer()
                     
@@ -594,7 +588,7 @@ struct WorkerDashboardSections {
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 12)
                     .background(Color.ksrYellow)
-                    .foregroundColor(.black)
+                    .foregroundColor(.white)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
             }
@@ -667,7 +661,7 @@ struct WorkerDashboardSections {
                         Text(entry.workDateFormatted)
                             .font(.subheadline)
                             .fontWeight(.semibold)
-                            .foregroundColor(colorScheme == .dark ? .white : .primary)
+                            .foregroundColor(Color.ksrTextPrimary)
                         
                         Spacer()
                         
@@ -680,7 +674,7 @@ struct WorkerDashboardSections {
                     HStack {
                         Text("\(entry.startTimeFormatted ?? "-") – \(entry.endTimeFormatted ?? "-")")
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(Color.ksrTextSecondary)
                         
                         Spacer()
                         
@@ -693,20 +687,20 @@ struct WorkerDashboardSections {
                     if let taskTitle = entry.tasks?.title {
                         Text("Task: \(taskTitle)")
                             .font(.caption2)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(Color.ksrTextSecondary)
                     }
                     
                     if let km = entry.km, km > 0 {
                         Text("Distance: \(String(format: "%.1f", km)) km")
                             .font(.caption2)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(Color.ksrTextSecondary)
                     }
                 }
             }
             .padding(12)
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(colorScheme == .dark ? Color(.systemGray5).opacity(0.3) : Color(.systemGray6).opacity(0.5))
+                    .fill(Color.ksrLightGray)
             )
         }
     }
@@ -724,7 +718,7 @@ struct WorkerDashboardSections {
                     Text("Announcements")
                         .font(.title3)
                         .fontWeight(.bold)
-                        .foregroundColor(colorScheme == .dark ? .white : Color.ksrDarkGray)
+                        .foregroundColor(Color.ksrTextPrimary)
                     
                     Spacer()
                     
@@ -780,12 +774,12 @@ struct WorkerDashboardSections {
                         Text(announcement.title)
                             .font(.subheadline)
                             .fontWeight(.semibold)
-                            .foregroundColor(colorScheme == .dark ? .white : .primary)
+                            .foregroundColor(Color.ksrTextPrimary)
                             .lineLimit(1)
                         
                         Text(announcement.content)
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(Color.ksrTextSecondary)
                             .lineLimit(2)
                     }
                     
@@ -801,11 +795,11 @@ struct WorkerDashboardSections {
                     HStack(spacing: 4) {
                         Image(systemName: "calendar")
                             .font(.caption2)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(Color.ksrTextSecondary)
                         
                         Text(formatDate(announcement.publishedAt))
                             .font(.caption2)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(Color.ksrTextSecondary)
                     }
                     
                     Spacer()
@@ -826,7 +820,7 @@ struct WorkerDashboardSections {
             .padding(12)
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(colorScheme == .dark ? Color(.systemGray5).opacity(0.3) : Color(.systemGray6).opacity(0.5))
+                    .fill(Color.ksrLightGray)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
@@ -860,7 +854,7 @@ struct WorkerDashboardSections {
             HStack {
                 Text(weekStatus.weekLabel)
                     .font(.caption)
-                    .foregroundColor(colorScheme == .dark ? .white : .primary)
+                    .foregroundColor(Color.ksrTextPrimary)
                     .frame(width: 70, alignment: .leading)
                 
                 VStack(alignment: .leading, spacing: 2) {
@@ -900,7 +894,7 @@ struct WorkerDashboardSections {
                 
                 Text("Loading tasks...")
                     .font(.subheadline)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(Color.ksrTextSecondary)
             }
             .frame(maxWidth: .infinity, minHeight: 120)
         }
@@ -913,17 +907,17 @@ struct WorkerDashboardSections {
             VStack(spacing: 20) {
                 Image(systemName: "briefcase")
                     .font(.system(size: 48, weight: .light))
-                    .foregroundColor(.secondary)
+                    .foregroundColor(Color.ksrTextSecondary)
                 
                 VStack(spacing: 8) {
                     Text("No tasks assigned")
                         .font(.title3)
                         .fontWeight(.semibold)
-                        .foregroundColor(colorScheme == .dark ? .white : .primary)
+                        .foregroundColor(Color.ksrTextPrimary)
                     
                     Text("When tasks are assigned to you, they will appear here")
                         .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(Color.ksrTextSecondary)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal)
                 }
@@ -940,11 +934,11 @@ struct WorkerDashboardSections {
             VStack(spacing: 16) {
                 Image(systemName: "clock")
                     .font(.system(size: 32, weight: .light))
-                    .foregroundColor(.secondary)
+                    .foregroundColor(Color.ksrTextSecondary)
                 
                 Text("No hours recorded yet")
                     .font(.subheadline)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(Color.ksrTextSecondary)
             }
             .frame(maxWidth: .infinity, minHeight: 80)
             .padding(.vertical, 20)
@@ -958,11 +952,11 @@ struct WorkerDashboardSections {
             VStack(spacing: 16) {
                 Image(systemName: "megaphone")
                     .font(.system(size: 32, weight: .light))
-                    .foregroundColor(.secondary)
+                    .foregroundColor(Color.ksrTextSecondary)
                 
                 Text("No announcements")
                     .font(.subheadline)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(Color.ksrTextSecondary)
             }
             .frame(maxWidth: .infinity, minHeight: 80)
             .padding(.vertical, 20)

@@ -253,8 +253,9 @@ struct SettingsRow: View {
     }
 }
 
-struct ExternalCertificationCard: View {
-    let certification: ExternalCertification
+// 🔥 ZMIENIONA NAZWA: ExternalCertificationCard -> CertificationCard
+struct CertificationCard: View {
+    let certification: ManagerCertification  // 🔥 ZMIENIONY TYP
     @Environment(\.colorScheme) private var colorScheme
     
     var body: some View {
@@ -499,7 +500,7 @@ struct SettingsTabContent: View {
                 }
             }
             
-            ProfileSectionCard(title: "External Manager Support", icon: "person.crop.circle.badge.questionmark", color: .ksrWarning) {
+            ProfileSectionCard(title: "Manager Support", icon: "person.crop.circle.badge.questionmark", color: .ksrWarning) {
                 VStack(alignment: .leading, spacing: 12) {
                     SettingsRow(
                         title: "Contract Support",
@@ -575,6 +576,7 @@ extension DateFormatter {
     }()
 }
 
+// 🔥 ZMIENIONY PREVIEW - używa nowych nazw
 struct ManagerProfileComponents_Previews: PreviewProvider {
     static var previews: some View {
         VStack(spacing: 20) {
@@ -584,8 +586,8 @@ struct ManagerProfileComponents_Previews: PreviewProvider {
                 color: .ksrSuccess
             )
             
-            ExternalCertificationCard(
-                certification: ExternalCertification(
+            CertificationCard(  // 🔥 ZMIENIONA NAZWA
+                certification: ManagerCertification(  // 🔥 ZMIENIONY TYP
                     name: "Project Management Professional",
                     issuingOrganization: "PMI",
                     issueDate: Date(),

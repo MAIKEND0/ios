@@ -68,6 +68,8 @@ struct WorkerProfileView: View {
                     Button {
                         withAnimation(.easeInOut(duration: 0.3)) {
                             viewModel.loadData()
+                            // 🆕 Także odśwież zdjęcie profilowe
+                            viewModel.refreshProfileImage()
                         }
                     } label: {
                         Image(systemName: "arrow.clockwise")
@@ -83,6 +85,7 @@ struct WorkerProfileView: View {
             .refreshable {
                 await withCheckedContinuation { continuation in
                     viewModel.loadData()
+                    viewModel.refreshProfileImage() // 🆕 Odśwież też zdjęcie
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                         continuation.resume()
                     }
@@ -150,6 +153,9 @@ struct WorkerProfileView: View {
         // Clear API tokens
         WorkerAPIService.shared.authToken = nil
         
+        // 🆕 Wyczyść cache zdjęć przy logowaie
+        ProfileImageCache.shared.clearCache()
+        
         DispatchQueue.main.async {
             self.viewModel.basicData = WorkerBasicData(employeeId: 0, name: "", email: "", role: "arbejder")
             self.viewModel.stats = WorkerStats(currentWeekHours: 0, currentMonthHours: 0, pendingEntries: 0, approvedEntries: 0, rejectedEntries: 0, approvalRate: 0)
@@ -183,25 +189,25 @@ struct WorkerProfileView: View {
                                 .stroke(Color.ksrYellow, lineWidth: 2)
                         )
                     
-                    if let profilePictureUrl = viewModel.basicData.profilePictureUrl,
-                       !profilePictureUrl.isEmpty,
-                       let url = URL(string: profilePictureUrl) {
-                        AsyncImage(url: url) { image in
-                            image
-                                .resizable()
-                                .aspectRatio(contentMode: .fill)
-                                .frame(width: 75, height: 75)
-                                .clipShape(Circle())
-                        } placeholder: {
-                            ProgressView()
-                                .scaleEffect(0.6)
-                        }
+                    // 🆕 Używaj cache'owanego zdjęcia z ViewModel
+                    if let profileImage = viewModel.profileImage {
+                        Image(uiImage: profileImage)
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(width: 75, height: 75)
+                            .clipShape(Circle())
+                    } else if viewModel.basicData.profilePictureUrl != nil && !viewModel.basicData.profilePictureUrl!.isEmpty {
+                        // Pokaż placeholder podczas ładowania
+                        ProgressView()
+                            .scaleEffect(0.6)
                     } else {
+                        // Brak zdjęcia
                         Image(systemName: "person.circle.fill")
                             .font(.system(size: 40))
                             .foregroundColor(.ksrSecondary)
                     }
                     
+                    // Plus button overlay
                     VStack {
                         Spacer()
                         HStack {
@@ -216,6 +222,7 @@ struct WorkerProfileView: View {
                     }
                     .frame(width: 80, height: 80)
                     
+                    // Upload progress overlay
                     if viewModel.isUploadingImage {
                         Circle()
                             .fill(Color.black.opacity(0.5))
@@ -230,12 +237,19 @@ struct WorkerProfileView: View {
                     showingImagePicker = true
                 }
                 .contextMenu {
-                    if viewModel.basicData.profilePictureUrl != nil {
+                    if viewModel.profileImage != nil || viewModel.basicData.profilePictureUrl != nil {
                         Button(role: .destructive) {
                             viewModel.deleteProfilePicture()
                         } label: {
                             Label("Remove Picture", systemImage: "trash")
                         }
+                    }
+                    
+                    // 🆕 Opcja do odświeżenia zdjęcia
+                    Button {
+                        viewModel.refreshProfileImage()
+                    } label: {
+                        Label("Refresh Picture", systemImage: "arrow.clockwise")
                     }
                 }
                 
