@@ -24,7 +24,7 @@ struct ProfilePictureView: View {
             matching: .images,
             photoLibrary: .shared()
         )
-        .onChange(of: selectedItem) { _ in
+        .onChange(of: selectedItem) { _, _ in
             Task {
                 if let selectedItem = selectedItem,
                    let data = try? await selectedItem.loadTransferable(type: Data.self),
@@ -269,7 +269,7 @@ struct CompactProfilePictureView: View {
             matching: .images,
             photoLibrary: .shared()
         )
-        .onChange(of: selectedItem) { _ in
+        .onChange(of: selectedItem) { _, _ in
             Task {
                 if let selectedItem = selectedItem,
                    let data = try? await selectedItem.loadTransferable(type: Data.self),

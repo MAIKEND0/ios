@@ -196,3 +196,103 @@ extension EnvironmentValues {
         set { self[AppStateManagerKey.self] = newValue }
     }
 }
+
+// MARK: - Supporting Views
+
+struct AppInitializationErrorView: View {
+    let error: String
+    @EnvironmentObject private var appStateManager: AppStateManager
+    
+    var body: some View {
+        ZStack {
+            Color.ksrDarkGray.ignoresSafeArea()
+            
+            VStack(spacing: 32) {
+                VStack(spacing: 16) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.system(size: 64))
+                        .foregroundColor(.ksrError)
+                    
+                    Image("KSRLogo")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 60, height: 60)
+                        .opacity(0.6)
+                }
+                
+                VStack(spacing: 16) {
+                    Text("Failed to Initialize")
+                        .font(.title2)
+                        .fontWeight(.bold)
+                        .foregroundColor(.white)
+                    
+                    Text(error)
+                        .font(.body)
+                        .foregroundColor(.white.opacity(0.8))
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+                }
+                
+                VStack(spacing: 16) {
+                    Button(action: {
+                        appStateManager.initializeApp()
+                    }) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "arrow.clockwise")
+                            Text("Retry Initialization")
+                        }
+                        .font(.headline)
+                        .foregroundColor(.black)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
+                        .background(Color.ksrYellow)
+                        .cornerRadius(12)
+                    }
+                    
+                    Button(action: {
+                        AuthService.shared.logout()
+                        appStateManager.resetAppState()
+                    }) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "arrow.left.circle")
+                            Text("Return to Login")
+                        }
+                        .font(.subheadline)
+                        .foregroundColor(.white.opacity(0.8))
+                        .underline()
+                    }
+                }
+                .padding(.horizontal, 40)
+            }
+            .padding()
+        }
+    }
+}
+
+struct ProfileLoadingFallback: View {
+    let userType: String
+    @EnvironmentObject private var appStateManager: AppStateManager
+    
+    var body: some View {
+        VStack(spacing: 20) {
+            ProgressView()
+                .progressViewStyle(CircularProgressViewStyle(tint: .ksrYellow))
+                .scaleEffect(1.2)
+            
+            Text("Loading \(userType) Profile...")
+                .font(.headline)
+                .foregroundColor(.primary)
+            
+            Text("Initializing profile data")
+                .font(.caption)
+                .foregroundColor(.secondary)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(.systemBackground))
+        .onAppear {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                appStateManager.initializeApp()
+            }
+        }
+    }
+}

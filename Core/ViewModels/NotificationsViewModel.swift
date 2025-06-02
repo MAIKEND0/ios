@@ -256,7 +256,7 @@ extension NotificationsViewModel {
         case .hoursRejected:
             // Check if it's a week rejection notification
             if let metadata = notification.metadata,
-               let weekNumber = metadata["weekNumber"],
+               let _ = metadata["weekNumber"],
                let _ = metadata["entryIds"] {
                 return [
                     QuickAction(

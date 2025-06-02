@@ -25,6 +25,36 @@
 		1B4514992DDDA5880020443F /* WorkPlanPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B4514982DDDA57E0020443F /* WorkPlanPreviewView.swift */; };
 		1B4514A92DDF373B0020443F /* WeekUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B4514A82DDF372F0020443F /* WeekUtils.swift */; };
 		1B4514AB2DDF83260020443F /* ToastView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B4514AA2DDF83240020443F /* ToastView.swift */; };
+		1B5362F32DEA2F950092B268 /* ChefDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B5362F22DEA2F930092B268 /* ChefDashboardView.swift */; };
+		1B5362F62DEA30210092B268 /* ChefDashboardViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B5362F52DEA301F0092B268 /* ChefDashboardViewModel.swift */; };
+		1B5362F82DEA30430092B268 /* ChefProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B5362F72DEA30410092B268 /* ChefProfileView.swift */; };
+		1B5362FF2DEA32CD0092B268 /* CustomersListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B5362FE2DEA32CB0092B268 /* CustomersListView.swift */; };
+		1B5363032DEA336C0092B268 /* CustomersViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B5363022DEA336B0092B268 /* CustomersViewModel.swift */; };
+		1B5363052DEA33850092B268 /* CreateCustomerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B5363042DEA33840092B268 /* CreateCustomerView.swift */; };
+		1B5363072DEA33F90092B268 /* CustomersFiltersSheet.swift in Resources */ = {isa = PBXBuildFile; fileRef = 1B5363062DEA33F80092B268 /* CustomersFiltersSheet.swift */; };
+		1B5363092DEA39870092B268 /* CustomerDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B5363082DEA39850092B268 /* CustomerDetailView.swift */; };
+		1B53630B2DEA3A090092B268 /* CustomerDetailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B53630A2DEA3A080092B268 /* CustomerDetailViewModel.swift */; };
+		1B53630D2DEA3B540092B268 /* EditCustomerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B53630C2DEA3B520092B268 /* EditCustomerView.swift */; };
+		1B53630F2DEA3D8F0092B268 /* CustomerModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B53630E2DEA3D8E0092B268 /* CustomerModels.swift */; };
+		1B5363112DEA3DAB0092B268 /* SharedUIComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B5363102DEA3DA90092B268 /* SharedUIComponents.swift */; };
+		1B5363132DEA47BB0092B268 /* CreateCustomerViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B5363122DEA47B50092B268 /* CreateCustomerViewModel.swift */; };
+		1B5363152DEA4B1C0092B268 /* EditCustomerViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B5363142DEA4B160092B268 /* EditCustomerViewModel.swift */; };
+		1B5363182DEA4E6D0092B268 /* ChefAPIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B5363172DEA4E660092B268 /* ChefAPIService.swift */; };
+		1B53631A2DEA52490092B268 /* ChefDashboardStats.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B5363192DEA52480092B268 /* ChefDashboardStats.swift */; };
+		1B53631C2DEA569A0092B268 /* CustomerLogoPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B53631B2DEA56990092B268 /* CustomerLogoPickerView.swift */; };
+		1B53631E2DEA56CC0092B268 /* CustomerLogoErrorHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B53631D2DEA56CA0092B268 /* CustomerLogoErrorHandler.swift */; };
+		1B5363202DEA5B380092B268 /* EnhancedCustomerLogoManager+Integration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B53631F2DEA5B350092B268 /* EnhancedCustomerLogoManager+Integration.swift */; };
+		1B5363232DEC4ACB0092B268 /* ChefProjectViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B5363222DEC4ACA0092B268 /* ChefProjectViews.swift */; };
+		1B5363252DEC4C080092B268 /* ChefProjectViewModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B5363242DEC4C060092B268 /* ChefProjectViewModels.swift */; };
+		1B5363272DEC4C510092B268 /* ChefTaskManagementViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B5363262DEC4C500092B268 /* ChefTaskManagementViews.swift */; };
+		1B5363292DEC4D3C0092B268 /* ChefProjectsAPIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B5363282DEC4D3B0092B268 /* ChefProjectsAPIService.swift */; };
+		1B53632B2DEC4F090092B268 /* ProjectModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B53632A2DEC4EFD0092B268 /* ProjectModels.swift */; };
+		1B53632D2DEC5FCD0092B268 /* ChefWorkerPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B53632C2DEC5FCB0092B268 /* ChefWorkerPickerView.swift */; };
+		1B53632F2DEC5FDD0092B268 /* ChefCreateProjectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B53632E2DEC5FDC0092B268 /* ChefCreateProjectView.swift */; };
+		1B5363322DEC60000092B268 /* ChefProjectDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B5363312DEC5FFE0092B268 /* ChefProjectDetailView.swift */; };
+		1B5363362DECAF5F0092B268 /* ChefProjectsAPIService+TaskCreation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B5363352DECAF5D0092B268 /* ChefProjectsAPIService+TaskCreation.swift */; };
+		1B5363382DECB0B10092B268 /* CreateTaskViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B5363372DECB0AF0092B268 /* CreateTaskViewModel.swift */; };
+		1B53633A2DECDEB50092B268 /* ChefTaskDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B5363392DECDEA90092B268 /* ChefTaskDetailView.swift */; };
 		1B63CC4D2DD85FFB005F598D /* ManagerWorkersView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B63CC4A2DD85FE3005F598D /* ManagerWorkersView.swift */; };
 		1B63CC512DD8602A005F598D /* ManagerWorkersViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B63CC502DD86022005F598D /* ManagerWorkersViewModel.swift */; };
 		1B63CC542DD8620D005F598D /* ManagerProjectsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B63CC532DD8620B005F598D /* ManagerProjectsView.swift */; };
@@ -136,6 +166,36 @@
 		1B4514982DDDA57E0020443F /* WorkPlanPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkPlanPreviewView.swift; sourceTree = "<group>"; };
 		1B4514A82DDF372F0020443F /* WeekUtils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeekUtils.swift; sourceTree = "<group>"; };
 		1B4514AA2DDF83240020443F /* ToastView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastView.swift; sourceTree = "<group>"; };
+		1B5362F22DEA2F930092B268 /* ChefDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChefDashboardView.swift; sourceTree = "<group>"; };
+		1B5362F52DEA301F0092B268 /* ChefDashboardViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChefDashboardViewModel.swift; sourceTree = "<group>"; };
+		1B5362F72DEA30410092B268 /* ChefProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChefProfileView.swift; sourceTree = "<group>"; };
+		1B5362FE2DEA32CB0092B268 /* CustomersListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomersListView.swift; sourceTree = "<group>"; };
+		1B5363022DEA336B0092B268 /* CustomersViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomersViewModel.swift; sourceTree = "<group>"; };
+		1B5363042DEA33840092B268 /* CreateCustomerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateCustomerView.swift; sourceTree = "<group>"; };
+		1B5363062DEA33F80092B268 /* CustomersFiltersSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomersFiltersSheet.swift; sourceTree = "<group>"; };
+		1B5363082DEA39850092B268 /* CustomerDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomerDetailView.swift; sourceTree = "<group>"; };
+		1B53630A2DEA3A080092B268 /* CustomerDetailViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomerDetailViewModel.swift; sourceTree = "<group>"; };
+		1B53630C2DEA3B520092B268 /* EditCustomerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditCustomerView.swift; sourceTree = "<group>"; };
+		1B53630E2DEA3D8E0092B268 /* CustomerModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomerModels.swift; sourceTree = "<group>"; };
+		1B5363102DEA3DA90092B268 /* SharedUIComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedUIComponents.swift; sourceTree = "<group>"; };
+		1B5363122DEA47B50092B268 /* CreateCustomerViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateCustomerViewModel.swift; sourceTree = "<group>"; };
+		1B5363142DEA4B160092B268 /* EditCustomerViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditCustomerViewModel.swift; sourceTree = "<group>"; };
+		1B5363172DEA4E660092B268 /* ChefAPIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChefAPIService.swift; sourceTree = "<group>"; };
+		1B5363192DEA52480092B268 /* ChefDashboardStats.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChefDashboardStats.swift; sourceTree = "<group>"; };
+		1B53631B2DEA56990092B268 /* CustomerLogoPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomerLogoPickerView.swift; sourceTree = "<group>"; };
+		1B53631D2DEA56CA0092B268 /* CustomerLogoErrorHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomerLogoErrorHandler.swift; sourceTree = "<group>"; };
+		1B53631F2DEA5B350092B268 /* EnhancedCustomerLogoManager+Integration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "EnhancedCustomerLogoManager+Integration.swift"; sourceTree = "<group>"; };
+		1B5363222DEC4ACA0092B268 /* ChefProjectViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChefProjectViews.swift; sourceTree = "<group>"; };
+		1B5363242DEC4C060092B268 /* ChefProjectViewModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChefProjectViewModels.swift; sourceTree = "<group>"; };
+		1B5363262DEC4C500092B268 /* ChefTaskManagementViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChefTaskManagementViews.swift; sourceTree = "<group>"; };
+		1B5363282DEC4D3B0092B268 /* ChefProjectsAPIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChefProjectsAPIService.swift; sourceTree = "<group>"; };
+		1B53632A2DEC4EFD0092B268 /* ProjectModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectModels.swift; sourceTree = "<group>"; };
+		1B53632C2DEC5FCB0092B268 /* ChefWorkerPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChefWorkerPickerView.swift; sourceTree = "<group>"; };
+		1B53632E2DEC5FDC0092B268 /* ChefCreateProjectView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChefCreateProjectView.swift; sourceTree = "<group>"; };
+		1B5363312DEC5FFE0092B268 /* ChefProjectDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChefProjectDetailView.swift; sourceTree = "<group>"; };
+		1B5363352DECAF5D0092B268 /* ChefProjectsAPIService+TaskCreation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ChefProjectsAPIService+TaskCreation.swift"; sourceTree = "<group>"; };
+		1B5363372DECB0AF0092B268 /* CreateTaskViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateTaskViewModel.swift; sourceTree = "<group>"; };
+		1B5363392DECDEA90092B268 /* ChefTaskDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChefTaskDetailView.swift; sourceTree = "<group>"; };
 		1B63CC4A2DD85FE3005F598D /* ManagerWorkersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManagerWorkersView.swift; sourceTree = "<group>"; };
 		1B63CC502DD86022005F598D /* ManagerWorkersViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManagerWorkersViewModel.swift; sourceTree = "<group>"; };
 		1B63CC532DD8620B005F598D /* ManagerProjectsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManagerProjectsView.swift; sourceTree = "<group>"; };
@@ -270,6 +330,117 @@
 			path = Workplan;
 			sourceTree = "<group>";
 		};
+		1B5362EA2DEA2BD40092B268 /* Chef */ = {
+			isa = PBXGroup;
+			children = (
+				1B5362F12DEA2C190092B268 /* Profile */,
+				1B5362F02DEA2C100092B268 /* Workers */,
+				1B5362EF2DEA2C090092B268 /* Tasks */,
+				1B5362EE2DEA2BF90092B268 /* Projects */,
+				1B5362ED2DEA2BF10092B268 /* Customers */,
+				1B5362EC2DEA2BE90092B268 /* Dashboard */,
+			);
+			path = Chef;
+			sourceTree = "<group>";
+		};
+		1B5362EC2DEA2BE90092B268 /* Dashboard */ = {
+			isa = PBXGroup;
+			children = (
+				1B5363192DEA52480092B268 /* ChefDashboardStats.swift */,
+				1B5362F52DEA301F0092B268 /* ChefDashboardViewModel.swift */,
+				1B5362F22DEA2F930092B268 /* ChefDashboardView.swift */,
+			);
+			path = Dashboard;
+			sourceTree = "<group>";
+		};
+		1B5362ED2DEA2BF10092B268 /* Customers */ = {
+			isa = PBXGroup;
+			children = (
+				1B53631F2DEA5B350092B268 /* EnhancedCustomerLogoManager+Integration.swift */,
+				1B53631D2DEA56CA0092B268 /* CustomerLogoErrorHandler.swift */,
+				1B53631B2DEA56990092B268 /* CustomerLogoPickerView.swift */,
+				1B5363102DEA3DA90092B268 /* SharedUIComponents.swift */,
+				1B53630E2DEA3D8E0092B268 /* CustomerModels.swift */,
+				1B53630C2DEA3B520092B268 /* EditCustomerView.swift */,
+				1B5363142DEA4B160092B268 /* EditCustomerViewModel.swift */,
+				1B5363082DEA39850092B268 /* CustomerDetailView.swift */,
+				1B53630A2DEA3A080092B268 /* CustomerDetailViewModel.swift */,
+				1B5363042DEA33840092B268 /* CreateCustomerView.swift */,
+				1B5363122DEA47B50092B268 /* CreateCustomerViewModel.swift */,
+				1B5363022DEA336B0092B268 /* CustomersViewModel.swift */,
+				1B5362FE2DEA32CB0092B268 /* CustomersListView.swift */,
+				1B5363062DEA33F80092B268 /* CustomersFiltersSheet.swift */,
+			);
+			path = Customers;
+			sourceTree = "<group>";
+		};
+		1B5362EE2DEA2BF90092B268 /* Projects */ = {
+			isa = PBXGroup;
+			children = (
+				1B5363312DEC5FFE0092B268 /* ChefProjectDetailView.swift */,
+				1B53632E2DEC5FDC0092B268 /* ChefCreateProjectView.swift */,
+				1B53632C2DEC5FCB0092B268 /* ChefWorkerPickerView.swift */,
+				1B5363242DEC4C060092B268 /* ChefProjectViewModels.swift */,
+				1B5363222DEC4ACA0092B268 /* ChefProjectViews.swift */,
+			);
+			path = Projects;
+			sourceTree = "<group>";
+		};
+		1B5362EF2DEA2C090092B268 /* Tasks */ = {
+			isa = PBXGroup;
+			children = (
+				1B5363392DECDEA90092B268 /* ChefTaskDetailView.swift */,
+				1B5363372DECB0AF0092B268 /* CreateTaskViewModel.swift */,
+				1B5363262DEC4C500092B268 /* ChefTaskManagementViews.swift */,
+			);
+			path = Tasks;
+			sourceTree = "<group>";
+		};
+		1B5362F02DEA2C100092B268 /* Workers */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Workers;
+			sourceTree = "<group>";
+		};
+		1B5362F12DEA2C190092B268 /* Profile */ = {
+			isa = PBXGroup;
+			children = (
+				1B5362F72DEA30410092B268 /* ChefProfileView.swift */,
+			);
+			path = Profile;
+			sourceTree = "<group>";
+		};
+		1B5362FB2DEA323A0092B268 /* Manager */ = {
+			isa = PBXGroup;
+			children = (
+				1BA25FF92DE248E600501208 /* SupervisorProfileApiService.swift */,
+				1B45147D2DDC58150020443F /* WorkPlanAPIService.swift */,
+				1B6FB00F2DD7A849007B2C9E /* ManagerAPIService.swift */,
+			);
+			path = Manager;
+			sourceTree = "<group>";
+		};
+		1B5362FC2DEA32410092B268 /* Worker */ = {
+			isa = PBXGroup;
+			children = (
+				1B779BF82DE60B3F00947C94 /* WorkerProfileApiService.swift */,
+				1B71EFCC2DD3351B00731223 /* WorkerAPIService.swift */,
+			);
+			path = Worker;
+			sourceTree = "<group>";
+		};
+		1B5362FD2DEA32480092B268 /* Chef */ = {
+			isa = PBXGroup;
+			children = (
+				1B5363352DECAF5D0092B268 /* ChefProjectsAPIService+TaskCreation.swift */,
+				1B53632A2DEC4EFD0092B268 /* ProjectModels.swift */,
+				1B5363282DEC4D3B0092B268 /* ChefProjectsAPIService.swift */,
+				1B5363172DEA4E660092B268 /* ChefAPIService.swift */,
+			);
+			path = Chef;
+			sourceTree = "<group>";
+		};
 		1B63CC4F2DD86017005F598D /* Workers */ = {
 			isa = PBXGroup;
 			children = (
@@ -350,12 +521,10 @@
 		1B6FB0112DD7ADC3007B2C9E /* API */ = {
 			isa = PBXGroup;
 			children = (
-				1B779BF82DE60B3F00947C94 /* WorkerProfileApiService.swift */,
-				1BA25FF92DE248E600501208 /* SupervisorProfileApiService.swift */,
-				1B45147D2DDC58150020443F /* WorkPlanAPIService.swift */,
+				1B5362FD2DEA32480092B268 /* Chef */,
+				1B5362FC2DEA32410092B268 /* Worker */,
+				1B5362FB2DEA323A0092B268 /* Manager */,
 				1B6FB00D2DD7A817007B2C9E /* BaseAPIService.swift */,
-				1B6FB00F2DD7A849007B2C9E /* ManagerAPIService.swift */,
-				1B71EFCC2DD3351B00731223 /* WorkerAPIService.swift */,
 			);
 			path = API;
 			sourceTree = "<group>";
@@ -403,8 +572,8 @@
 		1B71EF7E2DD3115400731223 /* Features */ = {
 			isa = PBXGroup;
 			children = (
+				1B5362EA2DEA2BD40092B268 /* Chef */,
 				1B6FB0052DD79D7F007B2C9E /* Manager */,
-				1B71EF9C2DD3128300731223 /* Chef */,
 				1B71EFA02DD3128600731223 /* Worker */,
 			);
 			path = Features;
@@ -413,10 +582,7 @@
 		1B71EF892DD311FA00731223 /* UI */ = {
 			isa = PBXGroup;
 			children = (
-				1B71EFBC2DD3259C00731223 /* Main */,
 				1B71EF972DD3127400731223 /* Views */,
-				1B71EF962DD3127200731223 /* Themes */,
-				1B71EF952DD3127000731223 /* Components */,
 			);
 			path = UI;
 			sourceTree = "<group>";
@@ -454,46 +620,16 @@
 			path = Services;
 			sourceTree = "<group>";
 		};
-		1B71EF952DD3127000731223 /* Components */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = Components;
-			sourceTree = "<group>";
-		};
-		1B71EF962DD3127200731223 /* Themes */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = Themes;
-			sourceTree = "<group>";
-		};
 		1B71EF972DD3127400731223 /* Views */ = {
 			isa = PBXGroup;
 			children = (
 				1B71F0112DD494DD00731223 /* Worker */,
 				1B71EFE92DD3623D00731223 /* Profile */,
 				1B71EFE62DD3615100731223 /* Auth */,
-				1B71EFC52DD330DE00731223 /* WorkHours */,
 				1B71EFC02DD32A0000731223 /* Splash */,
 				1B71EFBF2DD3286C00731223 /* Navigation */,
 			);
 			path = Views;
-			sourceTree = "<group>";
-		};
-		1B71EF9B2DD3128300731223 /* Dashboard */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = Dashboard;
-			sourceTree = "<group>";
-		};
-		1B71EF9C2DD3128300731223 /* Chef */ = {
-			isa = PBXGroup;
-			children = (
-				1B71EF9B2DD3128300731223 /* Dashboard */,
-			);
-			path = Chef;
 			sourceTree = "<group>";
 		};
 		1B71EF9F2DD3128600731223 /* WorkHours */ = {
@@ -531,13 +667,6 @@
 			path = Extensions;
 			sourceTree = "<group>";
 		};
-		1B71EFBC2DD3259C00731223 /* Main */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = Main;
-			sourceTree = "<group>";
-		};
 		1B71EFBF2DD3286C00731223 /* Navigation */ = {
 			isa = PBXGroup;
 			children = (
@@ -554,13 +683,6 @@
 				1B71EFC12DD32A6200731223 /* SplashScreenView.swift */,
 			);
 			path = Splash;
-			sourceTree = "<group>";
-		};
-		1B71EFC52DD330DE00731223 /* WorkHours */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = WorkHours;
 			sourceTree = "<group>";
 		};
 		1B71EFE62DD3615100731223 /* Auth */ = {
@@ -810,6 +932,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				1B5363072DEA33F90092B268 /* CustomersFiltersSheet.swift in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -836,6 +959,7 @@
 			files = (
 				1B4514992DDDA5880020443F /* WorkPlanPreviewView.swift in Sources */,
 				1B779BE42DE604F600947C94 /* WorkerProfileViewModel.swift in Sources */,
+				1B5362FF2DEA32CD0092B268 /* CustomersListView.swift in Sources */,
 				1B71EFC92DD3318F00731223 /* Announcement.swift in Sources */,
 				1B71EFBE2DD325AB00731223 /* MainTabView.swift in Sources */,
 				1B71EFB32DD3182200731223 /* WorkerWorkHoursView.swift in Sources */,
@@ -852,51 +976,69 @@
 				1B71F01E2DD496FF00731223 /* WorkerTasksViewModel.swift in Sources */,
 				1B71EFCD2DD3351E00731223 /* WorkerAPIService.swift in Sources */,
 				1B6FB00B2DD79DF9007B2C9E /* ManagerDashboardViewModel.swift in Sources */,
+				1B5362F82DEA30430092B268 /* ChefProfileView.swift in Sources */,
 				1BA25FFE2DE272F700501208 /* TabButton.swift in Sources */,
 				1B71F0402DD4BBFB00731223 /* WorkHourEntry+Extensions.swift in Sources */,
 				1B3600DA2DDA56E700943E5B /* TimesheetReportsViewModel.swift in Sources */,
 				1B6FB0082DD79DD1007B2C9E /* ManagerDashboardView.swift in Sources */,
 				1BD0F7FF2DE8FBB0002DEDFA /* WorkerTimesheetReportsViewModel.swift in Sources */,
 				1BA25FFC2DE24C4900501208 /* ProfilePictureView.swift in Sources */,
+				1B5363362DECAF5F0092B268 /* ChefProjectsAPIService+TaskCreation.swift in Sources */,
 				1B71EFAC2DD315C900731223 /* Color+Extensions.swift in Sources */,
 				1BA25FF62DE227F000501208 /* ManagerProfileViewModel.swift in Sources */,
+				1B5363232DEC4ACB0092B268 /* ChefProjectViews.swift in Sources */,
 				1B3600D82DDA563800943E5B /* TimesheetReportsView.swift in Sources */,
 				1B71F0422DD4BE9200731223 /* AuthInterceptor.swift in Sources */,
+				1B53630D2DEA3B540092B268 /* EditCustomerView.swift in Sources */,
 				1B63CC742DD91D20005F598D /* WeekDetailView.swift in Sources */,
 				1B3600D22DDA3A8000943E5B /* AppDelegate.swift in Sources */,
 				1B63CC562DD86240005F598D /* ManagerProjectsViewModel.swift in Sources */,
 				1B4514972DDC8E410020443F /* WorkPlanCreatorView.swift in Sources */,
 				1B779BF92DE60B4500947C94 /* WorkerProfileApiService.swift in Sources */,
+				1B53631E2DEA56CC0092B268 /* CustomerLogoErrorHandler.swift in Sources */,
 				1B71F03C2DD4BA2F00731223 /* WeeklyWorkEntryForm.swift in Sources */,
 				1B63CC542DD8620D005F598D /* ManagerProjectsView.swift in Sources */,
+				1B5363112DEA3DAB0092B268 /* SharedUIComponents.swift in Sources */,
 				1B3600D42DDA3AF900943E5B /* SignatureModalViewController.swift in Sources */,
+				1B53633A2DECDEB50092B268 /* ChefTaskDetailView.swift in Sources */,
 				1B63CC4D2DD85FFB005F598D /* ManagerWorkersView.swift in Sources */,
 				1B71EFEF2DD363F700731223 /* RoleBasedRootView.swift in Sources */,
+				1B5363382DECB0B10092B268 /* CreateTaskViewModel.swift in Sources */,
 				1B7A27782DD6032F004FFF06 /* Notifications.swift in Sources */,
 				1B71F00F2DD470FA00731223 /* SplashLoginContainerView.swift in Sources */,
 				1B6FB0102DD7A850007B2C9E /* ManagerAPIService.swift in Sources */,
 				1B71EFF12DD371D700731223 /* KeychainService.swift in Sources */,
 				1B71EFEB2DD3624500731223 /* ProfileView.swift in Sources */,
+				1B53632D2DEC5FCD0092B268 /* ChefWorkerPickerView.swift in Sources */,
 				1BD0F8112DE9B81C002DEDFA /* AppStateManager.swift in Sources */,
 				1B71F0172DD4952100731223 /* WorkerTaskDetailView.swift in Sources */,
 				1B71F0212DD4972200731223 /* WorkerWorkHoursViewModel.swift in Sources */,
+				1B5363272DEC4C510092B268 /* ChefTaskManagementViews.swift in Sources */,
 				1BD0F7FD2DE8EFD0002DEDFA /* WorkHoursUtilities.swift in Sources */,
 				1B4514862DDC5A0D0020443F /* ManagerWorkPlansView.swift in Sources */,
+				1B5363322DEC60000092B268 /* ChefProjectDetailView.swift in Sources */,
 				1BD0F80B2DE9A5DE002DEDFA /* ProfileImageCache.swift in Sources */,
 				1B71EFE82DD3617200731223 /* LoginView.swift in Sources */,
 				1B779BDC2DE6035600947C94 /* NotificationsViewModel.swift in Sources */,
 				1B7D9B322DE4600300D39069 /* NotificationService.swift in Sources */,
 				1B71F02F2DD4A49100731223 /* WorkHourEntry.swift in Sources */,
+				1B5363052DEA33850092B268 /* CreateCustomerView.swift in Sources */,
 				1B71F0352DD4AA0C00731223 /* DateFormatter+ISO.swift in Sources */,
 				1B779BD92DE5D25400947C94 /* WeekDetailsModal.swift in Sources */,
 				1B71EFC22DD32A6500731223 /* SplashScreenView.swift in Sources */,
 				1B779BFE2DE614C400947C94 /* WorkerDashboardView.swift in Sources */,
 				1BD0F8042DE8FC05002DEDFA /* WorkerTimesheetReportsView.swift in Sources */,
+				1B5363252DEC4C080092B268 /* ChefProjectViewModels.swift in Sources */,
+				1B5363092DEA39870092B268 /* CustomerDetailView.swift in Sources */,
+				1B53631C2DEA569A0092B268 /* CustomerLogoPickerView.swift in Sources */,
 				1BA25FF42DE227D300501208 /* ManagerProfileView.swift in Sources */,
 				1B3600D62DDA3B1500943E5B /* OrientationManager.swift in Sources */,
 				1B71F03A2DD4B53C00731223 /* WorkerDashboardViewModel.swift in Sources */,
 				1B71F02D2DD4A10200731223 /* EditableWorkEntry.swift in Sources */,
 				1BD0F8082DE90403002DEDFA /* SharedTimesheetComponents.swift in Sources */,
+				1B53630F2DEA3D8F0092B268 /* CustomerModels.swift in Sources */,
+				1B53632B2DEC4F090092B268 /* ProjectModels.swift in Sources */,
+				1B5363152DEA4B1C0092B268 /* EditCustomerViewModel.swift in Sources */,
 				1B71EFCF2DD3355400731223 /* AuthService.swift in Sources */,
 				1B71F00D2DD46AEC00731223 /* UIApplication+Extensions.swift in Sources */,
 				1B71EFED2DD3636000731223 /* LoginViewModel.swift in Sources */,
@@ -908,20 +1050,30 @@
 				1BA25FF82DE22FE400501208 /* ManagerProfileComponent.swift in Sources */,
 				1B71F0482DD4C44900731223 /* AuthenticationHandler.swift in Sources */,
 				1B63CC5E2DD867E3005F598D /* TimesheetReceiptView.swift in Sources */,
+				1B5363132DEA47BB0092B268 /* CreateCustomerViewModel.swift in Sources */,
+				1B5363032DEA336C0092B268 /* CustomersViewModel.swift in Sources */,
 				1B779BE62DE6050200947C94 /* WorkerkProfileComponents.swift in Sources */,
 				1BD0F7F92DE8E036002DEDFA /* WorkerDashboardSections.swift in Sources */,
 				1B779BD72DE5927100947C94 /* WorkerDashboardComponents.swift in Sources */,
+				1B5363182DEA4E6D0092B268 /* ChefAPIService.swift in Sources */,
 				1B63CC6D2DD91CE7005F598D /* ManagerDashboardComponents.swift in Sources */,
 				1B71F0452DD4C41400731223 /* AuthDebugger.swift in Sources */,
+				1B5362F32DEA2F950092B268 /* ChefDashboardView.swift in Sources */,
 				1BD0F7FB2DE8E21F002DEDFA /* EntryStatus+Extensions.swift in Sources */,
 				1B7D9B332DE46CDE00D39069 /* NotificationResponse.swift in Sources */,
 				1B7D9B2E2DE45F9A00D39069 /* AppNotification.swift in Sources */,
+				1B53630B2DEA3A090092B268 /* CustomerDetailViewModel.swift in Sources */,
+				1B5363292DEC4D3C0092B268 /* ChefProjectsAPIService.swift in Sources */,
 				1B7D9B372DE49BDC00D39069 /* NotificationsView.swift in Sources */,
 				1B71F03E2DD4BBC400731223 /* Calendar+Extensions.swift in Sources */,
 				1B45147E2DDC58180020443F /* WorkPlanAPIService.swift in Sources */,
+				1B5362F62DEA30210092B268 /* ChefDashboardViewModel.swift in Sources */,
 				1B4514802DDC588D0020443F /* CreateWorkPlanViewModel.swift in Sources */,
 				1B71EFC42DD3307700731223 /* WeeklyWorkEntryViewModel.swift in Sources */,
 				1B779BE22DE604DF00947C94 /* WorkerProfileView.swift in Sources */,
+				1B5363202DEA5B380092B268 /* EnhancedCustomerLogoManager+Integration.swift in Sources */,
+				1B53631A2DEA52490092B268 /* ChefDashboardStats.swift in Sources */,
+				1B53632F2DEC5FDD0092B268 /* ChefCreateProjectView.swift in Sources */,
 				1B4514A92DDF373B0020443F /* WeekUtils.swift in Sources */,
 				1B71EFF32DD3A06800731223 /* tempAPIError.swift in Sources */,
 				1B6FB00E2DD7A81C007B2C9E /* BaseAPIService.swift in Sources */,
@@ -1084,6 +1236,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "KSR Cranes App/KSR Cranes App.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = G53M447379;
@@ -1114,6 +1267,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "KSR Cranes App/KSR Cranes App.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = G53M447379;

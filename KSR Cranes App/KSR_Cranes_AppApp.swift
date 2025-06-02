@@ -13,83 +13,508 @@ struct KSR_Cranes_AppApp: App {
     // Użyj dedykowanego OrientationManagerDelegate
     @UIApplicationDelegateAdaptor(OrientationManagerDelegate.self) var appDelegate
     
-    // ✨ DODANE: Globalny state manager
+    // ✨ ZACHOWANY: Globalny state manager (ważny!)
     @StateObject private var appStateManager = AppStateManager.shared
     
     var body: some Scene {
         WindowGroup {
-            // ✨ UŻYWAJ PROSTSZEGO SYSTEMU BEZ SKOMPLIKOWANYCH ZALEŻNOŚCI
-            SmartAppContainerView()
+            // ✅ UŻYWAJ PROSTSZEGO SYSTEMU - TYLKO JEDEN LOADING
+            AppContainerView()
                 .environmentObject(appStateManager)
                 .environment(\.appStateManager, appStateManager)
-        }
-    }
-}
-
-
-
-// MARK: - Smart App Container - Uproszczony routing
-
-struct SmartAppContainerView: View {
-    @EnvironmentObject private var appStateManager: AppStateManager
-    @State private var showSplash = true
-    
-    var body: some View {
-        Group {
-            if showSplash {
-                // Splash screen przez 2.5s
-                EnhancedSplashScreen()
-                    .onAppear {
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
-                            withAnimation(.easeInOut(duration: 0.6)) {
-                                showSplash = false
-                            }
-                        }
-                    }
-            } else {
-                // Główna aplikacja
-                mainAppRouting
-            }
-        }
-    }
-    
-    @ViewBuilder
-    private var mainAppRouting: some View {
-        if !AuthService.shared.isLoggedIn {
-            // Nie zalogowany
-            LoginView()
-        } else if appStateManager.isLoadingInitialData {
-            // Ładuje dane
-            AppDataLoadingView()
-        } else if let error = appStateManager.initializationError {
-            // Błąd
-            AppInitializationErrorView(error: error)
-        } else if appStateManager.isAppInitialized {
-            // Gotowe - główna aplikacja
-            SmartMainAppRouter()
-        } else {
-            // Rozpocznij inicjalizację
-            AppDataLoadingView()
                 .onAppear {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                        appStateManager.initializeApp()
-                    }
+                    // Initialize auth handler for global error handling
+                    AuthenticationHandler.initialize()
                 }
         }
     }
 }
 
-// MARK: - Smart Main App Router (uproszczony)
+// MARK: - App Container - POPRAWIONY żeby reagował na zmiany stanu logowania
 
-struct SmartMainAppRouter: View {
+struct AppContainerView: View {
+    @EnvironmentObject private var appStateManager: AppStateManager
+    @State private var currentPhase: AppPhase = .splash
+    @State private var hasCheckedAuth = false
+    @State private var isLoggedIn = false  // ✅ DODANE: Lokalny stan autoryzacji
+    @State private var authCheckTrigger = false  // ✅ DODANE: Trigger dla sprawdzania auth
+    
+    enum AppPhase {
+        case splash                    // Piękny splash z animacjami
+        case dataLoading              // Splash + data loading (bez dodatkowego ekranu)
+        case readyToShow              // Gotowe do pokazania
+        case showingApp               // Pokazujemy główną aplikację
+    }
+    
+    var body: some View {
+        ZStack {
+            switch currentPhase {
+            case .splash, .dataLoading:
+                // ✅ JEDEN PIĘKNY SPLASH - bez dodatkowych loading screen'ów
+                IntegratedSplashWithDataLoading(
+                    currentPhase: $currentPhase,
+                    appStateManager: appStateManager
+                )
+                .transition(.identity)
+                
+            case .readyToShow:
+                // Krótka faza przejściowa
+                TransitionView()
+                    .transition(.opacity)
+                
+            case .showingApp:
+                // Główna aplikacja
+                mainAppContent
+                    .transition(.asymmetric(
+                        insertion: .opacity,
+                        removal: .identity
+                    ))
+            }
+        }
+        .animation(.easeInOut(duration: 0.3), value: currentPhase)
+        .onAppear {
+            startAppFlow()
+        }
+        // ✅ DODANE: Nasłuchuj zmian stanu logowania
+        .onReceive(NotificationCenter.default.publisher(for: .didLoginUser)) { _ in
+            #if DEBUG
+            print("[AppContainerView] 🔔 Received login success notification")
+            #endif
+            handleSuccessfulLogin()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .didLogoutUser)) { _ in
+            #if DEBUG
+            print("[AppContainerView] 🔔 Received logout notification")
+            #endif
+            handleLogout()
+        }
+        // ✅ DODANE: Monitoruj zmiany stanu autoryzacji
+        .onChange(of: authCheckTrigger) { _, _ in
+            recheckAuthenticationState()
+        }
+    }
+    
+    @ViewBuilder
+    private var mainAppContent: some View {
+        if !isLoggedIn {
+            // Nie zalogowany - LOGIN VIEW
+            LoginView()
+                .onAppear {
+                    #if DEBUG
+                    print("[AppContainerView] 🔄 Showing LoginView - user not logged in")
+                    #endif
+                }
+        } else if let error = appStateManager.initializationError {
+            // Błąd inicjalizacji
+            AppInitializationErrorView(error: error)
+        } else if appStateManager.isAppInitialized {
+            // Gotowe - główna aplikacja
+            MainAppRouter()
+                .onAppear {
+                    #if DEBUG
+                    print("[AppContainerView] 🔄 Showing MainAppRouter - user logged in and initialized")
+                    #endif
+                }
+        } else {
+            // Fallback - ładowanie
+            VStack {
+                ProgressView()
+                    .progressViewStyle(CircularProgressViewStyle(tint: .ksrYellow))
+                Text("Loading...")
+                    .foregroundColor(.white)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Color.black)
+        }
+    }
+    
+    private func startAppFlow() {
+        #if DEBUG
+        print("[AppContainerView] 🚀 Starting app flow...")
+        #endif
+        
+        // Sprawdź autoryzację tylko raz na początku
+        if !hasCheckedAuth {
+            hasCheckedAuth = true
+            checkAuthenticationAndProceed()
+        }
+    }
+    
+    // ✅ NOWA FUNKCJA: Obsługa pomyślnego logowania
+    private func handleSuccessfulLogin() {
+        #if DEBUG
+        print("[AppContainerView] 🎉 Handling successful login...")
+        #endif
+        
+        // Aktualizuj lokalny stan
+        isLoggedIn = true
+        
+        // Przejdź do fazy ładowania danych
+        DispatchQueue.main.async {
+            if self.currentPhase == .showingApp {
+                // Jeśli aktualnie pokazujemy LoginView, przejdź do ładowania
+                self.currentPhase = .dataLoading
+                self.startDataLoadingPhase()
+            }
+        }
+    }
+    
+    // ✅ NOWA FUNKCJA: Obsługa wylogowania
+    private func handleLogout() {
+        #if DEBUG
+        print("[AppContainerView] 👋 Handling logout...")
+        #endif
+        
+        // Aktualizuj lokalny stan
+        isLoggedIn = false
+        
+        // Resetuj fazę do splash
+        DispatchQueue.main.async {
+            self.currentPhase = .splash
+            self.hasCheckedAuth = false
+            
+            // Po krótkiej pauzie sprawdź auth ponownie
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                self.startAppFlow()
+            }
+        }
+    }
+    
+    // ✅ NOWA FUNKCJA: Ponowne sprawdzenie stanu autoryzacji
+    private func recheckAuthenticationState() {
+        #if DEBUG
+        print("[AppContainerView] 🔄 Rechecking authentication state...")
+        #endif
+        
+        let currentAuthState = AuthService.shared.isLoggedIn
+        
+        if currentAuthState != isLoggedIn {
+            #if DEBUG
+            print("[AppContainerView] 🔄 Auth state changed: \(isLoggedIn) -> \(currentAuthState)")
+            #endif
+            
+            isLoggedIn = currentAuthState
+            
+            if currentAuthState {
+                handleSuccessfulLogin()
+            } else {
+                handleLogout()
+            }
+        }
+    }
+    
+    private func checkAuthenticationAndProceed() {
+        let authResult = AuthService.shared.isLoggedIn
+        isLoggedIn = authResult  // ✅ DODANE: Aktualizuj lokalny stan
+        
+        #if DEBUG
+        print("[AppContainerView] 🔐 Auth check result: \(authResult ? "LOGGED IN" : "NOT LOGGED IN")")
+        if authResult {
+            print("[AppContainerView] 👤 User: \(AuthService.shared.getEmployeeName() ?? "Unknown")")
+            print("[AppContainerView] 🎭 Role: \(AuthService.shared.getEmployeeRole() ?? "Unknown")")
+        }
+        #endif
+        
+        if authResult {
+            // Użytkownik zalogowany - uruchom inicjalizację i pokaż splash
+            startDataLoadingPhase()
+        } else {
+            // Użytkownik nie zalogowany - pokaż splash, potem login
+            showSplashThenLogin()
+        }
+    }
+    
+    private func startDataLoadingPhase() {
+        #if DEBUG
+        print("[AppContainerView] 📊 Starting data loading phase for logged in user...")
+        #endif
+        
+        // Faza 1: Splash animations (2s)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+            currentPhase = .dataLoading
+            
+            // Rozpocznij ładowanie danych PODCZAS splash'a
+            appStateManager.initializeApp()
+            
+            // Monitoruj zakończenie ładowania
+            observeDataLoadingCompletion()
+        }
+    }
+    
+    private func showSplashThenLogin() {
+        #if DEBUG
+        print("[AppContainerView] 🔑 Showing splash then login for non-logged user...")
+        #endif
+        
+        // Pokaż splash przez 3 sekundy, potem login
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+            currentPhase = .readyToShow
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                currentPhase = .showingApp
+            }
+        }
+    }
+    
+    private func observeDataLoadingCompletion() {
+        #if DEBUG
+        print("[AppContainerView] 👀 Starting to observe data loading completion...")
+        #endif
+        
+        // Użyj prostego sprawdzania co sekundę zamiast co 0.1s
+        var checkCount = 0
+        let maxChecks = 10 // Maksymalnie 10 sekund
+        
+        func checkDataStatus() {
+            checkCount += 1
+            
+            #if DEBUG
+            print("[AppContainerView] 🔍 Data check \(checkCount)/\(maxChecks)")
+            print("[AppContainerView] 🔍 - isAppInitialized: \(appStateManager.isAppInitialized)")
+            print("[AppContainerView] 🔍 - isLoadingInitialData: \(appStateManager.isLoadingInitialData)")
+            print("[AppContainerView] 🔍 - initializationError: \(appStateManager.initializationError != nil)")
+            #endif
+            
+            if appStateManager.isAppInitialized || appStateManager.initializationError != nil {
+                // Dane gotowe lub błąd - pokaż aplikację
+                #if DEBUG
+                print("[AppContainerView] ✅ Data loading completed, transitioning to app...")
+                #endif
+                
+                DispatchQueue.main.async {
+                    currentPhase = .readyToShow
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                        currentPhase = .showingApp
+                    }
+                }
+                return
+            }
+            
+            // Jeśli przekroczono limit czasowy - force show
+            if checkCount >= maxChecks {
+                #if DEBUG
+                print("[AppContainerView] ⏰ Timeout reached, forcing app display...")
+                #endif
+                
+                DispatchQueue.main.async {
+                    currentPhase = .showingApp
+                }
+                return
+            }
+            
+            // Kontynuuj sprawdzanie za sekundę
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                checkDataStatus()
+            }
+        }
+        
+        // Rozpocznij sprawdzanie
+        checkDataStatus()
+    }
+}
+
+// MARK: - OPTIMIZED Integrated Splash With Data Loading
+
+struct IntegratedSplashWithDataLoading: View {
+    @Binding var currentPhase: AppContainerView.AppPhase
+    let appStateManager: AppStateManager
+    
+    @State private var logoScale: CGFloat = 0.3
+    @State private var logoOpacity: Double = 0
+    @State private var logoRotation: Double = -45
+    @State private var titleOpacity: Double = 0
+    @State private var titleOffset: CGFloat = 30
+    @State private var loadingOpacity: Double = 0
+    @State private var copyrightOpacity: Double = 0
+    @State private var glowOpacity: Double = 0
+    
+    // ✅ SIMPLIFIED - removed heavy particle animations
+    @State private var showProgressIndicator = false
+    
+    var body: some View {
+        ZStack {
+            // ✅ SIMPLIFIED gradient - much lighter
+            LinearGradient(
+                gradient: Gradient(colors: [
+                    Color.ksrDarkGray,
+                    Color.black.opacity(0.9)
+                ]),
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .ignoresSafeArea()
+            
+            VStack(spacing: 0) {
+                Spacer()
+                
+                // MARK: - SIMPLIFIED Logo Section
+                VStack(spacing: 24) {
+                    ZStack {
+                        // ✅ SIMPLIFIED glow effect
+                        Image("KSRLogo")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 150, height: 150)
+                            .opacity(glowOpacity * 0.2)
+                            .blur(radius: 8)
+                            .foregroundColor(.ksrYellow)
+                        
+                        // Main logo - SIMPLIFIED shadows
+                        Image("KSRLogo")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 150, height: 150)
+                            .shadow(color: .ksrYellow.opacity(0.3), radius: 8, x: 0, y: 4)
+                            .scaleEffect(logoScale)
+                            .opacity(logoOpacity)
+                            .rotationEffect(.degrees(logoRotation))
+                    }
+                    
+                    // Company branding
+                    VStack(spacing: 12) {
+                        Text("KSR CRANES")
+                            .font(.system(size: 32, weight: .bold, design: .rounded))
+                            .foregroundColor(.white)
+                            .opacity(titleOpacity)
+                            .offset(y: titleOffset)
+                            .scaleEffect(titleOpacity)
+                        
+                        Text("Kranfører Udlejning")
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundColor(.white.opacity(0.8))
+                            .opacity(titleOpacity * 0.8)
+                            .offset(y: titleOffset * 0.5)
+                        
+                        // Simple underline
+                        if titleOpacity > 0.5 {
+                            Rectangle()
+                                .fill(Color.ksrYellow)
+                                .frame(width: titleOpacity * 180, height: 2)
+                                .opacity(titleOpacity)
+                                .animation(.easeInOut(duration: 0.6), value: titleOpacity)
+                        }
+                    }
+                }
+                
+                Spacer()
+                
+                // MARK: - SIMPLIFIED Loading Section
+                VStack(spacing: 16) {
+                    HStack(spacing: 12) {
+                        if showProgressIndicator {
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle(tint: .ksrYellow))
+                                .scaleEffect(0.9)
+                        }
+                        
+                        Text(dynamicLoadingText)
+                            .font(.subheadline)
+                            .foregroundColor(.white.opacity(0.7))
+                            .animation(.easeInOut(duration: 0.3), value: dynamicLoadingText)
+                    }
+                    .opacity(loadingOpacity)
+                }
+                .padding(.bottom, 20)
+                
+                // Copyright
+                Text("© 2025 KSR Cranes")
+                    .font(.caption2)
+                    .foregroundColor(.white.opacity(0.5))
+                    .opacity(copyrightOpacity)
+                    .padding(.bottom, 40)
+            }
+            .padding(.horizontal, 40)
+        }
+        .onAppear {
+            startOptimizedAnimationSequence()
+        }
+    }
+    
+    private var dynamicLoadingText: String {
+        if currentPhase == .splash {
+            return "Initializing..."
+        } else if appStateManager.isLoadingInitialData {
+            return "Loading your workspace..."
+        } else if appStateManager.initializationError != nil {
+            return "Initialization failed"
+        } else if appStateManager.isAppInitialized {
+            return "Ready!"
+        } else {
+            return "Preparing..."
+        }
+    }
+    
+    // ✅ OPTIMIZED animation sequence - faster, lighter
+    private func startOptimizedAnimationSequence() {
+        // Phase 1: Logo entrance - FASTER
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            withAnimation(.easeOut(duration: 0.6)) {
+                logoScale = 1.0
+                logoOpacity = 1.0
+            }
+            
+            withAnimation(.easeInOut(duration: 0.8)) {
+                logoRotation = 360
+            }
+            
+            withAnimation(.easeInOut(duration: 0.6).delay(0.2)) {
+                glowOpacity = 1.0
+            }
+        }
+        
+        // Phase 2: Title animation - FASTER
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+            withAnimation(.easeOut(duration: 0.5)) {
+                titleOffset = 0
+                titleOpacity = 1.0
+            }
+        }
+        
+        // Phase 3: Loading indicator - FASTER
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) {
+            withAnimation(.easeInOut(duration: 0.3)) {
+                loadingOpacity = 1.0
+                showProgressIndicator = true
+            }
+        }
+        
+        // Phase 4: Copyright - FASTER
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.9) {
+            withAnimation(.easeInOut(duration: 0.3)) {
+                copyrightOpacity = 1.0
+            }
+        }
+    }
+}
+
+// MARK: - Simple Transition View
+struct TransitionView: View {
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.8)
+                .ignoresSafeArea()
+            
+            VStack {
+                Image("KSRLogo")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 60, height: 60)
+                    .opacity(0.8)
+            }
+        }
+    }
+}
+
+// MARK: - Main App Router
+struct MainAppRouter: View {
     @EnvironmentObject private var appStateManager: AppStateManager
     
     var body: some View {
         switch appStateManager.currentUserRole {
         case "arbejder":
-            SmartWorkerMainView()
+            WorkerMainViewWithState()
         case "byggeleder":
-            SmartManagerMainView()
+            ManagerMainViewWithState()
         case "chef":
             BossMainView()
         case "system":
@@ -100,9 +525,8 @@ struct SmartMainAppRouter: View {
     }
 }
 
-// MARK: - Smart Worker Main View (używa globalnego stanu)
-
-struct SmartWorkerMainView: View {
+// MARK: - Worker Main View With State
+struct WorkerMainViewWithState: View {
     @EnvironmentObject private var appStateManager: AppStateManager
     
     var body: some View {
@@ -122,8 +546,7 @@ struct SmartWorkerMainView: View {
                     Label("Tasks", systemImage: "list.bullet")
                 }
             
-            // ✨ UŻYWA GLOBALNEGO STANU
-            SmartWorkerProfileView()
+            WorkerProfileViewWithState()
                 .tabItem {
                     Label("Profile", systemImage: "person.fill")
                 }
@@ -132,9 +555,8 @@ struct SmartWorkerMainView: View {
     }
 }
 
-// MARK: - Smart Manager Main View (używa globalnego stanu)
-
-struct SmartManagerMainView: View {
+// MARK: - Manager Main View With State
+struct ManagerMainViewWithState: View {
     @EnvironmentObject private var appStateManager: AppStateManager
     
     var body: some View {
@@ -159,8 +581,7 @@ struct SmartManagerMainView: View {
                     Label("Work Plans", systemImage: "calendar")
                 }
             
-            // ✨ UŻYWA GLOBALNEGO STANU
-            SmartManagerProfileView()
+            ManagerProfileViewWithState()
                 .tabItem {
                     Label("Profile", systemImage: "person.fill")
                 }
@@ -169,16 +590,13 @@ struct SmartManagerMainView: View {
     }
 }
 
-// MARK: - Smart Profile Views (używają globalnego stanu)
-
-struct SmartWorkerProfileView: View {
+// MARK: - Profile Views With State
+struct WorkerProfileViewWithState: View {
     @EnvironmentObject private var appStateManager: AppStateManager
     
     var body: some View {
         Group {
             if let workerProfileVM = appStateManager.workerProfileVM {
-                // ✨ DANE JUŻ ZAŁADOWANE - UŻYWAJ ISTNIEJĄCEGO WorkerProfileView
-                // ale przekaż mu gotowy ViewModel
                 WorkerProfileViewWithPreloadedData(viewModel: workerProfileVM)
             } else {
                 ProfileLoadingFallback(userType: "Worker")
@@ -187,14 +605,12 @@ struct SmartWorkerProfileView: View {
     }
 }
 
-struct SmartManagerProfileView: View {
+struct ManagerProfileViewWithState: View {
     @EnvironmentObject private var appStateManager: AppStateManager
     
     var body: some View {
         Group {
             if let managerProfileVM = appStateManager.managerProfileVM {
-                // ✨ DANE JUŻ ZAŁADOWANE - UŻYWAJ ISTNIEJĄCEGO ManagerProfileView
-                // ale przekaż mu gotowy ViewModel
                 ManagerProfileViewWithPreloadedData(viewModel: managerProfileVM)
             } else {
                 ProfileLoadingFallback(userType: "Manager")
@@ -203,7 +619,7 @@ struct SmartManagerProfileView: View {
     }
 }
 
-// MARK: - Profile Views z preloaded data (modyfikacje istniejących)
+// MARK: - Worker Profile View Components
 
 struct WorkerProfileViewWithPreloadedData: View {
     @ObservedObject var viewModel: WorkerProfileViewModel
@@ -240,7 +656,6 @@ struct WorkerProfileViewWithPreloadedData: View {
                             .font(.system(size: 18, weight: .medium))
                     }
                     
-                    // ✨ REFRESH UŻYWA GLOBALNEGO MANAGERA
                     Button {
                         withAnimation(.easeInOut(duration: 0.3)) {
                             appStateManager.refreshProfile()
@@ -253,9 +668,7 @@ struct WorkerProfileViewWithPreloadedData: View {
                     .disabled(viewModel.isLoading)
                 }
             )
-            // ✅ USUNIĘTO .onAppear { viewModel.loadData() } - DANE JUŻ ZAŁADOWANE!
             .refreshable {
-                // Pull-to-refresh używa globalnego managera
                 await withCheckedContinuation { continuation in
                     appStateManager.refreshProfile()
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
@@ -309,7 +722,6 @@ struct WorkerProfileViewWithPreloadedData: View {
         }
     }
     
-    // SKOPIUJ WSZYSTKIE private var z WorkerProfileView
     private func performLogout() {
         AuthService.shared.logout()
         appStateManager.resetAppState()
@@ -354,7 +766,6 @@ struct WorkerProfileViewWithPreloadedData: View {
                                 .stroke(Color.ksrYellow, lineWidth: 2)
                         )
                     
-                    // ✨ CACHE'OWANE ZDJĘCIE - NIE ŁADUJE PONOWNIE!
                     if let profileImage = viewModel.profileImage {
                         Image(uiImage: profileImage)
                             .resizable()
@@ -370,7 +781,6 @@ struct WorkerProfileViewWithPreloadedData: View {
                             .foregroundColor(.ksrSecondary)
                     }
                     
-                    // Plus button overlay
                     VStack {
                         Spacer()
                         HStack {
@@ -385,7 +795,6 @@ struct WorkerProfileViewWithPreloadedData: View {
                     }
                     .frame(width: 80, height: 80)
                     
-                    // Upload progress overlay
                     if viewModel.isUploadingImage {
                         Circle()
                             .fill(Color.black.opacity(0.5))
@@ -409,7 +818,6 @@ struct WorkerProfileViewWithPreloadedData: View {
                     }
                     
                     Button {
-                        // ✨ UŻYWA GLOBALNEGO REFRESH
                         appStateManager.refreshProfile()
                     } label: {
                         Label("Refresh Picture", systemImage: "arrow.clockwise")
@@ -448,7 +856,6 @@ struct WorkerProfileViewWithPreloadedData: View {
             }
             .padding(.horizontal, 20)
             
-            // Stats Cards - dane już załadowane
             HStack(spacing: 12) {
                 WorkerStatCard(
                     title: "This Week",
@@ -528,15 +935,12 @@ struct WorkerProfileViewWithPreloadedData: View {
     }
 }
 
-// MARK: - Manager Profile z preloaded data (podobnie jak Worker)
-
+// MARK: - Manager Profile z preloaded data (zachowany bez zmian)
 struct ManagerProfileViewWithPreloadedData: View {
     @ObservedObject var viewModel: ManagerProfileViewModel
     @EnvironmentObject private var appStateManager: AppStateManager
     
     var body: some View {
-        // Użyj istniejący ManagerProfileView ale bez .onAppear { viewModel.loadData() }
-        // i z globalnym refresh
         ManagerProfileContentView(viewModel: viewModel)
     }
 }
@@ -576,7 +980,6 @@ struct ManagerProfileContentView: View {
                             .font(.system(size: 18, weight: .medium))
                     }
                     
-                    // ✨ REFRESH UŻYWA GLOBALNEGO MANAGERA
                     Button {
                         withAnimation(.easeInOut(duration: 0.3)) {
                             appStateManager.refreshProfile()
@@ -589,7 +992,6 @@ struct ManagerProfileContentView: View {
                     .disabled(viewModel.isLoading)
                 }
             )
-            // ✅ USUNIĘTO .onAppear { viewModel.loadData() } - DANE JUŻ ZAŁADOWANE!
             .refreshable {
                 await withCheckedContinuation { continuation in
                     appStateManager.refreshProfile()
@@ -688,7 +1090,6 @@ struct ManagerProfileContentView: View {
                                 .stroke(Color.ksrYellow, lineWidth: 2)
                         )
                     
-                    // ✨ CACHE'OWANE ZDJĘCIE - NIE ŁADUJE PONOWNIE!
                     if let profileImage = viewModel.profileImage {
                         Image(uiImage: profileImage)
                             .resizable()
@@ -860,276 +1261,5 @@ struct ManagerProfileContentView: View {
             insertion: .opacity.combined(with: .move(edge: .trailing)),
             removal: .opacity.combined(with: .move(edge: .leading))
         ))
-    }
-}
-
-// MARK: - Pozostałe Views (bez zmian)
-
-struct EnhancedSplashScreen: View {
-    @State private var logoScale: CGFloat = 0.3
-    @State private var logoOpacity: Double = 0
-    @State private var logoRotation: Double = -45
-    @State private var titleOffset: CGFloat = 50
-    @State private var titleOpacity: Double = 0
-    @State private var subtitleOpacity: Double = 0
-    @State private var glowEffect: Bool = false
-    
-    var body: some View {
-        ZStack {
-            LinearGradient(
-                gradient: Gradient(colors: [
-                    Color.ksrDarkGray,
-                    Color.ksrDarkGray.opacity(0.9),
-                    Color.black.opacity(0.95)
-                ]),
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
-
-            VStack(spacing: 0) {
-                Spacer()
-                
-                VStack(spacing: 32) {
-                    ZStack {
-                        if glowEffect {
-                            Image("KSRLogo")
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 160, height: 160)
-                                .blur(radius: 20)
-                                .opacity(0.3)
-                        }
-                        
-                        Image("KSRLogo")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 150, height: 150)
-                            .shadow(
-                                color: glowEffect ? .ksrYellow.opacity(0.6) : .ksrYellow.opacity(0.2),
-                                radius: glowEffect ? 30 : 15,
-                                x: 0,
-                                y: glowEffect ? 10 : 5
-                            )
-                    }
-                    .scaleEffect(logoScale)
-                    .opacity(logoOpacity)
-                    .rotationEffect(.degrees(logoRotation))
-                    
-                    VStack(spacing: 12) {
-                        Text("KSR CRANES")
-                            .font(.system(size: 32, weight: .bold, design: .rounded))
-                            .foregroundColor(.white)
-                            .opacity(titleOpacity)
-                            .offset(y: titleOffset)
-                        
-                        Text("Kranfører Udlejning")
-                            .font(.system(size: 18, weight: .medium, design: .rounded))
-                            .foregroundColor(.white.opacity(0.85))
-                            .opacity(subtitleOpacity)
-                            .offset(y: titleOffset * 0.7)
-                    }
-                }
-                
-                Spacer()
-                
-                VStack(spacing: 16) {
-                    HStack(spacing: 8) {
-                        ForEach(0..<3) { index in
-                            Circle()
-                                .fill(Color.ksrYellow)
-                                .frame(width: 8, height: 8)
-                                .scaleEffect(glowEffect ? 1.2 : 0.8)
-                                .animation(
-                                    .easeInOut(duration: 0.6)
-                                    .repeatForever(autoreverses: true)
-                                    .delay(Double(index) * 0.2),
-                                    value: glowEffect
-                                )
-                        }
-                    }
-                    
-                    Text("Initializing App...")
-                        .font(.subheadline)
-                        .foregroundColor(.white.opacity(0.6))
-                        .opacity(subtitleOpacity)
-                }
-                .padding(.bottom, 60)
-            }
-        }
-        .onAppear {
-            startEnhancedAnimationSequence()
-        }
-    }
-    
-    private func startEnhancedAnimationSequence() {
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            withAnimation(.spring(response: 0.8, dampingFraction: 0.6)) {
-                logoOpacity = 1.0
-                logoScale = 1.0
-            }
-            withAnimation(.easeOut(duration: 1.4)) {
-                logoRotation = 0
-            }
-        }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-            withAnimation(.spring(response: 0.7, dampingFraction: 0.8)) {
-                titleOffset = 0
-                titleOpacity = 1.0
-            }
-        }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-            withAnimation(.easeInOut(duration: 0.5)) {
-                subtitleOpacity = 1.0
-            }
-        }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.4) {
-            glowEffect = true
-        }
-    }
-}
-
-struct AppDataLoadingView: View {
-    @State private var loadingText = "Loading your data..."
-    
-    var body: some View {
-        ZStack {
-            LinearGradient(
-                gradient: Gradient(colors: [
-                    Color.ksrDarkGray.opacity(0.95),
-                    Color.black
-                ]),
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
-            
-            VStack(spacing: 40) {
-                Image("KSRLogo")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 80, height: 80)
-                    .shadow(color: .ksrYellow.opacity(0.3), radius: 15, x: 0, y: 5)
-                
-                VStack(spacing: 24) {
-                    ProgressView()
-                        .progressViewStyle(CircularProgressViewStyle(tint: .ksrYellow))
-                        .scaleEffect(1.3)
-                    
-                    VStack(spacing: 12) {
-                        Text(loadingText)
-                            .font(.headline)
-                            .foregroundColor(.white)
-                            .multilineTextAlignment(.center)
-                        
-                        Text("This may take a moment")
-                            .font(.subheadline)
-                            .foregroundColor(.white.opacity(0.7))
-                    }
-                }
-            }
-            .padding()
-        }
-    }
-}
-
-struct AppInitializationErrorView: View {
-    let error: String
-    @EnvironmentObject private var appStateManager: AppStateManager
-    
-    var body: some View {
-        ZStack {
-            Color.ksrDarkGray.ignoresSafeArea()
-            
-            VStack(spacing: 32) {
-                VStack(spacing: 16) {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .font(.system(size: 64))
-                        .foregroundColor(.ksrError)
-                    
-                    Image("KSRLogo")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 60, height: 60)
-                        .opacity(0.6)
-                }
-                
-                VStack(spacing: 16) {
-                    Text("Failed to Initialize")
-                        .font(.title2)
-                        .fontWeight(.bold)
-                        .foregroundColor(.white)
-                    
-                    Text(error)
-                        .font(.body)
-                        .foregroundColor(.white.opacity(0.8))
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal)
-                }
-                
-                VStack(spacing: 16) {
-                    Button(action: {
-                        appStateManager.initializeApp()
-                    }) {
-                        HStack(spacing: 8) {
-                            Image(systemName: "arrow.clockwise")
-                            Text("Retry Initialization")
-                        }
-                        .font(.headline)
-                        .foregroundColor(.black)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                        .background(Color.ksrYellow)
-                        .cornerRadius(12)
-                    }
-                    
-                    Button(action: {
-                        AuthService.shared.logout()
-                        appStateManager.resetAppState()
-                    }) {
-                        HStack(spacing: 8) {
-                            Image(systemName: "arrow.left.circle")
-                            Text("Return to Login")
-                        }
-                        .font(.subheadline)
-                        .foregroundColor(.white.opacity(0.8))
-                        .underline()
-                    }
-                }
-                .padding(.horizontal, 40)
-            }
-            .padding()
-        }
-    }
-}
-
-struct ProfileLoadingFallback: View {
-    let userType: String
-    @EnvironmentObject private var appStateManager: AppStateManager
-    
-    var body: some View {
-        VStack(spacing: 20) {
-            ProgressView()
-                .progressViewStyle(CircularProgressViewStyle(tint: .ksrYellow))
-                .scaleEffect(1.2)
-            
-            Text("Loading \(userType) Profile...")
-                .font(.headline)
-                .foregroundColor(.primary)
-            
-            Text("Initializing profile data")
-                .font(.caption)
-                .foregroundColor(.secondary)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(.systemBackground))
-        .onAppear {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                appStateManager.initializeApp()
-            }
-        }
     }
 }

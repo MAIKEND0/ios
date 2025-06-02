@@ -1,6 +1,5 @@
-// LoginView.swift
+// LoginView.swift - OPTIMIZED VERSION
 // KSR Cranes App
-// Created by Maksymilian Marcinowski on 13/05/2025.
 
 import SwiftUI
 import Combine
@@ -10,11 +9,14 @@ struct LoginView: View {
     @State private var keyboardHeight: CGFloat = 0
     @FocusState private var focusedField: FocusableField?
     
-    // Dodatkowe stany dla lepszych animacji
+    // Simplified animation states - reduced for performance
     @State private var isEmailFocused = false
     @State private var isPasswordFocused = false
     @State private var logoScale: CGFloat = 1.0
     @State private var formOffset: CGFloat = 0
+    @State private var formOpacity: Double = 0.0
+    @State private var logoOpacity: Double = 0.0
+    @State private var backgroundOpacity: Double = 0.0
     
     enum FocusableField: Hashable {
         case email, password
@@ -27,16 +29,17 @@ struct LoginView: View {
     var body: some View {
         NavigationView {
             ZStack {
-                // Gradient background dla lepszego wyglądu
+                // ✅ SIMPLIFIED BACKGROUND - much lighter
                 LinearGradient(
                     gradient: Gradient(colors: [
                         Color.ksrDarkGray,
-                        Color.ksrDarkGray.opacity(0.8)
+                        Color.black.opacity(0.9)
                     ]),
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 )
                 .ignoresSafeArea()
+                .opacity(backgroundOpacity)
 
                 ScrollView {
                     VStack(spacing: 0) {
@@ -44,33 +47,34 @@ struct LoginView: View {
                         // MARK: - Logo Section
                         logoSection
                             .padding(.top, isKeyboardVisible ? 20 : 60)
+                            .opacity(logoOpacity)
                         
                         Spacer().frame(height: isKeyboardVisible ? 20 : 40)
                         
-                        // MARK: - Login Form
+                        // MARK: - Login Form - OPTIMIZED
                         loginFormSection
                             .padding(.horizontal, 24)
                             .offset(y: formOffset)
+                            .opacity(formOpacity)
                         
                         Spacer().frame(height: 40)
                         
                         // MARK: - Version Info
                         if !isKeyboardVisible {
                             versionSection
+                                .opacity(formOpacity)
                         }
                         
-                        // Dodatkowy spacer dla klawiatury
+                        // Keyboard spacer
                         Spacer().frame(height: keyboardHeight > 0 ? keyboardHeight : 0)
                     }
                 }
                 .ignoresSafeArea(.keyboard, edges: .bottom)
             }
             .onTapGesture {
+                // ✅ IMMEDIATE RESPONSE - no animation delays
                 focusedField = nil
-                UIApplication.shared.hideKeyboard()
-            }
-            .fullScreenCover(isPresented: $viewModel.isLoggedIn) {
-                RoleBasedRootView(userRole: viewModel.userRole)
+                hideKeyboard()
             }
             .alert(isPresented: $viewModel.showAlert) {
                 Alert(
@@ -82,21 +86,51 @@ struct LoginView: View {
             .onReceive(keyboardPublisher) { height in
                 handleKeyboardChange(height: height)
             }
+            .onAppear {
+                startLoginViewAnimations()
+            }
+            .onChange(of: viewModel.isLoggedIn) { _, isLoggedIn in
+                if isLoggedIn {
+                    #if DEBUG
+                    print("[LoginView] ✅ Login successful, AppContainerView will handle navigation")
+                    #endif
+                }
+            }
         }
         .navigationViewStyle(StackNavigationViewStyle())
     }
     
-    // MARK: - Logo Section
+    // MARK: - SIMPLIFIED Animations
+    private func startLoginViewAnimations() {
+        // ✅ FASTER, SIMPLER animations
+        withAnimation(.easeOut(duration: 0.3)) {
+            backgroundOpacity = 1.0
+        }
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            withAnimation(.easeOut(duration: 0.4)) {
+                logoOpacity = 1.0
+                logoScale = 1.0
+            }
+        }
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            withAnimation(.easeOut(duration: 0.4)) {
+                formOpacity = 1.0
+            }
+        }
+    }
+    
+    // MARK: - SIMPLIFIED Logo Section
     private var logoSection: some View {
         Group {
             if isKeyboardVisible {
-                // Kompaktowa wersja dla klawiatury
+                // Compact version
                 HStack(alignment: .center, spacing: 12) {
                     Image("KSRLogo")
                         .resizable()
                         .scaledToFit()
                         .frame(width: 40, height: 40)
-                        .shadow(color: .black.opacity(0.3), radius: 4, x: 0, y: 2)
                     
                     VStack(alignment: .leading, spacing: 2) {
                         Text("KSR CRANES")
@@ -114,16 +148,16 @@ struct LoginView: View {
                 }
                 .padding(.horizontal)
             } else {
-                // Pełna wersja logo
-                VStack(spacing: 16) {
+                // Full version - SIMPLIFIED shadows
+                VStack(spacing: 20) {
                     Image("KSRLogo")
                         .resizable()
                         .scaledToFit()
                         .frame(width: 100, height: 100)
-                        .shadow(color: .black.opacity(0.4), radius: 10, x: 0, y: 5)
+                        .shadow(color: .ksrYellow.opacity(0.3), radius: 8, x: 0, y: 4)
                         .scaleEffect(logoScale)
                     
-                    VStack(spacing: 8) {
+                    VStack(spacing: 12) {
                         Text("KSR CRANES")
                             .font(.largeTitle)
                             .fontWeight(.bold)
@@ -132,18 +166,24 @@ struct LoginView: View {
                         Text("Kranfører Udlejning")
                             .font(.subheadline)
                             .foregroundColor(.white.opacity(0.8))
+                        
+                        // Simple underline
+                        Rectangle()
+                            .fill(Color.ksrYellow)
+                            .frame(width: formOpacity * 120, height: 2)
+                            .animation(.easeInOut(duration: 0.5), value: formOpacity)
                     }
                 }
             }
         }
-        .animation(.spring(response: 0.6, dampingFraction: 0.8), value: isKeyboardVisible)
+        .animation(.easeInOut(duration: 0.2), value: isKeyboardVisible)
     }
     
-    // MARK: - Login Form Section
+    // MARK: - OPTIMIZED Login Form Section
     private var loginFormSection: some View {
         VStack(spacing: 24) {
-            // Email Field
-            CustomTextField(
+            // ✅ OPTIMIZED Email Field - instant response
+            OptimizedTextField(
                 title: "Email",
                 text: $viewModel.email,
                 placeholder: "Enter your email",
@@ -152,24 +192,22 @@ struct LoginView: View {
                 isFocused: isEmailFocused
             )
             .focused($focusedField, equals: .email)
-            .onChange(of: focusedField) { field in
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    isEmailFocused = (field == .email)
-                }
+            .onChange(of: focusedField) { _, field in
+                // ✅ NO ANIMATION for instant response
+                isEmailFocused = (field == .email)
             }
             
-            // Password Field
-            CustomSecureField(
+            // ✅ OPTIMIZED Password Field
+            OptimizedSecureField(
                 title: "Password",
                 text: $viewModel.password,
                 placeholder: "Enter your password",
                 isFocused: isPasswordFocused
             )
             .focused($focusedField, equals: .password)
-            .onChange(of: focusedField) { field in
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    isPasswordFocused = (field == .password)
-                }
+            .onChange(of: focusedField) { _, field in
+                // ✅ NO ANIMATION for instant response
+                isPasswordFocused = (field == .password)
             }
             
             // Error Message
@@ -186,19 +224,18 @@ struct LoginView: View {
                     Spacer()
                 }
                 .padding(.horizontal, 4)
-                .transition(.scale.combined(with: .opacity))
             }
             
-            // Login Button
-            loginButton
+            // ✅ OPTIMIZED Login Button
+            optimizedLoginButton
             
             // Forgot Password
             forgotPasswordButton
         }
     }
     
-    // MARK: - Custom Text Field
-    private struct CustomTextField: View {
+    // MARK: - OPTIMIZED Text Field - No lag
+    private struct OptimizedTextField: View {
         let title: String
         @Binding var text: String
         let placeholder: String
@@ -233,14 +270,13 @@ struct LoginView: View {
                     )
                     .foregroundColor(.black)
                     .font(.body)
-                    .scaleEffect(isFocused ? 1.02 : 1.0)
-                    .animation(.easeInOut(duration: 0.2), value: isFocused)
+                    // ✅ REMOVED scaleEffect animation - causes lag
             }
         }
     }
     
-    // MARK: - Custom Secure Field
-    private struct CustomSecureField: View {
+    // MARK: - OPTIMIZED Secure Field - No lag
+    private struct OptimizedSecureField: View {
         let title: String
         @Binding var text: String
         let placeholder: String
@@ -287,17 +323,22 @@ struct LoginView: View {
                 )
                 .foregroundColor(.black)
                 .font(.body)
-                .scaleEffect(isFocused ? 1.02 : 1.0)
-                .animation(.easeInOut(duration: 0.2), value: isFocused)
+                // ✅ REMOVED scaleEffect animation - causes lag
             }
         }
     }
     
-    // MARK: - Login Button
-    private var loginButton: some View {
+    // MARK: - OPTIMIZED Login Button
+    private var optimizedLoginButton: some View {
         Button(action: {
+            // ✅ IMMEDIATE response
             focusedField = nil
-            viewModel.login()
+            hideKeyboard()
+            
+            // Small delay for keyboard to hide, then login
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                viewModel.login()
+            }
         }) {
             HStack(spacing: 12) {
                 if viewModel.isLoading {
@@ -318,23 +359,13 @@ struct LoginView: View {
             .padding(.vertical, 16)
             .background(
                 RoundedRectangle(cornerRadius: 12)
-                    .fill(
-                        LinearGradient(
-                            gradient: Gradient(colors: [
-                                Color.ksrYellow,
-                                Color.ksrYellow.opacity(0.8)
-                            ]),
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
-                    )
-                    .shadow(color: .ksrYellow.opacity(0.3), radius: 8, x: 0, y: 4)
+                    .fill(Color.ksrYellow)
+                    // ✅ SIMPLIFIED gradient - less GPU load
             )
         }
         .disabled(viewModel.isLoading || viewModel.email.isEmpty || viewModel.password.isEmpty)
         .opacity((viewModel.isLoading || viewModel.email.isEmpty || viewModel.password.isEmpty) ? 0.6 : 1.0)
-        .scaleEffect(viewModel.isLoading ? 0.98 : 1.0)
-        .animation(.easeInOut(duration: 0.1), value: viewModel.isLoading)
+        // ✅ REMOVED scaleEffect animation
         .padding(.top, 8)
     }
     
@@ -368,7 +399,7 @@ struct LoginView: View {
         .padding(.bottom, 16)
     }
     
-    // MARK: - Keyboard Handling
+    // MARK: - OPTIMIZED Keyboard Handling
     private var keyboardPublisher: AnyPublisher<CGFloat, Never> {
         Publishers.Merge(
             NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)
@@ -382,10 +413,10 @@ struct LoginView: View {
     }
     
     private func handleKeyboardChange(height: CGFloat) {
-        withAnimation(.easeOut(duration: 0.3)) {
+        // ✅ FASTER animation
+        withAnimation(.easeOut(duration: 0.2)) {
             keyboardHeight = height
             
-            // Animuj logo i formularz
             if height > 0 {
                 logoScale = 0.8
                 formOffset = -20
@@ -394,6 +425,11 @@ struct LoginView: View {
                 formOffset = 0
             }
         }
+    }
+    
+    // ✅ OPTIMIZED keyboard hiding
+    private func hideKeyboard() {
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
     }
 }
 
