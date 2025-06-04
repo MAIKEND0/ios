@@ -105,8 +105,67 @@ struct AppContainerView: View {
                     #endif
                 }
         } else if let error = appStateManager.initializationError {
-            // Błąd inicjalizacji
-            AppInitializationErrorView(error: error)
+            // ✅ FIXED: Błąd inicjalizacji - inline error view
+            VStack(spacing: 32) {
+                VStack(spacing: 16) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.system(size: 64))
+                        .foregroundColor(.red)
+                    
+                    Image("KSRLogo")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 60, height: 60)
+                        .opacity(0.6)
+                }
+                
+                VStack(spacing: 16) {
+                    Text("Failed to Initialize")
+                        .font(.title2)
+                        .fontWeight(.bold)
+                        .foregroundColor(.white)
+                    
+                    Text(error)
+                        .font(.body)
+                        .foregroundColor(.white.opacity(0.8))
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+                }
+                
+                VStack(spacing: 16) {
+                    Button(action: {
+                        appStateManager.initializeApp()
+                    }) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "arrow.clockwise")
+                            Text("Retry Initialization")
+                        }
+                        .font(.headline)
+                        .foregroundColor(.black)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
+                        .background(Color.ksrYellow)
+                        .cornerRadius(12)
+                    }
+                    
+                    Button(action: {
+                        AuthService.shared.logout()
+                        appStateManager.resetAppState()
+                    }) {
+                        HStack(spacing: 8) {
+                            Image(systemName: "arrow.left.circle")
+                            Text("Return to Login")
+                        }
+                        .font(.subheadline)
+                        .foregroundColor(.white.opacity(0.8))
+                        .underline()
+                    }
+                }
+                .padding(.horizontal, 40)
+            }
+            .padding()
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Color.ksrDarkGray)
         } else if appStateManager.isAppInitialized {
             // Gotowe - główna aplikacja
             MainAppRouter()
@@ -505,25 +564,250 @@ struct TransitionView: View {
     }
 }
 
-// MARK: - Main App Router
+// MARK: - Main App Router - FIXED VERSION WITH PROPER ROLE ISOLATION
 struct MainAppRouter: View {
     @EnvironmentObject private var appStateManager: AppStateManager
     
     var body: some View {
-        switch appStateManager.currentUserRole {
+        Group {
+            // ✅ DODANE: Defensywne sprawdzenie
+            if appStateManager.currentUserRole.isEmpty {
+                // Fallback gdy nie ma roli - pokaż loading lub error
+                VStack {
+                    ProgressView("Loading user data...")
+                        .progressViewStyle(CircularProgressViewStyle(tint: .ksrYellow))
+                    
+                    Text("Determining user role...")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .padding(.top, 8)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color(.systemBackground))
+                .onAppear {
+                    // ✅ FIXED: Spróbuj ponownie pobrać rolę - używaj publicznej metody
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                        // Bezpośrednio wywołaj refresh bez private metod
+                        appStateManager.initializeApp()
+                    }
+                }
+            } else {
+                // Główny routing na podstawie roli
+                roleBasedContent
+            }
+        }
+        .onAppear {
+            #if DEBUG
+            print("[MainAppRouter] 🔄 Showing router for role: '\(appStateManager.currentUserRole)'")
+            appStateManager.debugState()
+            #endif
+        }
+    }
+    
+    @ViewBuilder
+    private var roleBasedContent: some View {
+        switch appStateManager.currentUserRole.lowercased() {
         case "arbejder":
             WorkerMainViewWithState()
+                .onAppear {
+                    #if DEBUG
+                    print("[MainAppRouter] 👷‍♂️ Showing Worker interface")
+                    #endif
+                }
+            
         case "byggeleder":
             ManagerMainViewWithState()
+                .onAppear {
+                    #if DEBUG
+                    print("[MainAppRouter] 👔 Showing Manager interface")
+                    #endif
+                }
+            
         case "chef":
-            BossMainView()
+            BossMainViewFixed()  // ✅ UŻYWAJ FIXED VERSION!
+                .onAppear {
+                    #if DEBUG
+                    print("[MainAppRouter] 👨‍💼 Showing Boss/Chef interface")
+                    #endif
+                }
+            
         case "system":
             AdminMainView()
+                .onAppear {
+                    #if DEBUG
+                    print("[MainAppRouter] ⚙️ Showing Admin interface")
+                    #endif
+                }
+            
         default:
             UnauthorizedView()
+                .onAppear {
+                    #if DEBUG
+                    print("[MainAppRouter] ❌ Unknown role: '\(appStateManager.currentUserRole)' - showing unauthorized")
+                    #endif
+                }
         }
     }
 }
+
+// ✅ NOWA WERSJA: BossMainView z lepszą izolacją
+struct BossMainViewFixed: View {
+    @State private var selectedTab = 0
+    
+    var body: some View {
+        TabView(selection: $selectedTab) {
+            ChefDashboardView()
+                .tabItem {
+                    Label("Dashboard", systemImage: selectedTab == 0 ? "chart.bar.fill" : "chart.bar")
+                }
+                .tag(0)
+            
+            CustomersListView()
+                .tabItem {
+                    Label("Customers", systemImage: selectedTab == 1 ? "building.2.fill" : "building.2")
+                }
+                .tag(1)
+            
+            ChefProjectsView()
+                .tabItem {
+                    Label("Projects", systemImage: selectedTab == 2 ? "folder.fill" : "folder")
+                }
+                .tag(2)
+            
+            ChefWorkersView() // ✅ DODANE: Dedykowany widok dla chef'a
+                .tabItem {
+                    Label("Workers", systemImage: selectedTab == 3 ? "person.3.fill" : "person.3")
+                }
+                .tag(3)
+            
+            ChefTasksView() // ✅ DODANE: Dedykowany widok dla chef'a
+                .tabItem {
+                    Label("Tasks", systemImage: selectedTab == 4 ? "list.bullet.rectangle.fill" : "list.bullet.rectangle")
+                }
+                .tag(4)
+            
+            ChefProfileView()
+                .tabItem {
+                    Label("Profile", systemImage: selectedTab == 5 ? "person.fill" : "person")
+                }
+                .tag(5)
+        }
+        .accentColor(Color.ksrYellow)
+        .onAppear {
+            setupTabBarAppearance()
+            
+            #if DEBUG
+            print("[BossMainViewFixed] 👨‍💼 Chef interface loaded")
+            #endif
+        }
+    }
+}
+
+// ✅ DODANE: Placeholder views dla chef'a (żeby nie mieszały się z worker/manager)
+struct ChefWorkersView: View {
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 24) {
+                Image(systemName: "person.3.badge.gearshape")
+                    .font(.system(size: 60))
+                    .foregroundColor(.ksrYellow)
+                
+                VStack(spacing: 12) {
+                    Text("Workers Management")
+                        .font(.title2)
+                        .fontWeight(.bold)
+                        .foregroundColor(.primary)
+                    
+                    Text("Manage and oversee your workforce")
+                        .font(.body)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 40)
+                }
+                
+                Text("Coming in v1.1.0")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .padding(.bottom, 40)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Color(.systemBackground))
+            .navigationTitle("Workers")
+        }
+    }
+}
+
+struct ChefTasksView: View {
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 24) {
+                Image(systemName: "list.bullet.rectangle.badge.gearshape")
+                    .font(.system(size: 60))
+                    .foregroundColor(.ksrYellow)
+                
+                VStack(spacing: 12) {
+                    Text("Tasks Overview")
+                        .font(.title2)
+                        .fontWeight(.bold)
+                        .foregroundColor(.primary)
+                    
+                    Text("Monitor and manage all project tasks")
+                        .font(.body)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 40)
+                }
+                
+                Text("Coming in v1.1.0")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .padding(.bottom, 40)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Color(.systemBackground))
+            .navigationTitle("Tasks")
+        }
+    }
+}
+
+// ✅ DODANE: Debug view dla sprawdzenia routing'u
+#if DEBUG
+struct RoleDebugView: View {
+    @EnvironmentObject private var appStateManager: AppStateManager
+    
+    var body: some View {
+        VStack(spacing: 16) {
+            Text("Role Debug")
+                .font(.title)
+                .fontWeight(.bold)
+            
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Current Role: '\(appStateManager.currentUserRole)'")
+                Text("User ID: '\(appStateManager.currentUserId)'")
+                Text("User Name: '\(appStateManager.currentUserName)'")
+                Text("Auth Role: '\(AuthService.shared.getEmployeeRole() ?? "nil")'")
+                Text("Auth Name: '\(AuthService.shared.getEmployeeName() ?? "nil")'")
+            }
+            .font(.caption)
+            .padding()
+            .background(Color(.systemGray6))
+            .cornerRadius(8)
+            
+            Button("Refresh State") {
+                appStateManager.initializeApp()
+            }
+            .buttonStyle(.bordered)
+            
+            Button("Debug Full State") {
+                appStateManager.debugState()
+                AuthService.shared.debugAuthenticationState()
+            }
+            .buttonStyle(.bordered)
+        }
+        .padding()
+    }
+}
+#endif
 
 // MARK: - Worker Main View With State
 struct WorkerMainViewWithState: View {
@@ -599,7 +883,27 @@ struct WorkerProfileViewWithState: View {
             if let workerProfileVM = appStateManager.workerProfileVM {
                 WorkerProfileViewWithPreloadedData(viewModel: workerProfileVM)
             } else {
-                ProfileLoadingFallback(userType: "Worker")
+                // ✅ FIXED: Inline ProfileLoadingFallback
+                VStack(spacing: 20) {
+                    ProgressView()
+                        .progressViewStyle(CircularProgressViewStyle(tint: .ksrYellow))
+                        .scaleEffect(1.2)
+                    
+                    Text("Loading Worker Profile...")
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                    
+                    Text("Initializing profile data")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color(.systemBackground))
+                .onAppear {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                        appStateManager.initializeApp()
+                    }
+                }
             }
         }
     }
@@ -613,7 +917,27 @@ struct ManagerProfileViewWithState: View {
             if let managerProfileVM = appStateManager.managerProfileVM {
                 ManagerProfileViewWithPreloadedData(viewModel: managerProfileVM)
             } else {
-                ProfileLoadingFallback(userType: "Manager")
+                // ✅ FIXED: Inline ProfileLoadingFallback
+                VStack(spacing: 20) {
+                    ProgressView()
+                        .progressViewStyle(CircularProgressViewStyle(tint: .ksrYellow))
+                        .scaleEffect(1.2)
+                    
+                    Text("Loading Manager Profile...")
+                        .font(.headline)
+                        .foregroundColor(.primary)
+                    
+                    Text("Initializing profile data")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color(.systemBackground))
+                .onAppear {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                        appStateManager.initializeApp()
+                    }
+                }
             }
         }
     }
@@ -646,28 +970,30 @@ struct WorkerProfileViewWithPreloadedData: View {
             .background(backgroundGradient)
             .navigationTitle("My Profile")
             .navigationBarTitleDisplayMode(.inline)
-            .navigationBarItems(trailing:
-                HStack(spacing: 12) {
-                    Button {
-                        showEditProfile = true
-                    } label: {
-                        Image(systemName: "pencil.circle")
-                            .foregroundColor(Color.ksrYellow)
-                            .font(.system(size: 18, weight: .medium))
-                    }
-                    
-                    Button {
-                        withAnimation(.easeInOut(duration: 0.3)) {
-                            appStateManager.refreshProfile()
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    HStack(spacing: 12) {
+                        Button {
+                            showEditProfile = true
+                        } label: {
+                            Image(systemName: "pencil.circle")
+                                .foregroundColor(Color.ksrYellow)
+                                .font(.system(size: 18, weight: .medium))
                         }
-                    } label: {
-                        Image(systemName: "arrow.clockwise")
-                            .foregroundColor(colorScheme == .dark ? .white : Color.ksrDarkGray)
-                            .font(.system(size: 16, weight: .medium))
+                        
+                        Button {
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                appStateManager.refreshProfile()
+                            }
+                        } label: {
+                            Image(systemName: "arrow.clockwise")
+                                .foregroundColor(colorScheme == .dark ? .white : Color.ksrDarkGray)
+                                .font(.system(size: 16, weight: .medium))
+                        }
+                        .disabled(viewModel.isLoading)
                     }
-                    .disabled(viewModel.isLoading)
                 }
-            )
+            }
             .refreshable {
                 await withCheckedContinuation { continuation in
                     appStateManager.refreshProfile()
@@ -970,28 +1296,30 @@ struct ManagerProfileContentView: View {
             .background(backgroundGradient)
             .navigationTitle("Manager Profile")
             .navigationBarTitleDisplayMode(.inline)
-            .navigationBarItems(trailing:
-                HStack(spacing: 12) {
-                    Button {
-                        showEditProfile = true
-                    } label: {
-                        Image(systemName: "pencil.circle")
-                            .foregroundColor(Color.ksrYellow)
-                            .font(.system(size: 18, weight: .medium))
-                    }
-                    
-                    Button {
-                        withAnimation(.easeInOut(duration: 0.3)) {
-                            appStateManager.refreshProfile()
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    HStack(spacing: 12) {
+                        Button {
+                            showEditProfile = true
+                        } label: {
+                            Image(systemName: "pencil.circle")
+                                .foregroundColor(Color.ksrYellow)
+                                .font(.system(size: 18, weight: .medium))
                         }
-                    } label: {
-                        Image(systemName: "arrow.clockwise")
-                            .foregroundColor(colorScheme == .dark ? .white : Color.ksrDarkGray)
-                            .font(.system(size: 16, weight: .medium))
+                        
+                        Button {
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                appStateManager.refreshProfile()
+                            }
+                        } label: {
+                            Image(systemName: "arrow.clockwise")
+                                .foregroundColor(colorScheme == .dark ? .white : Color.ksrDarkGray)
+                                .font(.system(size: 16, weight: .medium))
+                        }
+                        .disabled(viewModel.isLoading)
                     }
-                    .disabled(viewModel.isLoading)
                 }
-            )
+            }
             .refreshable {
                 await withCheckedContinuation { continuation in
                     appStateManager.refreshProfile()
