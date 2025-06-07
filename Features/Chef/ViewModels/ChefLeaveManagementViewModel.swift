@@ -10,7 +10,7 @@ import Foundation
 import Combine
 import SwiftUI
 
-extension AnyPublisher where Failure == Error {
+extension AnyPublisher where Failure == ChefLeaveAPIService.APIError {
     func async() async throws -> Output {
         try await withCheckedThrowingContinuation { continuation in
             var cancellable: AnyCancellable?
@@ -305,7 +305,11 @@ class ChefLeaveManagementViewModel: ObservableObject {
         } catch {
             await MainActor.run {
                 isLoading = false
-                handleError(error as? ChefLeaveAPIService.APIError ?? .serverError(500, error.localizedDescription))
+                if let apiError = error as? ChefLeaveAPIService.APIError {
+                    handleError(apiError)
+                } else {
+                    handleError(.serverError(500, error.localizedDescription))
+                }
             }
         }
     }
@@ -470,10 +474,6 @@ class ChefLeaveManagementViewModel: ObservableObject {
         print("[ChefLeaveManagementViewModel] Error: \(error)")
         #endif
     }
-    
-    func clearError() {
-        errorMessage = nil
-    }
 }
 
 // MARK: - Leave Approval Detail ViewModel
@@ -578,10 +578,6 @@ class LeaveApprovalDetailViewModel: ObservableObject {
         print("[LeaveApprovalDetailViewModel] Error: \(error)")
         #endif
     }
-    
-    func clearError() {
-        errorMessage = nil
-    }
 }
 
 // MARK: - Team Leave Calendar ViewModel
@@ -681,7 +677,4 @@ class TeamLeaveCalendarViewModel: ObservableObject {
         #endif
     }
     
-    func clearError() {
-        errorMessage = nil
-    }
 }
