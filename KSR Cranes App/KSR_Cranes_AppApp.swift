@@ -7,11 +7,14 @@
 
 import SwiftUI
 import PhotosUI
+import FirebaseCore
+import FirebaseMessaging
+import UserNotifications
 
 @main
 struct KSR_Cranes_AppApp: App {
-    // Użyj dedykowanego OrientationManagerDelegate
-    @UIApplicationDelegateAdaptor(OrientationManagerDelegate.self) var appDelegate
+    // Use Firebase-enabled AppDelegate
+    @UIApplicationDelegateAdaptor(FirebaseAppDelegate.self) var appDelegate
     
     // ✨ ZACHOWANY: Globalny state manager (ważny!)
     @StateObject private var appStateManager = AppStateManager.shared
@@ -674,7 +677,7 @@ struct BossMainViewFixed: View {
                 }
                 .tag(2)
             
-            ChefWorkersView() // ✅ DODANE: Dedykowany widok dla chef'a
+            ChefWorkersManagementView() // ✅ DODANE: Dedykowany widok dla chef'a
                 .tabItem {
                     Label("Workers", systemImage: selectedTab == 3 ? "person.3.fill" : "person.3")
                 }
@@ -703,39 +706,6 @@ struct BossMainViewFixed: View {
     }
 }
 
-// ✅ DODANE: Placeholder views dla chef'a (żeby nie mieszały się z worker/manager)
-struct ChefWorkersView: View {
-    var body: some View {
-        NavigationView {
-            VStack(spacing: 24) {
-                Image(systemName: "person.3.badge.gearshape")
-                    .font(.system(size: 60))
-                    .foregroundColor(.ksrYellow)
-                
-                VStack(spacing: 12) {
-                    Text("Workers Management")
-                        .font(.title2)
-                        .fontWeight(.bold)
-                        .foregroundColor(.primary)
-                    
-                    Text("Manage and oversee your workforce")
-                        .font(.body)
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 40)
-                }
-                
-                Text("Coming in v1.1.0")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .padding(.bottom, 40)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(Color(.systemBackground))
-            .navigationTitle("Workers")
-        }
-    }
-}
 
 struct ChefTasksView: View {
     var body: some View {
@@ -828,6 +798,11 @@ struct WorkerMainViewWithState: View {
             WorkerTasksView()
                 .tabItem {
                     Label("Tasks", systemImage: "list.bullet")
+                }
+            
+            WorkerLeaveView()
+                .tabItem {
+                    Label("Leave", systemImage: "calendar.badge.clock")
                 }
             
             WorkerProfileViewWithState()
@@ -1589,5 +1564,100 @@ struct ManagerProfileContentView: View {
             insertion: .opacity.combined(with: .move(edge: .trailing)),
             removal: .opacity.combined(with: .move(edge: .leading))
         ))
+    }
+}
+
+// MARK: - Firebase AppDelegate
+
+class FirebaseAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate, MessagingDelegate {
+    
+    func application(_ application: UIApplication, 
+                    didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+        
+        // Configure Firebase
+        FirebaseApp.configure()
+        
+        // Set FCM messaging delegate
+        Messaging.messaging().delegate = self
+        
+        // Set notification delegate
+        UNUserNotificationCenter.current().delegate = self
+        
+        // Request notification permissions
+        let authOptions: UNAuthorizationOptions = [.alert, .badge, .sound]
+        UNUserNotificationCenter.current().requestAuthorization(
+            options: authOptions,
+            completionHandler: { _, _ in }
+        )
+        
+        // Register for remote notifications
+        application.registerForRemoteNotifications()
+        
+        #if DEBUG
+        print("[FirebaseAppDelegate] Firebase configured and push notifications initialized")
+        #endif
+        
+        return true
+    }
+    
+    // MARK: - Remote Notifications
+    
+    func application(_ application: UIApplication, 
+                    didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
+        #if DEBUG
+        print("[FirebaseAppDelegate] APNs token received")
+        #endif
+        
+        // Set APNs token for FCM
+        Messaging.messaging().apnsToken = deviceToken
+    }
+    
+    func application(_ application: UIApplication, 
+                    didFailToRegisterForRemoteNotificationsWithError error: Error) {
+        #if DEBUG
+        print("[FirebaseAppDelegate] Failed to register for remote notifications: \(error)")
+        #endif
+    }
+    
+    // MARK: - MessagingDelegate
+    
+    func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String?) {
+        #if DEBUG
+        print("[FirebaseAppDelegate] FCM token received: \(fcmToken ?? "nil")")
+        #endif
+        
+        guard let fcmToken = fcmToken else { return }
+        
+        // Register token with our push notification service
+        Task { @MainActor in
+            await PushNotificationService.shared.registerToken(fcmToken)
+        }
+    }
+    
+    // MARK: - UNUserNotificationCenterDelegate
+    
+    func userNotificationCenter(_ center: UNUserNotificationCenter,
+                              willPresent notification: UNNotification,
+                              withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+        // Show notification even when app is in foreground
+        completionHandler([.banner, .badge, .sound])
+    }
+    
+    func userNotificationCenter(_ center: UNUserNotificationCenter,
+                              didReceive response: UNNotificationResponse,
+                              withCompletionHandler completionHandler: @escaping () -> Void) {
+        
+        let userInfo = response.notification.request.content.userInfo
+        
+        #if DEBUG
+        print("[FirebaseAppDelegate] Notification tapped: \(userInfo)")
+        #endif
+        
+        // Handle notification tap
+        Task { @MainActor in
+            PushNotificationService.shared.handleNotificationTap(userInfo)
+        }
+        
+        completionHandler()
     }
 }

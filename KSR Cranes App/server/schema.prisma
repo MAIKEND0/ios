@@ -1,0 +1,1738 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x", "windows"]
+}
+
+datasource db {
+  provider          = "mysql"
+  url               = env("DATABASE_URL")
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
+}
+
+model Employees {
+  employee_id                                                                  Int                          @id @default(autoincrement()) @db.UnsignedInt
+  email                                                                        String                       @unique @db.VarChar(255)
+  name                                                                         String                       @db.VarChar(255)
+  role                                                                         Employees_role
+  password_hash                                                                String                       @db.VarChar(255)
+  created_at                                                                   DateTime?                    @default(now()) @db.Timestamp(0)
+  operator_normal_rate                                                         Decimal?                     @default(0.00) @db.Decimal(10, 2)
+  operator_overtime_rate1                                                      Decimal?                     @default(0.00) @db.Decimal(10, 2)
+  operator_overtime_rate2                                                      Decimal?                     @default(0.00) @db.Decimal(10, 2)
+  operator_weekend_rate                                                        Decimal?                     @default(0.00) @db.Decimal(10, 2)
+  address                                                                      String?                      @db.VarChar(255)
+  phone_number                                                                 String?                      @db.VarChar(50)
+  emergency_contact                                                            String?                      @db.VarChar(255)
+  cpr_number                                                                   String?                      @db.VarChar(50)
+  birth_date                                                                   DateTime?                    @db.Date
+  has_driving_license                                                          Boolean?                     @default(false)
+  driving_license_category                                                     String?                      @db.VarChar(10)
+  driving_license_expiration                                                   DateTime?                    @db.Date
+  profilePictureUrl                                                            String?                      @db.VarChar(1024)
+  zenegy_employee_number                                                       String?                      @unique(map: "uk_zenegy_employee_number") @db.VarChar(50)
+  is_activated                                                                 Boolean                      @default(true)
+  AuditLogs                                                                    AuditLogs[]
+  ClientInteractions                                                           ClientInteractions[]
+  conversationParticipants                                                     ConversationParticipant[]
+  EmployeeCraneTypes                                                           EmployeeCraneTypes[]
+  EmployeeLanguage                                                             EmployeeLanguage[]
+  EmployeeOvertimeSettings                                                     EmployeeOvertimeSettings[]
+  statusChangeHistories                                                        HiringRequestStatusHistory[] @relation("StatusChangeBy")
+  LeaveAuditLog_LeaveAuditLog_employee_idToEmployees                           LeaveAuditLog[]              @relation("LeaveAuditLog_employee_idToEmployees")
+  LeaveAuditLog_LeaveAuditLog_performed_byToEmployees                          LeaveAuditLog[]              @relation("LeaveAuditLog_performed_byToEmployees")
+  LeaveBalance                                                                 LeaveBalance[]
+  LeaveRequests_LeaveRequests_approved_byToEmployees                           LeaveRequests[]              @relation("LeaveRequests_approved_byToEmployees")
+  LeaveRequests_LeaveRequests_employee_idToEmployees                           LeaveRequests[]              @relation("LeaveRequests_employee_idToEmployees")
+  sentMessages                                                                 Message[]                    @relation("EmployeeMessages")
+  messageStatuses                                                              MessageStatus[]
+  Notifications                                                                Notifications[]
+  Notifications_Notifications_sender_idToEmployees                             Notifications[]              @relation("Notifications_sender_idToEmployees")
+  Notifications_Notifications_target_employee_idToEmployees                    Notifications[]              @relation("Notifications_target_employee_idToEmployees")
+  operatorAssignments                                                          OperatorHiringRequest[]      @relation("AssignedOperator")
+  OperatorPerformanceReviews_OperatorPerformanceReviews_employee_idToEmployees OperatorPerformanceReviews[] @relation("OperatorPerformanceReviews_employee_idToEmployees")
+  OperatorPerformanceReviews_OperatorPerformanceReviews_reviewed_byToEmployees OperatorPerformanceReviews[] @relation("OperatorPerformanceReviews_reviewed_byToEmployees")
+  PayrollAuditLog                                                              PayrollAuditLog[]
+  PayrollBatchEntries                                                          PayrollBatchEntries[]
+  PayrollBatches_PayrollBatches_created_byToEmployees                          PayrollBatches[]             @relation("PayrollBatches_created_byToEmployees")
+  PayrollBatches_PayrollBatches_approved_byToEmployees                         PayrollBatches[]             @relation("PayrollBatches_approved_byToEmployees")
+  PushNotifications                                                            PushNotifications[]
+  PushTokens                                                                   PushTokens[]
+  SupervisorSignatures                                                         SupervisorSignatures[]
+  TaskAssignments                                                              TaskAssignments[]
+  Tasks                                                                        Tasks[]
+  WorkEntries                                                                  WorkEntries[]
+  WorkPlanAssignments                                                          WorkPlanAssignments[]
+  WorkPlans                                                                    WorkPlans[]
+  ZenegyConfig                                                                 ZenegyConfig[]
+  ZenegyEmployeeMapping                                                        ZenegyEmployeeMapping?
+  activation_email_logs                                                        activation_email_logs[]
+
+  @@index([zenegy_employee_number], map: "idx_zenegy_employee_number")
+}
+
+model AuditLogs {
+  log_id     Int       @id @default(autoincrement()) @db.UnsignedInt
+  user_id    Int       @db.UnsignedInt
+  action     String    @db.VarChar(255)
+  details    String?   @db.Text
+  created_at DateTime? @default(now()) @db.Timestamp(0)
+  Employees  Employees @relation(fields: [user_id], references: [employee_id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([user_id])
+}
+
+model EmployeeOvertimeSettings {
+  id                     Int       @id @default(autoincrement()) @db.UnsignedInt
+  employee_id            Int       @db.UnsignedInt
+  overtime_rate1         Decimal   @db.Decimal(10, 2)
+  overtime_rate2         Decimal   @db.Decimal(10, 2)
+  weekend_overtime_rate1 Decimal   @db.Decimal(10, 2)
+  weekend_overtime_rate2 Decimal   @db.Decimal(10, 2)
+  effective_from         DateTime  @db.Date
+  effective_to           DateTime? @db.Date
+  start_time             DateTime  @db.Time(0)
+  end_time               DateTime  @db.Time(0)
+  Employees              Employees @relation(fields: [employee_id], references: [employee_id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([employee_id])
+}
+
+model Notifications {
+  notification_id                                       Int                             @id @default(autoincrement()) @db.UnsignedInt
+  employee_id                                           Int?                            @db.UnsignedInt
+  project_id                                            Int?                            @db.UnsignedInt
+  task_id                                               Int?                            @db.UnsignedInt
+  work_entry_id                                         Int?                            @db.UnsignedInt
+  message                                               String                          @db.Text
+  is_read                                               Boolean?                        @default(false)
+  created_at                                            DateTime?                       @default(now()) @db.Timestamp(0)
+  title                                                 String?                         @db.VarChar(255)
+  updated_at                                            DateTime?                       @default(now()) @db.Timestamp(0)
+  target_role                                           Notifications_target_role?
+  sender_id                                             Int?                            @db.UnsignedInt
+  target_employee_id                                    Int?                            @db.UnsignedInt
+  priority                                              Notifications_priority?         @default(NORMAL)
+  category                                              Notifications_category?
+  action_required                                       Boolean?                        @default(false)
+  action_url                                            String?                         @db.VarChar(500)
+  expires_at                                            DateTime?                       @db.Timestamp(0)
+  metadata                                              Json?
+  read_at                                               DateTime?                       @db.Timestamp(0)
+  notification_type                                     Notifications_notification_type
+  Employees                                             Employees?                      @relation(fields: [employee_id], references: [employee_id], onDelete: NoAction, onUpdate: NoAction)
+  Projects                                              Projects?                       @relation(fields: [project_id], references: [project_id], onDelete: NoAction, onUpdate: NoAction)
+  Employees_Notifications_sender_idToEmployees          Employees?                      @relation("Notifications_sender_idToEmployees", fields: [sender_id], references: [employee_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_notifications_sender")
+  Employees_Notifications_target_employee_idToEmployees Employees?                      @relation("Notifications_target_employee_idToEmployees", fields: [target_employee_id], references: [employee_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_notifications_target")
+
+  @@index([employee_id])
+  @@index([project_id])
+  @@index([task_id])
+  @@index([work_entry_id])
+  @@index([sender_id], map: "fk_notifications_sender")
+  @@index([target_employee_id], map: "fk_notifications_target")
+  @@index([action_required, expires_at], map: "idx_notifications_action_required")
+  @@index([employee_id, category, is_read], map: "idx_notifications_employee_category")
+  @@index([target_role, is_read, created_at], map: "idx_notifications_role_unread")
+}
+
+model Projects {
+  project_id                 Int                          @id @default(autoincrement()) @db.UnsignedInt
+  title                      String                       @db.VarChar(255)
+  description                String?                      @db.Text
+  start_date                 DateTime?                    @db.Date
+  end_date                   DateTime?                    @db.Date
+  status                     Projects_status?             @default(afventer)
+  created_at                 DateTime?                    @default(now()) @db.Timestamp(0)
+  customer_id                Int?                         @db.UnsignedInt
+  street                     String?                      @db.VarChar(255)
+  city                       String?                      @db.VarChar(100)
+  zip                        String?                      @db.VarChar(20)
+  isActive                   Boolean                      @default(true)
+  BillingSettings            BillingSettings[]
+  ClientInteractions         ClientInteractions[]
+  Notifications              Notifications[]
+  hiringRequests             OperatorHiringRequest[]      @relation("AssignedProject")
+  OperatorPerformanceReviews OperatorPerformanceReviews[]
+  Customers                  Customers?                   @relation(fields: [customer_id], references: [customer_id], onDelete: NoAction, onUpdate: NoAction)
+  RevenueTracking            RevenueTracking[]
+  Tasks                      Tasks[]
+
+  @@index([customer_id])
+}
+
+model BillingSettings {
+  setting_id             Int       @id @default(autoincrement()) @db.UnsignedInt
+  project_id             Int?      @db.UnsignedInt
+  normal_rate            Decimal   @db.Decimal(10, 2)
+  weekend_rate           Decimal   @db.Decimal(10, 2)
+  overtime_rate1         Decimal   @db.Decimal(10, 2)
+  overtime_rate2         Decimal   @db.Decimal(10, 2)
+  weekend_overtime_rate1 Decimal   @db.Decimal(10, 2)
+  weekend_overtime_rate2 Decimal   @db.Decimal(10, 2)
+  effective_from         DateTime  @db.Date
+  effective_to           DateTime? @db.Date
+  Projects               Projects? @relation(fields: [project_id], references: [project_id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([project_id])
+}
+
+model TaskAssignments {
+  assignment_id  Int         @id @default(autoincrement()) @db.UnsignedInt
+  task_id        Int         @db.UnsignedInt
+  employee_id    Int         @db.UnsignedInt
+  assigned_at    DateTime?   @default(now()) @db.Timestamp(0)
+  crane_model_id Int?        @db.UnsignedInt
+  Employees      Employees   @relation(fields: [employee_id], references: [employee_id], onDelete: NoAction, onUpdate: NoAction)
+  Tasks          Tasks       @relation(fields: [task_id], references: [task_id], onDelete: NoAction, onUpdate: NoAction)
+  CraneModel     CraneModel? @relation(fields: [crane_model_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_taskassignments_cranemodel")
+
+  @@index([employee_id])
+  @@index([task_id])
+  @@index([crane_model_id], map: "idx_crane_model_id")
+}
+
+model Tasks {
+  task_id                  Int                     @id @default(autoincrement()) @db.UnsignedInt
+  project_id               Int                     @db.UnsignedInt
+  title                    String                  @db.VarChar(255)
+  description              String?                 @db.Text
+  deadline                 DateTime?               @db.Date
+  created_at               DateTime?               @default(now()) @db.Timestamp(0)
+  supervisor_email         String?                 @db.VarChar(255)
+  supervisor_phone         String?                 @db.VarChar(50)
+  supervisor_name          String?                 @db.VarChar(255)
+  supervisor_id            Int?                    @db.UnsignedInt
+  isActive                 Boolean                 @default(true)
+  required_crane_types     Json?
+  preferred_crane_model_id Int?                    @db.UnsignedInt
+  equipment_category_id    Int?                    @db.UnsignedInt
+  equipment_brand_id       Int?                    @db.UnsignedInt
+  conversation             Conversation?           @relation("TaskConversation")
+  hiringRequests           OperatorHiringRequest[] @relation("AssignedTask")
+  TaskAssignments          TaskAssignments[]
+  Projects                 Projects                @relation(fields: [project_id], references: [project_id], onDelete: NoAction, onUpdate: NoAction)
+  CraneBrand               CraneBrand?             @relation(fields: [equipment_brand_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_tasks_equipment_brand")
+  CraneCategory            CraneCategory?          @relation(fields: [equipment_category_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_tasks_equipment_category")
+  CraneModel               CraneModel?             @relation(fields: [preferred_crane_model_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_tasks_preferred_crane_model")
+  Employees                Employees?              @relation(fields: [supervisor_id], references: [employee_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_tasks_supervisor")
+  WorkEntries              WorkEntries[]
+  WorkPlans                WorkPlans[]
+
+  @@index([project_id])
+  @@index([supervisor_id])
+  @@index([equipment_brand_id], map: "fk_tasks_equipment_brand")
+  @@index([equipment_category_id], map: "fk_tasks_equipment_category")
+  @@index([preferred_crane_model_id], map: "fk_tasks_preferred_crane_model")
+}
+
+model WorkEntries {
+  entry_id            Int                              @id @default(autoincrement()) @db.UnsignedInt
+  employee_id         Int                              @db.UnsignedInt
+  task_id             Int                              @db.UnsignedInt
+  work_date           DateTime                         @db.Date
+  start_time          DateTime?                        @db.DateTime(0)
+  end_time            DateTime?                        @db.DateTime(0)
+  pause_minutes       Int?                             @default(0)
+  status              WorkEntries_status?              @default(pending)
+  confirmation_status WorkEntries_confirmation_status? @default(pending)
+  confirmed_by        Int?                             @db.UnsignedInt
+  confirmed_at        DateTime?                        @db.DateTime(0)
+  description         String?                          @db.Text
+  created_at          DateTime?                        @default(now()) @db.Timestamp(0)
+  is_draft            Boolean                          @default(true)
+  isActive            Boolean                          @default(true)
+  rejection_reason    String?                          @db.Text
+  timesheetId         Int?
+  km                  Decimal?                         @default(0.00) @db.Decimal(10, 2)
+  payroll_batch_id    Int?
+  sent_to_payroll     Boolean?                         @default(false)
+  sent_to_payroll_at  DateTime?                        @db.DateTime(0)
+  Employees           Employees                        @relation(fields: [employee_id], references: [employee_id], onDelete: NoAction, onUpdate: NoAction)
+  Tasks               Tasks                            @relation(fields: [task_id], references: [task_id], onDelete: NoAction, onUpdate: NoAction)
+  PayrollBatches      PayrollBatches?                  @relation(fields: [payroll_batch_id], references: [id], onUpdate: NoAction, map: "fk_workentries_payroll_batch")
+  Timesheet           Timesheet?                       @relation(fields: [timesheetId], references: [id], map: "fk_workentries_timesheet")
+
+  @@unique([employee_id, task_id, work_date], map: "employee_id_task_id_work_date")
+  @@index([employee_id])
+  @@index([task_id])
+  @@index([timesheetId], map: "idx_timesheet_id")
+  @@index([payroll_batch_id], map: "idx_payroll_batch_id")
+  @@index([sent_to_payroll, confirmation_status], map: "idx_payroll_status")
+}
+
+model Customers {
+  customer_id      Int                     @id @default(autoincrement()) @db.UnsignedInt
+  name             String                  @db.VarChar(255)
+  contact_email    String?                 @db.VarChar(255)
+  phone            String?                 @db.VarChar(50)
+  address          String?                 @db.VarChar(255)
+  cvr_nr           String?                 @db.VarChar(50)
+  created_at       DateTime?               @default(now()) @db.Timestamp(0)
+  logo_url         String?                 @db.VarChar(1024)
+  logo_key         String?                 @db.VarChar(512)
+  logo_uploaded_at DateTime?               @db.Timestamp(0)
+  hiringRequests   OperatorHiringRequest[] @relation("CustomerRequests")
+  Projects         Projects[]
+
+  @@index([logo_uploaded_at], map: "idx_customers_logo_uploaded_at")
+}
+
+model CraneTypes {
+  crane_type_id      Int                  @id @default(autoincrement()) @db.UnsignedInt
+  name               String               @db.VarChar(255)
+  description        String?              @db.Text
+  EmployeeCraneTypes EmployeeCraneTypes[]
+}
+
+model EmployeeCraneTypes {
+  employee_id        Int        @db.UnsignedInt
+  crane_type_id      Int        @db.UnsignedInt
+  certification_date DateTime?
+  CraneTypes         CraneTypes @relation(fields: [crane_type_id], references: [crane_type_id], onDelete: Cascade)
+  Employees          Employees  @relation(fields: [employee_id], references: [employee_id], onDelete: Cascade)
+
+  @@id([employee_id, crane_type_id])
+  @@index([crane_type_id], map: "EmployeeCraneTypes_crane_type_id_fkey")
+}
+
+model Conversation {
+  conversation_id          Int                       @id @default(autoincrement()) @db.UnsignedInt
+  task_id                  Int?                      @unique @db.UnsignedInt
+  created_at               DateTime?                 @default(now()) @db.Timestamp(0)
+  updated_at               DateTime?                 @updatedAt @db.Timestamp(0)
+  isActive                 Boolean                   @default(true)
+  task                     Tasks?                    @relation("TaskConversation", fields: [task_id], references: [task_id], onDelete: Cascade)
+  conversationParticipants ConversationParticipant[] @relation("ConversationParticipants")
+  Messages                 Message[]
+}
+
+model Message {
+  message_id      Int             @id @default(autoincrement()) @db.UnsignedInt
+  conversation_id Int             @db.UnsignedInt
+  sender_id       Int             @db.UnsignedInt
+  content         String          @db.Text
+  created_at      DateTime?       @default(now()) @db.Timestamp(0)
+  embed           Json?
+  Conversation    Conversation    @relation(fields: [conversation_id], references: [conversation_id], onDelete: Cascade)
+  sender          Employees       @relation("EmployeeMessages", fields: [sender_id], references: [employee_id], onDelete: Cascade)
+  statuses        MessageStatus[]
+
+  @@index([conversation_id])
+  @@index([sender_id])
+}
+
+model ConversationParticipant {
+  id              Int          @id @default(autoincrement()) @db.UnsignedInt
+  conversation_id Int          @db.UnsignedInt
+  employee_id     Int          @db.UnsignedInt
+  joined_at       DateTime     @default(now())
+  conversation    Conversation @relation("ConversationParticipants", fields: [conversation_id], references: [conversation_id], onDelete: Cascade)
+  employee        Employees    @relation(fields: [employee_id], references: [employee_id], onDelete: Cascade)
+
+  @@unique([conversation_id, employee_id])
+  @@index([employee_id], map: "ConversationParticipant_employee_id_fkey")
+}
+
+model MessageStatus {
+  id           Int               @id @default(autoincrement()) @db.UnsignedInt
+  message_id   Int               @db.UnsignedInt
+  employee_id  Int               @db.UnsignedInt
+  status       MessageStatusEnum @default(SENT)
+  delivered_at DateTime?
+  read_at      DateTime?
+  employee     Employees         @relation(fields: [employee_id], references: [employee_id], onDelete: Cascade)
+  message      Message           @relation(fields: [message_id], references: [message_id], onDelete: Cascade)
+
+  @@unique([message_id, employee_id])
+  @@index([employee_id], map: "MessageStatus_employee_id_fkey")
+}
+
+model OperatorHiringRequest {
+  id                          Int                           @id @default(autoincrement()) @db.UnsignedInt
+  fullName                    String                        @db.VarChar(255)
+  companyName                 String?                       @db.VarChar(255)
+  email                       String                        @db.VarChar(255)
+  phone                       String                        @db.VarChar(50)
+  cvrNumber                   String?                       @db.VarChar(50)
+  customer_id                 Int?                          @db.UnsignedInt
+  projectName                 String                        @db.VarChar(255)
+  projectLocation             String                        @db.VarChar(255)
+  projectDescription          String?                       @db.Text
+  specialRequirements         String?                       @db.Text
+  serviceType                 String                        @db.VarChar(50)
+  craneType                   String                        @db.VarChar(50)
+  startDate                   DateTime                      @db.Date
+  estimatedEndDate            DateTime?                     @db.Date
+  duration                    String                        @db.VarChar(50)
+  additionalTimeInfo          String?                       @db.Text
+  status                      OperatorHiringRequest_status  @default(PENDING)
+  statusNotes                 String?                       @db.Text
+  assignedOperatorId          Int?                          @db.UnsignedInt
+  assignedProjectId           Int?                          @db.UnsignedInt
+  createdAt                   DateTime                      @default(now()) @db.Timestamp(0)
+  updatedAt                   DateTime                      @updatedAt @db.Timestamp(0)
+  assignedTaskId              Int?                          @db.UnsignedInt
+  craneHeight                 String?                       @db.VarChar(50)
+  accommodationType           String?                       @db.VarChar(50)
+  accommodationDetails        String?                       @db.Text
+  additionalSkills            String?                       @db.Text
+  includeHooker               Boolean                       @default(false)
+  hookerQuantity              Int?                          @db.UnsignedInt
+  experienceLevel             String?                       @db.VarChar(50)
+  hoursPerDay                 Int?                          @default(8) @db.UnsignedInt
+  daysPerWeek                 Int?                          @default(5) @db.UnsignedInt
+  selectedCraneCategoryName   String?                       @db.VarChar(100)
+  selectedCraneTypeName       String?                       @db.VarChar(100)
+  selectedCraneBrandName      String?                       @db.VarChar(100)
+  selectedCraneModelNames     String?                       @db.Text
+  craneCategoryId             Int?                          @db.UnsignedInt
+  craneTypeId                 Int?                          @db.UnsignedInt
+  craneBrandId                Int?                          @db.UnsignedInt
+  operatorDuties              String?                       @db.Text
+  projectContext              String?                       @db.Text
+  attachments                 HiringRequestAttachment[]
+  statusHistory               HiringRequestStatusHistory[]
+  assignedOperator            Employees?                    @relation("AssignedOperator", fields: [assignedOperatorId], references: [employee_id])
+  assignedProject             Projects?                     @relation("AssignedProject", fields: [assignedProjectId], references: [project_id])
+  assignedTask                Tasks?                        @relation("AssignedTask", fields: [assignedTaskId], references: [task_id])
+  customer                    Customers?                    @relation("CustomerRequests", fields: [customer_id], references: [customer_id])
+  OperatorHiringRequestModel  OperatorHiringRequestModel[]
+  OperatorLanguageRequirement OperatorLanguageRequirement[]
+  quotes                      OperatorQuote[]
+
+  @@index([customer_id])
+  @@index([assignedOperatorId])
+  @@index([assignedTaskId])
+  @@index([assignedProjectId])
+  @@index([status])
+  @@index([startDate])
+  @@index([experienceLevel], map: "idx_experienceLevel")
+}
+
+model HiringRequestAttachment {
+  id         Int                   @id @default(autoincrement()) @db.UnsignedInt
+  requestId  Int                   @db.UnsignedInt
+  fileName   String                @db.VarChar(255)
+  fileUrl    String                @db.VarChar(1024)
+  fileType   String                @db.VarChar(100)
+  fileSize   Int                   @db.UnsignedInt
+  uploadedAt DateTime              @default(now()) @db.Timestamp(0)
+  request    OperatorHiringRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@index([requestId])
+}
+
+model HiringRequestStatusHistory {
+  id             Int                                        @id @default(autoincrement()) @db.UnsignedInt
+  requestId      Int                                        @db.UnsignedInt
+  previousStatus HiringRequestStatusHistory_previousStatus?
+  newStatus      HiringRequestStatusHistory_newStatus
+  changedById    Int                                        @db.UnsignedInt
+  notes          String?                                    @db.Text
+  createdAt      DateTime                                   @default(now()) @db.Timestamp(0)
+  changedBy      Employees                                  @relation("StatusChangeBy", fields: [changedById], references: [employee_id], onDelete: NoAction)
+  request        OperatorHiringRequest                      @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@index([requestId])
+  @@index([changedById])
+}
+
+model Testimonial {
+  id        Int      @id @default(autoincrement())
+  quote     String   @db.Text
+  author    String
+  approved  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Service {
+  id            Int           @id @default(autoincrement())
+  title         String
+  slug          String
+  description   String?       @db.Text
+  imageUrl      String?
+  imageAlt      String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  imageHeight   Int?
+  imageWidth    Int?
+  subcategories Subcategory[]
+}
+
+model Subcategory {
+  id          Int     @id @default(autoincrement())
+  serviceId   Int
+  title       String
+  description String
+  imageUrl    String?
+  imageAlt    String?
+  imageHeight Int?
+  imageWidth  Int?
+  Service     Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@index([serviceId], map: "Subcategory_serviceId_fkey")
+}
+
+model Page {
+  id        Int      @id @default(autoincrement())
+  title     String
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Navbar {
+  id          Int      @id @default(autoincrement())
+  accentColor String
+  logoUrl     String?
+  logoAlt     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Hero {
+  id        Int      @id @default(autoincrement())
+  title     String
+  subtitle  String?
+  ctaText   String?
+  ctaLink   String?
+  videoUrl  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model FooterSettings {
+  id            Int      @id @default(autoincrement())
+  logoUrl       String?
+  videoUrl      String?
+  companyName   String?
+  addressLine1  String?
+  addressLine2  String?
+  country       String?
+  email         String?
+  phone         String?
+  cvrNumber     String?
+  facebookUrl   String?
+  linkedinUrl   String?
+  instagramUrl  String?
+  copyrightYear Int
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model FAQ {
+  id        Int      @id @default(autoincrement())
+  question  String   @db.VarChar(255)
+  answer    String   @db.Text
+  order     Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ErfaringImage {
+  id              Int      @id @default(autoincrement())
+  title           String
+  slug            String   @unique
+  metaTitle       String?
+  metaDescription String?  @db.Text
+  description     String?  @db.Text
+  imageUrl        String?
+  imageAlt        String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model CraneOperator {
+  id           Int      @id @default(autoincrement())
+  name         String
+  post         String
+  description  String?
+  imageUrl     String?
+  imageAlt     String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  cropHeight   Float?
+  cropLeft     Float?
+  cropTop      Float?
+  cropWidth    Float?
+  hotspotWidth Float?
+  hotspotX     Float?
+  hotspotY     Float?
+}
+
+model BlogPost {
+  id                      Int                       @id @default(autoincrement())
+  title                   String                    @db.VarChar(255)
+  slug                    String                    @unique @db.VarChar(255)
+  publishedAt             DateTime?
+  metaTitle               String?                   @db.VarChar(255)
+  metaDescription         String?                   @db.VarChar(500)
+  excerpt                 String?                   @db.VarChar(500)
+  mainImageUrl            String?                   @db.VarChar(1024)
+  mainImageAlt            String?                   @db.VarChar(255)
+  mainVideoUrl            String?                   @db.VarChar(1024)
+  mainVideoAlt            String?                   @db.VarChar(255)
+  videoDuration           Int?
+  videoThumbnail          String?                   @db.VarChar(1024)
+  contentType             String                    @default("image") @db.VarChar(50)
+  body                    Json?
+  createdAt               DateTime                  @default(now())
+  updatedAt               DateTime                  @updatedAt
+  linkedin_posts          linkedin_posts[]
+  linkedin_publish_errors linkedin_publish_errors[]
+
+  @@index([contentType], map: "idx_content_type")
+  @@index([publishedAt, contentType], map: "idx_published_content")
+}
+
+model About {
+  id        Int      @id @default(autoincrement())
+  title     String
+  content   Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  imageAlt  String?
+  imageUrl  String?
+}
+
+model PrivacyPolicy {
+  id          Int      @id @default(autoincrement())
+  title       String   @db.VarChar(255)
+  content     Json
+  lastUpdated DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model TermsConditions {
+  id        String   @id @default(cuid())
+  title     String
+  content   Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model CookiePolicy {
+  id        String   @id @default(cuid())
+  title     String
+  content   Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model CraneCategory {
+  id           Int         @id @default(autoincrement()) @db.UnsignedInt
+  name         String      @db.VarChar(100)
+  code         String      @unique @db.VarChar(50)
+  description  String?     @db.Text
+  iconUrl      String?     @db.VarChar(255)
+  displayOrder Int         @default(0)
+  isActive     Boolean     @default(true)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @default(now()) @updatedAt
+  craneTypes   CraneType[]
+  Tasks        Tasks[]
+}
+
+model CraneType {
+  id             Int           @id @default(autoincrement()) @db.UnsignedInt
+  categoryId     Int           @db.UnsignedInt
+  name           String        @db.VarChar(100)
+  code           String        @unique @db.VarChar(50)
+  description    String?       @db.Text
+  technicalSpecs Json?
+  iconUrl        String?       @db.VarChar(255)
+  imageUrl       String?       @db.VarChar(255)
+  displayOrder   Int           @default(0)
+  isActive       Boolean       @default(true)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @default(now()) @updatedAt
+  craneModels    CraneModel[]
+  category       CraneCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@index([categoryId])
+}
+
+model CraneBrand {
+  id           Int          @id @default(autoincrement()) @db.UnsignedInt
+  name         String       @db.VarChar(100)
+  code         String       @unique @db.VarChar(50)
+  logoUrl      String?      @db.VarChar(255)
+  website      String?      @db.VarChar(255)
+  description  String?      @db.Text
+  foundedYear  Int?
+  headquarters String?      @db.VarChar(255)
+  isActive     Boolean      @default(true)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @default(now()) @updatedAt
+  craneModels  CraneModel[]
+  Tasks        Tasks[]
+}
+
+model CraneModel {
+  id                         Int                          @id @default(autoincrement()) @db.UnsignedInt
+  brandId                    Int                          @db.UnsignedInt
+  typeId                     Int                          @db.UnsignedInt
+  name                       String                       @db.VarChar(100)
+  code                       String                       @unique @db.VarChar(50)
+  description                String?                      @db.Text
+  maxLoadCapacity            Decimal?                     @db.Decimal(10, 2)
+  maxHeight                  Decimal?                     @db.Decimal(10, 2)
+  maxRadius                  Decimal?                     @db.Decimal(10, 2)
+  enginePower                Int?
+  specifications             Json?
+  imageUrl                   String?                      @db.VarChar(255)
+  brochureUrl                String?                      @db.VarChar(255)
+  videoUrl                   String?                      @db.VarChar(255)
+  releaseYear                Int?
+  isDiscontinued             Boolean                      @default(false)
+  isActive                   Boolean                      @default(true)
+  createdAt                  DateTime                     @default(now())
+  updatedAt                  DateTime                     @default(now()) @updatedAt
+  brand                      CraneBrand                   @relation(fields: [brandId], references: [id], onDelete: Cascade)
+  type                       CraneType                    @relation(fields: [typeId], references: [id], onDelete: Cascade)
+  OperatorHiringRequestModel OperatorHiringRequestModel[]
+  TaskAssignments            TaskAssignments[]
+  Tasks                      Tasks[]
+
+  @@index([brandId])
+  @@index([typeId])
+}
+
+model EmployeeLanguage {
+  id          Int                          @id @default(autoincrement()) @db.UnsignedInt
+  employeeId  Int                          @db.UnsignedInt
+  language    EmployeeLanguage_language
+  proficiency EmployeeLanguage_proficiency @default(BASIC)
+  Employees   Employees                    @relation(fields: [employeeId], references: [employee_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_employeeLanguage_employee")
+
+  @@unique([employeeId, language], map: "uq_employee_language")
+  @@index([employeeId], map: "idx_employeeId")
+}
+
+model SectionSettings {
+  id        Int       @id @default(autoincrement())
+  sections  Json
+  createdAt DateTime? @default(now()) @db.DateTime(0)
+  updatedAt DateTime? @default(now()) @updatedAt @db.DateTime(0)
+}
+
+model OperatorLanguageRequirement {
+  id                    Int                                  @id @default(autoincrement()) @db.UnsignedInt
+  requestId             Int                                  @db.UnsignedInt
+  language              OperatorLanguageRequirement_language
+  OperatorHiringRequest OperatorHiringRequest                @relation(fields: [requestId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_operatorLanguageRequirement_request")
+
+  @@index([requestId], map: "idx_requestId")
+}
+
+model OperatorQuote {
+  id                       Int                   @id @default(autoincrement()) @db.UnsignedInt
+  quoteNumber              String                @db.VarChar(50)
+  hiringRequestId          Int                   @db.UnsignedInt
+  pdfUrl                   String?               @db.VarChar(1024)
+  issueDate                DateTime              @db.Date
+  validUntil               DateTime              @db.Date
+  hourlyRate               Decimal               @default(0.00) @db.Decimal(10, 2)
+  dailyRate                Decimal               @db.Decimal(10, 2)
+  totalAmount              Decimal               @db.Decimal(10, 2)
+  status                   OperatorQuoteStatus   @default(PENDING)
+  additionalNotes          String?               @db.Text
+  createdAt                DateTime              @default(now()) @db.Timestamp(0)
+  updatedAt                DateTime              @default(now()) @updatedAt @db.Timestamp(0)
+  emailSentAt              DateTime?             @db.Timestamp(0)
+  acceptedAt               DateTime?             @db.Timestamp(0)
+  rejectedAt               DateTime?             @db.Timestamp(0)
+  paymentTermsDays         Int                   @default(30)
+  lineItems                Json?
+  transportCost            Decimal?              @db.Decimal(10, 2)
+  advancePaymentDiscount   Decimal?              @db.Decimal(5, 2)
+  offerInstallments        Boolean?              @default(false)
+  installmentCount         Int?
+  initialPaymentPercentage Decimal?              @db.Decimal(5, 2)
+  hiringRequest            OperatorHiringRequest @relation(fields: [hiringRequestId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "OperatorQuote_ibfk_1")
+
+  @@index([hiringRequestId], map: "idx_hiringRequestId")
+  @@index([quoteNumber], map: "idx_quoteNumber")
+  @@index([status], map: "idx_status")
+}
+
+model OperatorHiringRequestModel {
+  id                    Int                   @id @default(autoincrement()) @db.UnsignedInt
+  requestId             Int                   @db.UnsignedInt
+  modelId               Int                   @db.UnsignedInt
+  createdAt             DateTime?             @default(now()) @db.Timestamp(0)
+  CraneModel            CraneModel            @relation(fields: [modelId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_opReqModel_model")
+  OperatorHiringRequest OperatorHiringRequest @relation(fields: [requestId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_opReqModel_request")
+
+  @@unique([requestId, modelId], map: "uq_request_model")
+  @@index([modelId], map: "fk_opReqModel_model")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model PageVisit {
+  id            Int       @id @default(autoincrement())
+  path          String    @db.VarChar(255)
+  ip            String?   @db.VarChar(45)
+  userAgent     String?   @db.Text
+  referer       String?   @db.Text
+  timestamp     DateTime? @default(now()) @db.DateTime(0)
+  country       String?   @db.VarChar(100)
+  city          String?   @db.VarChar(100)
+  region        String?   @db.VarChar(100)
+  deviceType    String?   @db.VarChar(50)
+  os            String?   @db.VarChar(100)
+  browser       String?   @db.VarChar(100)
+  refererDomain String?   @db.VarChar(255)
+
+  @@index([path], map: "idx_pagevisit_path")
+  @@index([timestamp], map: "idx_pagevisit_timestamp")
+  @@index([country], map: "idx_pagevisit_country")
+  @@index([deviceType], map: "idx_pagevisit_deviceType")
+}
+
+model FormFieldInteraction {
+  id               Int         @id @default(autoincrement())
+  formSessionId    String      @db.VarChar(255)
+  fieldName        String      @db.VarChar(100)
+  firstTouchedAt   DateTime    @default(now()) @db.DateTime(0)
+  lastTouchedAt    DateTime    @default(now()) @db.DateTime(0)
+  interactionCount Int         @default(1)
+  wasCompleted     Boolean     @default(false)
+  FormSession      FormSession @relation(fields: [formSessionId], references: [id], onDelete: Cascade, map: "fk_fieldInteraction_formSession")
+
+  @@unique([formSessionId, fieldName], map: "uq_formSessionId_fieldName")
+  @@index([fieldName], map: "idx_formFieldInteraction_fieldName")
+  @@index([formSessionId], map: "idx_formFieldInteraction_formSessionId")
+}
+
+model FormSession {
+  id                   String                 @id @db.VarChar(255)
+  startedAt            DateTime               @default(now()) @db.DateTime(0)
+  completedAt          DateTime?              @db.DateTime(0)
+  ip                   String?                @db.VarChar(45)
+  userAgent            String?                @db.Text
+  country              String?                @db.VarChar(100)
+  city                 String?                @db.VarChar(100)
+  deviceType           String?                @db.VarChar(50)
+  os                   String?                @db.VarChar(100)
+  browser              String?                @db.VarChar(100)
+  referrer             String?                @db.VarChar(255)
+  lastStep             Int                    @default(1)
+  isSubmitted          Boolean                @default(false)
+  formType             String                 @db.VarChar(100)
+  sessionData          Json?
+  FormFieldInteraction FormFieldInteraction[]
+  FormSnapshot         FormSnapshot[]
+  FormStepData         FormStepData[]
+
+  @@index([country], map: "idx_formSession_country")
+  @@index([deviceType], map: "idx_formSession_deviceType")
+  @@index([formType], map: "idx_formSession_formType")
+  @@index([isSubmitted], map: "idx_formSession_isSubmitted")
+  @@index([startedAt], map: "idx_formSession_startedAt")
+}
+
+model FormSnapshot {
+  id            String      @id @db.VarChar(255)
+  formSessionId String      @db.VarChar(255)
+  createdAt     DateTime    @default(now()) @db.DateTime(0)
+  stepNumber    Int
+  formData      Json
+  FormSession   FormSession @relation(fields: [formSessionId], references: [id], onDelete: Cascade, map: "fk_formSnapshot_formSession")
+
+  @@index([createdAt], map: "idx_formSnapshot_createdAt")
+  @@index([formSessionId], map: "idx_formSnapshot_formSessionId")
+}
+
+model FormStepData {
+  id            Int         @id @default(autoincrement())
+  formSessionId String      @db.VarChar(255)
+  stepNumber    Int
+  enteredAt     DateTime    @default(now()) @db.DateTime(0)
+  exitedAt      DateTime?   @db.DateTime(0)
+  timeSpentMs   Int?
+  wasCompleted  Boolean     @default(false)
+  FormSession   FormSession @relation(fields: [formSessionId], references: [id], onDelete: Cascade, map: "fk_stepData_formSession")
+
+  @@unique([formSessionId, stepNumber], map: "uq_formSessionId_stepNumber")
+  @@index([formSessionId], map: "idx_formStepData_formSessionId")
+  @@index([stepNumber], map: "idx_formStepData_stepNumber")
+}
+
+model activation_email_logs {
+  id          Int       @id @default(autoincrement()) @db.UnsignedInt
+  employee_id Int       @db.UnsignedInt
+  sent_at     DateTime  @default(now()) @db.Timestamp(0)
+  status      String    @default("SENT") @db.VarChar(50)
+  email_type  String    @default("ACTIVATION") @db.VarChar(50)
+  Employees   Employees @relation(fields: [employee_id], references: [employee_id], onDelete: Cascade, onUpdate: NoAction, map: "activation_email_logs_ibfk_1")
+
+  @@index([employee_id], map: "idx_employee_id")
+}
+
+model PushNotifications {
+  notification_id   BigInt                              @id @default(autoincrement())
+  employee_id       Int                                 @db.UnsignedInt
+  token_id          BigInt?
+  title             String                              @db.VarChar(100)
+  message           String                              @db.Text
+  priority          PushNotifications_priority?         @default(NORMAL)
+  category          PushNotifications_category?
+  action_required   Boolean?                            @default(false)
+  notification_type PushNotifications_notification_type
+  sent_at           DateTime?                           @default(now()) @db.Timestamp(0)
+  is_read           Boolean?                            @default(false)
+  read_at           DateTime?                           @db.Timestamp(0)
+  expires_at        DateTime?                           @db.Timestamp(0)
+  status            PushNotifications_status?           @default(PENDING)
+  error_message     String?                             @db.Text
+  Employees         Employees                           @relation(fields: [employee_id], references: [employee_id], onDelete: Cascade, onUpdate: NoAction, map: "PushNotifications_ibfk_1")
+  PushTokens        PushTokens?                         @relation(fields: [token_id], references: [token_id], onUpdate: NoAction, map: "PushNotifications_ibfk_2")
+
+  @@index([employee_id], map: "employee_id")
+  @@index([token_id], map: "token_id")
+  @@index([category, sent_at], map: "idx_pushnotifications_category")
+  @@index([expires_at], map: "idx_pushnotifications_expires")
+  @@index([priority, status], map: "idx_pushnotifications_priority")
+}
+
+model PushTokens {
+  token_id          BigInt                 @id @default(autoincrement())
+  employee_id       Int                    @db.UnsignedInt
+  token             String                 @unique(map: "token") @db.VarChar(255)
+  device_type       PushTokens_device_type
+  app_version       String?                @db.VarChar(20)
+  os_version        String?                @db.VarChar(20)
+  created_at        DateTime?              @default(now()) @db.Timestamp(0)
+  updated_at        DateTime?              @default(now()) @db.Timestamp(0)
+  last_used_at      DateTime?              @db.Timestamp(0)
+  is_active         Boolean?               @default(true)
+  PushNotifications PushNotifications[]
+  Employees         Employees              @relation(fields: [employee_id], references: [employee_id], onDelete: Cascade, onUpdate: NoAction, map: "PushTokens_ibfk_1")
+
+  @@index([employee_id], map: "employee_id")
+  @@index([last_used_at, is_active], map: "idx_pushtokens_last_used")
+}
+
+model Timesheet {
+  id           Int           @id @default(autoincrement())
+  task_id      Int
+  weekNumber   Int
+  year         Int
+  timesheetUrl String        @db.VarChar(255)
+  created_at   DateTime?     @default(now()) @db.DateTime(0)
+  updated_at   DateTime?     @default(now()) @db.DateTime(0)
+  WorkEntries  WorkEntries[]
+
+  @@index([task_id], map: "idx_task_id")
+  @@index([weekNumber, year], map: "idx_week_year")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model SupervisorSignatures {
+  id            BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  signature_id  String    @unique(map: "signature_id") @db.VarChar(36)
+  supervisor_id Int       @db.UnsignedInt
+  signature_url String    @db.VarChar(255)
+  created_at    DateTime  @default(now()) @db.DateTime(0)
+  updated_at    DateTime? @db.DateTime(0)
+  is_active     Boolean   @default(true)
+  Employees     Employees @relation(fields: [supervisor_id], references: [employee_id], onDelete: Cascade, onUpdate: NoAction, map: "SupervisorSignatures_ibfk_1")
+
+  @@index([signature_id], map: "idx_signature_id")
+  @@index([supervisor_id], map: "idx_supervisor_id")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model WorkPlanAssignments {
+  assignment_id Int       @id @default(autoincrement()) @db.UnsignedInt
+  work_plan_id  Int       @db.UnsignedInt
+  employee_id   Int       @db.UnsignedInt
+  work_date     DateTime  @db.Date
+  start_time    String?   @db.VarChar(5)
+  end_time      String?   @db.VarChar(5)
+  notes         String?   @db.Text
+  Employees     Employees @relation(fields: [employee_id], references: [employee_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_workplanassignments_employee")
+  WorkPlans     WorkPlans @relation(fields: [work_plan_id], references: [work_plan_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_workplanassignments_workplan")
+
+  @@unique([work_plan_id, employee_id, work_date], map: "uq_workplan_employee_date")
+  @@index([employee_id], map: "idx_employee_id")
+  @@index([work_plan_id], map: "idx_work_plan_id")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model WorkPlans {
+  work_plan_id        Int                   @id @default(autoincrement()) @db.UnsignedInt
+  task_id             Int                   @db.UnsignedInt
+  weekNumber          Int
+  year                Int
+  created_at          DateTime?             @default(now()) @db.Timestamp(0)
+  updated_at          DateTime?             @default(now()) @db.Timestamp(0)
+  created_by          Int                   @db.UnsignedInt
+  status              WorkPlans_status      @default(DRAFT)
+  description         String?               @db.Text
+  additional_info     String?               @db.Text
+  attachment_url      String?               @db.VarChar(1024)
+  WorkPlanAssignments WorkPlanAssignments[]
+  Employees           Employees             @relation(fields: [created_by], references: [employee_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_workplans_creator")
+  Tasks               Tasks                 @relation(fields: [task_id], references: [task_id], onDelete: NoAction, onUpdate: NoAction, map: "fk_workplans_task")
+
+  @@index([created_by], map: "idx_created_by")
+  @@index([task_id], map: "idx_task_id")
+  @@index([weekNumber, year], map: "idx_week_year")
+}
+
+model linkedin_embeds {
+  id          Int       @id @default(autoincrement())
+  postUrl     String    @unique(map: "postUrl") @db.VarChar(255)
+  embedCode   String    @db.Text
+  title       String?   @db.VarChar(255)
+  description String?   @db.Text
+  imageUrl    String?   @db.VarChar(255)
+  isActive    Boolean?  @default(true)
+  createdAt   DateTime? @default(now()) @db.DateTime(0)
+  updatedAt   DateTime? @default(now()) @db.DateTime(0)
+}
+
+model linkedin_posts {
+  id             Int       @id @default(autoincrement())
+  blogPostId     Int
+  linkedInPostId String    @unique(map: "linkedInPostId") @db.VarChar(255)
+  publishedAt    DateTime  @db.DateTime(0)
+  status         String?   @default("published") @db.VarChar(50)
+  engagementData String?   @db.Text
+  createdAt      DateTime? @default(now()) @db.DateTime(0)
+  updatedAt      DateTime? @default(now()) @db.DateTime(0)
+  BlogPost       BlogPost  @relation(fields: [blogPostId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "linkedin_posts_ibfk_1")
+
+  @@index([blogPostId], map: "blogPostId")
+}
+
+model linkedin_settings {
+  id           Int       @id @default(autoincrement())
+  accessToken  String    @db.Text
+  refreshToken String?   @db.Text
+  expiresAt    DateTime  @db.DateTime(0)
+  personUrn    String    @db.VarChar(255)
+  profileData  String?   @db.Text
+  autoPublish  Boolean?  @default(false)
+  createdAt    DateTime? @default(now()) @db.DateTime(0)
+  updatedAt    DateTime? @default(now()) @db.DateTime(0)
+}
+
+model linkedin_publish_errors {
+  id           Int       @id @default(autoincrement())
+  blogPostId   Int
+  errorMessage String    @db.Text
+  retryCount   Int       @default(0)
+  lastRetryAt  DateTime? @db.DateTime(0)
+  createdAt    DateTime  @default(now()) @db.DateTime(0)
+  updatedAt    DateTime  @default(now()) @db.DateTime(0)
+  BlogPost     BlogPost  @relation(fields: [blogPostId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_linkedin_publish_errors_blogPost")
+
+  @@index([blogPostId], map: "idx_blogPostId")
+}
+
+model NotificationPushSettings {
+  id                    Int                                     @id @default(autoincrement()) @db.UnsignedInt
+  notification_type     String                                  @db.VarChar(50)
+  target_role           NotificationPushSettings_target_role
+  send_push             Boolean?                                @default(true)
+  push_priority         NotificationPushSettings_push_priority? @default(NORMAL)
+  immediate_send        Boolean?                                @default(true)
+  quiet_hours_respected Boolean?                                @default(true)
+  batch_allowed         Boolean?                                @default(false)
+  push_title_template   String?                                 @db.VarChar(255)
+  push_message_template String?                                 @db.VarChar(500)
+  created_at            DateTime?                               @default(now()) @db.Timestamp(0)
+  updated_at            DateTime?                               @default(now()) @db.Timestamp(0)
+
+  @@unique([notification_type, target_role], map: "unique_type_role")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model ClientInteractions {
+  interaction_id     Int                                  @id @default(autoincrement()) @db.UnsignedInt
+  project_id         Int                                  @db.UnsignedInt
+  interaction_type   ClientInteractions_interaction_type? @default(meeting)
+  satisfaction_score Int?
+  interaction_date   DateTime?                            @default(now()) @db.DateTime(0)
+  notes              String?                              @db.Text
+  follow_up_required Boolean?                             @default(false)
+  created_by         Int                                  @db.UnsignedInt
+  Projects           Projects                             @relation(fields: [project_id], references: [project_id], onDelete: Cascade, onUpdate: NoAction, map: "ClientInteractions_ibfk_1")
+  Employees          Employees                            @relation(fields: [created_by], references: [employee_id], onDelete: NoAction, onUpdate: NoAction, map: "ClientInteractions_ibfk_2")
+
+  @@index([created_by], map: "created_by")
+  @@index([interaction_date], map: "idx_client_interactions_date")
+  @@index([project_id], map: "idx_client_interactions_project")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model OperatorPerformanceReviews {
+  review_id                                                   Int       @id @default(autoincrement()) @db.UnsignedInt
+  employee_id                                                 Int       @db.UnsignedInt
+  project_id                                                  Int       @db.UnsignedInt
+  review_date                                                 DateTime  @db.Date
+  efficiency_score                                            Int?
+  safety_compliance                                           Boolean?  @default(true)
+  client_feedback                                             String?   @db.Text
+  areas_for_improvement                                       String?   @db.Text
+  commendations                                               String?   @db.Text
+  reviewed_by                                                 Int       @db.UnsignedInt
+  Employees_OperatorPerformanceReviews_employee_idToEmployees Employees @relation("OperatorPerformanceReviews_employee_idToEmployees", fields: [employee_id], references: [employee_id], onDelete: Cascade, onUpdate: NoAction, map: "OperatorPerformanceReviews_ibfk_1")
+  Projects                                                    Projects  @relation(fields: [project_id], references: [project_id], onDelete: Cascade, onUpdate: NoAction, map: "OperatorPerformanceReviews_ibfk_2")
+  Employees_OperatorPerformanceReviews_reviewed_byToEmployees Employees @relation("OperatorPerformanceReviews_reviewed_byToEmployees", fields: [reviewed_by], references: [employee_id], onDelete: NoAction, onUpdate: NoAction, map: "OperatorPerformanceReviews_ibfk_3")
+
+  @@index([employee_id], map: "idx_performance_reviews_employee")
+  @@index([project_id], map: "idx_performance_reviews_project")
+  @@index([reviewed_by], map: "reviewed_by")
+}
+
+model RevenueTracking {
+  revenue_id           Int                             @id @default(autoincrement()) @db.UnsignedInt
+  project_id           Int                             @db.UnsignedInt
+  billing_period_start DateTime                        @db.Date
+  billing_period_end   DateTime                        @db.Date
+  total_hours          Decimal                         @db.Decimal(8, 2)
+  total_revenue        Decimal                         @db.Decimal(10, 2)
+  estimated_costs      Decimal?                        @db.Decimal(10, 2)
+  profit_margin        Decimal?                        @db.Decimal(5, 2)
+  payment_received     Boolean?                        @default(false)
+  payment_date         DateTime?                       @db.Date
+  payment_method       RevenueTracking_payment_method? @default(bank_transfer)
+  Projects             Projects                        @relation(fields: [project_id], references: [project_id], onDelete: Cascade, onUpdate: NoAction, map: "RevenueTracking_ibfk_1")
+
+  @@index([billing_period_start, billing_period_end], map: "idx_revenue_tracking_period")
+  @@index([project_id], map: "idx_revenue_tracking_project")
+}
+
+model PayrollAuditLog {
+  id             Int                         @id @default(autoincrement())
+  batch_id       Int?
+  action         PayrollAuditLog_action
+  entity_type    PayrollAuditLog_entity_type
+  entity_id      Int?
+  performed_by   Int                         @db.UnsignedInt
+  performed_at   DateTime?                   @default(now()) @db.DateTime(0)
+  ip_address     String?                     @db.VarChar(45)
+  user_agent     String?                     @db.VarChar(500)
+  old_values     Json?
+  new_values     Json?
+  notes          String?                     @db.Text
+  error_details  String?                     @db.Text
+  PayrollBatches PayrollBatches?             @relation(fields: [batch_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "PayrollAuditLog_ibfk_1")
+  Employees      Employees                   @relation(fields: [performed_by], references: [employee_id], onDelete: NoAction, onUpdate: NoAction, map: "PayrollAuditLog_ibfk_2")
+
+  @@index([action], map: "idx_action")
+  @@index([batch_id], map: "idx_batch_id")
+  @@index([performed_at], map: "idx_performed_at")
+  @@index([performed_by], map: "idx_performed_by")
+}
+
+model PayrollBatchEntries {
+  id                  Int                              @id @default(autoincrement())
+  batch_id            Int
+  employee_id         Int                              @db.UnsignedInt
+  zenegy_employee_id  String?                          @db.VarChar(100)
+  total_days_worked   Int?                             @default(0)
+  total_hours         Decimal?                         @default(0.00) @db.Decimal(8, 2)
+  total_km            Decimal?                         @default(0.00) @db.Decimal(10, 2)
+  sync_status         PayrollBatchEntries_sync_status? @default(pending)
+  sync_attempts       Int?                             @default(0)
+  last_sync_attempt   DateTime?                        @db.DateTime(0)
+  sync_error          String?                          @db.Text
+  zenegy_response     Json?
+  created_at          DateTime?                        @default(now()) @db.DateTime(0)
+  updated_at          DateTime?                        @default(now()) @db.DateTime(0)
+  PayrollBatches      PayrollBatches                   @relation(fields: [batch_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "PayrollBatchEntries_ibfk_1")
+  Employees           Employees                        @relation(fields: [employee_id], references: [employee_id], onDelete: NoAction, onUpdate: NoAction, map: "PayrollBatchEntries_ibfk_2")
+  PayrollDailyEntries PayrollDailyEntries[]
+  ZenegyApiLog        ZenegyApiLog[]
+
+  @@unique([batch_id, employee_id], map: "unique_batch_employee")
+  @@index([employee_id], map: "idx_employee_id")
+  @@index([sync_status], map: "idx_sync_status")
+}
+
+model PayrollBatches {
+  id                                              Int                    @id @default(autoincrement())
+  batch_number                                    String                 @unique(map: "batch_number") @db.VarChar(50)
+  period_start                                    DateTime               @db.Date
+  period_end                                      DateTime               @db.Date
+  year                                            Int
+  period_number                                   Int
+  total_employees                                 Int?                   @default(0)
+  total_hours                                     Decimal?               @default(0.00) @db.Decimal(10, 2)
+  total_km                                        Decimal?               @default(0.00) @db.Decimal(10, 2)
+  status                                          PayrollBatches_status? @default(draft)
+  created_by                                      Int                    @db.UnsignedInt
+  approved_by                                     Int?                   @db.UnsignedInt
+  approved_at                                     DateTime?              @db.DateTime(0)
+  sent_to_zenegy_at                               DateTime?              @db.DateTime(0)
+  zenegy_batch_id                                 String?                @db.VarChar(100)
+  zenegy_response                                 Json?
+  notes                                           String?                @db.Text
+  created_at                                      DateTime?              @default(now()) @db.DateTime(0)
+  updated_at                                      DateTime?              @default(now()) @db.DateTime(0)
+  PayrollAuditLog                                 PayrollAuditLog[]
+  PayrollBatchEntries                             PayrollBatchEntries[]
+  Employees_PayrollBatches_created_byToEmployees  Employees              @relation("PayrollBatches_created_byToEmployees", fields: [created_by], references: [employee_id], onDelete: NoAction, onUpdate: NoAction, map: "PayrollBatches_ibfk_1")
+  Employees_PayrollBatches_approved_byToEmployees Employees?             @relation("PayrollBatches_approved_byToEmployees", fields: [approved_by], references: [employee_id], onDelete: NoAction, onUpdate: NoAction, map: "PayrollBatches_ibfk_2")
+  WorkEntries                                     WorkEntries[]
+  ZenegyApiLog                                    ZenegyApiLog[]
+
+  @@index([approved_by], map: "approved_by")
+  @@index([created_by], map: "created_by")
+  @@index([created_at], map: "idx_created_at")
+  @@index([period_start, period_end], map: "idx_period")
+  @@index([status], map: "idx_status")
+  @@index([year, period_number], map: "idx_year_period")
+}
+
+model PayrollDailyEntries {
+  id                  Int                 @id @default(autoincrement())
+  batch_entry_id      Int
+  work_date           DateTime            @db.Date
+  hours_worked        Decimal             @db.Decimal(5, 2)
+  kilometers          Decimal?            @default(0.00) @db.Decimal(8, 2)
+  work_entry_ids      Json?
+  created_at          DateTime?           @default(now()) @db.DateTime(0)
+  PayrollBatchEntries PayrollBatchEntries @relation(fields: [batch_entry_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "PayrollDailyEntries_ibfk_1")
+
+  @@unique([batch_entry_id, work_date], map: "unique_entry_date")
+  @@index([batch_entry_id], map: "idx_batch_entry")
+  @@index([work_date], map: "idx_work_date")
+}
+
+model ZenegyApiLog {
+  id                  Int                  @id @default(autoincrement())
+  batch_id            Int?
+  batch_entry_id      Int?
+  endpoint            String               @db.VarChar(255)
+  method              ZenegyApiLog_method
+  request_headers     Json?
+  request_body        Json?
+  response_status     Int?
+  response_headers    Json?
+  response_body       Json?
+  response_time_ms    Int?
+  is_success          Boolean?             @default(false)
+  error_message       String?              @db.Text
+  created_at          DateTime?            @default(now()) @db.DateTime(0)
+  PayrollBatches      PayrollBatches?      @relation(fields: [batch_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "ZenegyApiLog_ibfk_1")
+  PayrollBatchEntries PayrollBatchEntries? @relation(fields: [batch_entry_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "ZenegyApiLog_ibfk_2")
+
+  @@index([batch_entry_id], map: "batch_entry_id")
+  @@index([batch_id], map: "idx_batch_id")
+  @@index([created_at], map: "idx_created_at")
+  @@index([is_success], map: "idx_is_success")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model ZenegyConfig {
+  id                     Int                                  @id @default(1)
+  api_key                String                               @db.VarChar(500)
+  api_secret             String                               @db.VarChar(500)
+  tenant_id              String                               @db.VarChar(100)
+  company_id             String                               @db.VarChar(100)
+  environment            ZenegyConfig_environment?            @default(production)
+  api_base_url           String?                              @default("https://api.zenegy.com") @db.VarChar(255)
+  api_version            String?                              @default("v1") @db.VarChar(10)
+  timeout_seconds        Int?                                 @default(30)
+  max_retry_attempts     Int?                                 @default(3)
+  webhook_secret         String?                              @db.VarChar(255)
+  is_active              Boolean?                             @default(true)
+  last_connection_test   DateTime?                            @db.DateTime(0)
+  last_connection_status ZenegyConfig_last_connection_status?
+  updated_at             DateTime?                            @default(now()) @db.DateTime(0)
+  updated_by             Int?                                 @db.UnsignedInt
+  Employees              Employees?                           @relation(fields: [updated_by], references: [employee_id], onDelete: NoAction, onUpdate: NoAction, map: "ZenegyConfig_ibfk_1")
+
+  @@index([updated_by], map: "updated_by")
+}
+
+model ZenegyEmployeeMapping {
+  id                   Int       @id @default(autoincrement())
+  employee_id          Int       @unique(map: "unique_employee") @db.UnsignedInt
+  zenegy_employee_id   String    @unique(map: "unique_zenegy_employee") @db.VarChar(100)
+  zenegy_person_id     String?   @db.VarChar(100)
+  zenegy_employment_id String?   @db.VarChar(100)
+  sync_enabled         Boolean?  @default(true)
+  last_synced_at       DateTime? @db.DateTime(0)
+  sync_errors          Int?      @default(0)
+  last_error_message   String?   @db.Text
+  created_at           DateTime? @default(now()) @db.DateTime(0)
+  updated_at           DateTime? @default(now()) @db.DateTime(0)
+  Employees            Employees @relation(fields: [employee_id], references: [employee_id], onDelete: Cascade, onUpdate: NoAction, map: "ZenegyEmployeeMapping_ibfk_1")
+
+  @@index([sync_enabled], map: "idx_sync_enabled")
+}
+
+model ZenegyWebhookLog {
+  id                Int                                 @id @default(autoincrement())
+  event_id          String?                             @unique(map: "event_id") @db.VarChar(100)
+  event_type        String                              @db.VarChar(100)
+  event_timestamp   DateTime                            @db.DateTime(0)
+  payload           Json
+  headers           Json?
+  processing_status ZenegyWebhookLog_processing_status? @default(received)
+  processed_at      DateTime?                           @db.DateTime(0)
+  error_message     String?                             @db.Text
+  created_at        DateTime?                           @default(now()) @db.DateTime(0)
+
+  @@index([created_at], map: "idx_created_at")
+  @@index([event_type], map: "idx_event_type")
+  @@index([processing_status], map: "idx_status")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model LeaveAuditLog {
+  id                                              Int                  @id @default(autoincrement()) @db.UnsignedInt
+  leave_request_id                                Int?                 @db.UnsignedInt
+  employee_id                                     Int                  @db.UnsignedInt
+  action                                          LeaveAuditLog_action
+  old_values                                      Json?
+  new_values                                      Json?
+  performed_by                                    Int                  @db.UnsignedInt
+  performed_at                                    DateTime?            @default(now()) @db.Timestamp(0)
+  ip_address                                      String?              @db.VarChar(45)
+  user_agent                                      String?              @db.VarChar(500)
+  notes                                           String?              @db.Text
+  Employees_LeaveAuditLog_employee_idToEmployees  Employees            @relation("LeaveAuditLog_employee_idToEmployees", fields: [employee_id], references: [employee_id], onDelete: Cascade, map: "fk_audit_employee")
+  LeaveRequests                                   LeaveRequests?       @relation(fields: [leave_request_id], references: [id], onDelete: Cascade, map: "fk_audit_leave_request")
+  Employees_LeaveAuditLog_performed_byToEmployees Employees            @relation("LeaveAuditLog_performed_byToEmployees", fields: [performed_by], references: [employee_id], onDelete: Cascade, map: "fk_audit_performer")
+
+  @@index([action], map: "idx_audit_action")
+  @@index([performed_at], map: "idx_audit_date")
+  @@index([employee_id], map: "idx_audit_employee")
+  @@index([leave_request_id], map: "idx_audit_leave_request")
+  @@index([performed_by], map: "idx_audit_performed_by")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model LeaveBalance {
+  id                  Int       @id @default(autoincrement()) @db.UnsignedInt
+  employee_id         Int       @db.UnsignedInt
+  year                Int
+  vacation_days_total Int?      @default(25)
+  vacation_days_used  Int?      @default(0)
+  sick_days_used      Int?      @default(0)
+  personal_days_total Int?      @default(5)
+  personal_days_used  Int?      @default(0)
+  carry_over_days     Int?      @default(0)
+  carry_over_expires  DateTime? @db.Date
+  created_at          DateTime? @default(now()) @db.Timestamp(0)
+  updated_at          DateTime? @default(now()) @db.Timestamp(0)
+  Employees           Employees @relation(fields: [employee_id], references: [employee_id], onDelete: Cascade, map: "fk_balance_employee")
+
+  @@unique([employee_id, year], map: "unique_employee_year")
+  @@index([employee_id], map: "idx_balance_employee")
+  @@index([year], map: "idx_balance_year")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model LeaveRequests {
+  id                                             Int                   @id @default(autoincrement()) @db.UnsignedInt
+  employee_id                                    Int                   @db.UnsignedInt
+  type                                           LeaveRequests_type
+  start_date                                     DateTime              @db.Date
+  end_date                                       DateTime              @db.Date
+  total_days                                     Int
+  half_day                                       Boolean?              @default(false)
+  status                                         LeaveRequests_status? @default(PENDING)
+  reason                                         String?               @db.Text
+  sick_note_url                                  String?               @db.VarChar(1024)
+  created_at                                     DateTime?             @default(now()) @db.Timestamp(0)
+  updated_at                                     DateTime?             @default(now()) @db.Timestamp(0)
+  approved_by                                    Int?                  @db.UnsignedInt
+  approved_at                                    DateTime?             @db.DateTime(0)
+  rejection_reason                               String?               @db.Text
+  emergency_leave                                Boolean?              @default(false)
+  LeaveAuditLog                                  LeaveAuditLog[]
+  Employees_LeaveRequests_approved_byToEmployees Employees?            @relation("LeaveRequests_approved_byToEmployees", fields: [approved_by], references: [employee_id], map: "fk_leave_approver")
+  Employees_LeaveRequests_employee_idToEmployees Employees             @relation("LeaveRequests_employee_idToEmployees", fields: [employee_id], references: [employee_id], onDelete: Cascade, map: "fk_leave_employee")
+
+  @@index([approved_by], map: "idx_leave_approver")
+  @@index([created_at], map: "idx_leave_created")
+  @@index([start_date, end_date], map: "idx_leave_dates")
+  @@index([employee_id], map: "idx_leave_employee_id")
+  @@index([status], map: "idx_leave_status")
+  @@index([type], map: "idx_leave_type")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model PublicHolidays {
+  id          Int       @id @default(autoincrement()) @db.UnsignedInt
+  date        DateTime  @unique(map: "unique_holiday_date") @db.Date
+  name        String    @db.VarChar(255)
+  description String?   @db.Text
+  year        Int
+  is_national Boolean?  @default(true)
+  created_at  DateTime? @default(now()) @db.Timestamp(0)
+  updated_at  DateTime? @default(now()) @db.Timestamp(0)
+
+  @@index([date], map: "idx_holiday_date")
+  @@index([is_national], map: "idx_holiday_national")
+  @@index([year], map: "idx_holiday_year")
+}
+
+enum OperatorQuoteStatus {
+  PENDING
+  SENT
+  ACCEPTED
+  REJECTED
+  EXPIRED
+}
+
+enum Employees_role {
+  arbejder
+  byggeleder
+  chef
+  system
+}
+
+enum WorkEntries_confirmation_status {
+  pending
+  submitted
+  confirmed
+  rejected
+}
+
+enum Projects_status {
+  aktiv
+  afsluttet
+  afventer
+}
+
+enum WorkEntries_status {
+  pending
+  submitted
+  confirmed
+  rejected
+}
+
+enum MessageStatusEnum {
+  SENT
+  DELIVERED
+  READ
+}
+
+enum EmployeeLanguage_language {
+  DANISH
+  ENGLISH
+  POLISH
+  GERMAN
+}
+
+enum OperatorLanguageRequirement_language {
+  DANISH
+  ENGLISH
+  POLISH
+  GERMAN
+}
+
+enum EmployeeLanguage_proficiency {
+  BASIC
+  INTERMEDIATE
+  FLUENT
+  NATIVE
+}
+
+enum HiringRequestStatusHistory_previousStatus {
+  PENDING
+  REVIEWING
+  APPROVED
+  SCHEDULED
+  REJECTED
+  COMPLETED
+  CANCELLED
+}
+
+enum HiringRequestStatusHistory_newStatus {
+  PENDING
+  REVIEWING
+  APPROVED
+  SCHEDULED
+  REJECTED
+  COMPLETED
+  CANCELLED
+}
+
+enum OperatorHiringRequest_status {
+  PENDING
+  REVIEWING
+  APPROVED
+  SCHEDULED
+  REJECTED
+  COMPLETED
+  CANCELLED
+}
+
+enum PushTokens_device_type {
+  ios
+  android
+}
+
+enum PushNotifications_status {
+  PENDING
+  SENT
+  FAILED
+}
+
+enum WorkPlans_status {
+  DRAFT
+  PUBLISHED
+}
+
+enum NotificationPushSettings_target_role {
+  arbejder
+  byggeleder
+  chef
+  all
+}
+
+enum NotificationPushSettings_push_priority {
+  URGENT
+  HIGH
+  NORMAL
+  LOW
+}
+
+enum PushNotifications_priority {
+  URGENT
+  HIGH
+  NORMAL
+  LOW
+}
+
+enum Notifications_target_role {
+  arbejder
+  byggeleder
+  chef
+  system
+  all
+}
+
+enum Notifications_priority {
+  URGENT
+  HIGH
+  NORMAL
+  LOW
+}
+
+enum ClientInteractions_interaction_type {
+  meeting
+  feedback
+  complaint
+  praise
+  review
+}
+
+enum RevenueTracking_payment_method {
+  bank_transfer
+  check
+  cash
+  other
+}
+
+enum PayrollAuditLog_action {
+  batch_created
+  batch_approved
+  batch_rejected
+  batch_cancelled
+  sync_started
+  sync_completed
+  sync_failed
+  entry_sent
+  entry_failed
+  config_changed
+  mapping_changed
+}
+
+enum PayrollAuditLog_entity_type {
+  batch
+  entry
+  config
+  mapping
+}
+
+enum ZenegyApiLog_method {
+  GET
+  POST
+  PUT
+  DELETE
+  PATCH
+}
+
+enum ZenegyConfig_environment {
+  production
+  sandbox
+}
+
+enum ZenegyWebhookLog_processing_status {
+  received
+  processing
+  processed
+  failed
+  ignored
+}
+
+enum PayrollBatchEntries_sync_status {
+  pending
+  syncing
+  sent
+  failed
+  skipped
+}
+
+enum PayrollBatches_status {
+  draft
+  ready_for_approval
+  approved
+  sent_to_zenegy
+  completed
+  failed
+  cancelled
+}
+
+enum ZenegyConfig_last_connection_status {
+  success
+  failed
+}
+
+enum LeaveRequests_type {
+  VACATION
+  SICK
+  PERSONAL
+  PARENTAL
+  COMPENSATORY
+  EMERGENCY
+}
+
+enum LeaveAuditLog_action {
+  CREATED
+  APPROVED
+  REJECTED
+  CANCELLED
+  MODIFIED
+  DELETED
+}
+
+enum LeaveRequests_status {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+  EXPIRED
+}
+
+enum PushNotifications_notification_type {
+  HOURS_SUBMITTED
+  HOURS_APPROVED
+  HOURS_CONFIRMED
+  HOURS_REJECTED
+  HOURS_CONFIRMED_FOR_PAYROLL
+  PAYROLL_PROCESSED
+  HOURS_REMINDER
+  HOURS_OVERDUE
+  TASK_ASSIGNED
+  TASK_COMPLETED
+  TASK_DEADLINE_APPROACHING
+  TASK_OVERDUE
+  WORKPLAN_CREATED
+  WORKPLAN_UPDATED
+  LEAVE_REQUEST_SUBMITTED
+  LEAVE_REQUEST_APPROVED
+  LEAVE_REQUEST_REJECTED
+  LEAVE_REQUEST_CANCELLED
+  LEAVE_BALANCE_UPDATED
+  LEAVE_REQUEST_REMINDER
+  LEAVE_STARTING
+  LEAVE_ENDING
+  PROJECT_CREATED
+  EMERGENCY_ALERT
+  LICENSE_EXPIRING
+  LICENSE_EXPIRED
+  SYSTEM_MAINTENANCE
+  PAYROLL_READY
+}
+
+enum Notifications_notification_type {
+  HOURS_SUBMITTED
+  HOURS_APPROVED
+  HOURS_CONFIRMED
+  HOURS_REJECTED
+  HOURS_CONFIRMED_FOR_PAYROLL
+  TIMESHEET_GENERATED
+  PAYROLL_PROCESSED
+  HOURS_REMINDER
+  HOURS_OVERDUE
+  PROJECT_CREATED
+  PROJECT_ASSIGNED
+  PROJECT_ACTIVATED
+  PROJECT_COMPLETED
+  PROJECT_CANCELLED
+  PROJECT_STATUS_CHANGED
+  PROJECT_DEADLINE_APPROACHING
+  TASK_CREATED
+  TASK_ASSIGNED
+  TASK_REASSIGNED
+  TASK_UNASSIGNED
+  TASK_COMPLETED
+  TASK_STATUS_CHANGED
+  TASK_DEADLINE_APPROACHING
+  TASK_OVERDUE
+  WORKPLAN_CREATED
+  WORKPLAN_UPDATED
+  WORKPLAN_ASSIGNED
+  WORKPLAN_CANCELLED
+  LEAVE_REQUEST_SUBMITTED
+  LEAVE_REQUEST_APPROVED
+  LEAVE_REQUEST_REJECTED
+  LEAVE_REQUEST_CANCELLED
+  LEAVE_BALANCE_UPDATED
+  LEAVE_REQUEST_REMINDER
+  LEAVE_STARTING
+  LEAVE_ENDING
+  EMPLOYEE_ACTIVATED
+  EMPLOYEE_DEACTIVATED
+  EMPLOYEE_ROLE_CHANGED
+  LICENSE_EXPIRING
+  LICENSE_EXPIRED
+  CERTIFICATION_REQUIRED
+  PAYROLL_READY
+  INVOICE_GENERATED
+  PAYMENT_RECEIVED
+  SYSTEM_MAINTENANCE
+  EMERGENCY_ALERT
+  GENERAL_ANNOUNCEMENT
+  GENERAL_INFO
+}
+
+enum PushNotifications_category {
+  HOURS
+  PROJECT
+  TASK
+  WORKPLAN
+  LEAVE
+  PAYROLL
+  SYSTEM
+  EMERGENCY
+}
+
+enum Notifications_category {
+  HOURS
+  PROJECT
+  TASK
+  WORKPLAN
+  LEAVE
+  PAYROLL
+  SYSTEM
+  EMERGENCY
+}

@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(rg:*)",
+      "Bash(/opt/homebrew/lib/node_modules/@anthropic-ai/claude-code/vendor/ripgrep/arm64-darwin/rg -l \"PayrollDashboardStatsResponse\" ../ --type swift)",
+      "Bash(/opt/homebrew/lib/node_modules/@anthropic-ai/claude-code/vendor/ripgrep/arm64-darwin/rg \"struct PayrollDashboardStatsResponse\" ../Core/Services/API/Chef/PayrollAPIService.swift -A 20)",
+      "Bash(/opt/homebrew/lib/node_modules/@anthropic-ai/claude-code/vendor/ripgrep/arm64-darwin/rg \"PayrollPeriodOption.*mockData\" ../Core/Services/API/Chef/PayrollAPIService.swift -A 20)",
+      "Bash(/opt/homebrew/lib/node_modules/@anthropic-ai/claude-code/vendor/ripgrep/arm64-darwin/rg \"struct PayrollPeriodOption\" ../Core/Services/API/Chef/PayrollAPIService.swift -A 30)",
+      "Bash(/opt/homebrew/lib/node_modules/@anthropic-ai/claude-code/vendor/ripgrep/arm64-darwin/rg \"Current Period.*Week\" ../Core/Services/API/Chef/PayrollAPIService.swift -A 10 -B 2)",
+      "Bash(/opt/homebrew/lib/node_modules/@anthropic-ai/claude-code/vendor/ripgrep/arm64-darwin/rg \"\\.title\\b\" \"/Users/maksymilianmarcinowski/Desktop/KSR Cranes App/Core/ViewModels/NotificationsViewModel.swift\")",
+      "Bash(/opt/homebrew/lib/node_modules/@anthropic-ai/claude-code/vendor/ripgrep/arm64-darwin/rg \"createPayrollBatch|bulkApproveWorkEntries\" ../Core/Services/API/Chef/PayrollAPIService.swift -A 10)",
+      "Bash(/opt/homebrew/lib/node_modules/@anthropic-ai/claude-code/vendor/ripgrep/arm64-darwin/rg \"sent_to_payroll.*true|payroll.*batch.*create\" ../Core/Services/API/Chef/PayrollAPIService.swift -A 5)",
+      "Bash(npx prisma generate:*)",
+      "Bash(find:*)",
+      "Bash(xcodebuild:*)",
+      "Bash(grep:*)",
+      "Bash(swift:*)",
+      "Bash(rm:*)",
+      "Bash(xcrun:*)",
+      "Bash(mv:*)"
+    ],
+    "deny": []
+  }
+}
