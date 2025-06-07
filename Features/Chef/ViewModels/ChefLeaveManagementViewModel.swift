@@ -298,9 +298,7 @@ class ChefLeaveManagementViewModel: ObservableObject {
                 showingSuccessAlert = true
                 
                 // Refresh data to show updated balances
-                loadLeaveRequests()
-                    .sink(receiveCompletion: { _ in }, receiveValue: { })
-                    .store(in: &cancellables)
+                loadInitialData()
             }
         } catch {
             await MainActor.run {
