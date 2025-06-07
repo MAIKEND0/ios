@@ -69,6 +69,13 @@ class ManagerProfileViewModel: ObservableObject {
                 self.profileData.assignedProjects = projectsAndWorkers.projects
                 self.profileData.managedWorkers = projectsAndWorkers.workers
                 
+                // 🔍 DEBUG: Log workers and their profile URLs
+                print("🔍 [ManagerProfileViewModel] Loaded \(projectsAndWorkers.workers.count) workers:")
+                for worker in projectsAndWorkers.workers {
+                    print("   - Worker: \(worker.name) (ID: \(worker.employee_id))")
+                    print("     Profile URL: \(worker.profilePictureUrl ?? "NIL")")
+                }
+                
                 // 🆕 Set profile picture URL from supervisor API
                 if let pictureUrl = profilePictureUrl, !pictureUrl.isEmpty {
                     self.profileData.profilePictureUrl = pictureUrl

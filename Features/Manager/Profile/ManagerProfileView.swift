@@ -840,9 +840,27 @@ struct TeamMemberCard: View {
     
     var body: some View {
         HStack(spacing: 12) {
-            Image(systemName: "person.circle.fill")
-                .font(.system(size: 24))
-                .foregroundColor(.ksrYellow)
+            // Profile image with fallback
+            Group {
+                if let profileUrl = worker.profilePictureUrl, !profileUrl.isEmpty {
+                    #if DEBUG
+                    let _ = print("✅ [TeamMemberCard] Worker \(worker.name) has profile URL: \(profileUrl)")
+                    #endif
+                    WorkerCachedProfileImage(
+                        employeeId: String(worker.employee_id),
+                        currentImageUrl: profileUrl,
+                        size: 40
+                    )
+                } else {
+                    #if DEBUG
+                    let _ = print("⚠️ [TeamMemberCard] Worker \(worker.name) has no profile URL - showing placeholder")
+                    #endif
+                    Image(systemName: "person.circle.fill")
+                        .font(.system(size: 40))
+                        .foregroundColor(.ksrYellow)
+                        .frame(width: 40, height: 40)
+                }
+            }
             
             VStack(alignment: .leading, spacing: 4) {
                 Text(worker.name)
