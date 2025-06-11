@@ -121,7 +121,12 @@ extension ChefProjectsAPIService {
         let assignments = workers.map { worker in
             CreateTaskAssignmentRequest(
                 employeeId: worker.employee.employeeId,
-                craneModelId: worker.craneTypes.first?.id ?? defaultCraneModel?.id
+                craneModelId: worker.craneTypes.first?.id ?? defaultCraneModel?.id,
+                skipCertificateValidation: nil,
+                skipCraneTypeValidation: nil,
+                workDate: nil,
+                status: nil,
+                notes: nil
             )
         }
         
@@ -152,6 +157,7 @@ extension ChefProjectsAPIService {
     func validateWorkerAssignments(
         workers: [AvailableWorker],
         requiredCraneTypes: [Int]? = nil,
+        requiredCertificates: [Int]? = nil,
         taskDate: Date? = nil
     ) -> WorkerAssignmentValidation {
         
@@ -164,17 +170,43 @@ extension ChefProjectsAPIService {
                 continue
             }
             
-            // Check required skills
+            var hasMissingSkills = false
+            
+            // Check required crane types
             if let required = requiredCraneTypes, !required.isEmpty {
-                let hasAllSkills = required.allSatisfy { requiredType in
+                let hasAllCraneTypes = required.allSatisfy { requiredType in
                     worker.craneTypes.contains { $0.id == requiredType }
                 }
                 
-                if !hasAllSkills {
-                    validation.workersWithMissingSkills.append(worker)
-                } else {
-                    validation.validWorkers.append(worker)
+                if !hasAllCraneTypes {
+                    hasMissingSkills = true
                 }
+            }
+            
+            // Check required certificates
+            if let requiredCerts = requiredCertificates, !requiredCerts.isEmpty {
+                // Check if worker has certificates data
+                if let workerCertificates = worker.certificates {
+                    let hasAllCertificates = requiredCerts.allSatisfy { requiredCertId in
+                        workerCertificates.contains { cert in
+                            cert.certificateTypeId == requiredCertId && 
+                            cert.isCertified &&
+                            (cert.certificationExpires == nil || cert.certificationExpires! > Date())
+                        }
+                    }
+                    
+                    if !hasAllCertificates {
+                        hasMissingSkills = true
+                    }
+                } else {
+                    // No certificates data available, worker is missing skills
+                    hasMissingSkills = true
+                }
+            }
+            
+            // Classify worker
+            if hasMissingSkills {
+                validation.workersWithMissingSkills.append(worker)
             } else {
                 validation.validWorkers.append(worker)
             }

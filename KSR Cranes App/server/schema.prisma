@@ -32,6 +32,10 @@ model Employees {
   zenegy_employee_number                                                       String?                      @unique(map: "uk_zenegy_employee_number") @db.VarChar(50)
   is_activated                                                                 Boolean                      @default(true)
   AuditLogs                                                                    AuditLogs[]
+  CalendarConflicts                                                            CalendarConflicts[]
+  CalendarEvents_CalendarEvents_employee_idToEmployees                         CalendarEvents[]             @relation("CalendarEvents_employee_idToEmployees")
+  CalendarEvents_CalendarEvents_created_byToEmployees                          CalendarEvents[]             @relation("CalendarEvents_created_byToEmployees")
+  CalendarSettings                                                             CalendarSettings?
   ClientInteractions                                                           ClientInteractions[]
   conversationParticipants                                                     ConversationParticipant[]
   EmployeeCraneTypes                                                           EmployeeCraneTypes[]
@@ -63,6 +67,7 @@ model Employees {
   WorkEntries                                                                  WorkEntries[]
   WorkPlanAssignments                                                          WorkPlanAssignments[]
   WorkPlans                                                                    WorkPlans[]
+  WorkerSkills                                                                 WorkerSkills[]
   ZenegyConfig                                                                 ZenegyConfig[]
   ZenegyEmployeeMapping                                                        ZenegyEmployeeMapping?
   activation_email_logs                                                        activation_email_logs[]
@@ -148,7 +153,11 @@ model Projects {
   city                       String?                      @db.VarChar(100)
   zip                        String?                      @db.VarChar(20)
   isActive                   Boolean                      @default(true)
+  budget                     Decimal?                     @db.Decimal(12, 2)
+  client_equipment_type      String?                      @db.VarChar(255)
+  operator_requirements      String?                      @db.Text
   BillingSettings            BillingSettings[]
+  CalendarEvents             CalendarEvents[]
   ClientInteractions         ClientInteractions[]
   Notifications              Notifications[]
   hiringRequests             OperatorHiringRequest[]      @relation("AssignedProject")
@@ -158,6 +167,7 @@ model Projects {
   Tasks                      Tasks[]
 
   @@index([customer_id])
+  @@index([start_date, end_date, status], map: "idx_projects_calendar_dates")
 }
 
 model BillingSettings {
@@ -177,18 +187,24 @@ model BillingSettings {
 }
 
 model TaskAssignments {
-  assignment_id  Int         @id @default(autoincrement()) @db.UnsignedInt
-  task_id        Int         @db.UnsignedInt
-  employee_id    Int         @db.UnsignedInt
-  assigned_at    DateTime?   @default(now()) @db.Timestamp(0)
-  crane_model_id Int?        @db.UnsignedInt
-  Employees      Employees   @relation(fields: [employee_id], references: [employee_id], onDelete: NoAction, onUpdate: NoAction)
-  Tasks          Tasks       @relation(fields: [task_id], references: [task_id], onDelete: NoAction, onUpdate: NoAction)
-  CraneModel     CraneModel? @relation(fields: [crane_model_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_taskassignments_cranemodel")
+  assignment_id  Int                     @id @default(autoincrement()) @db.UnsignedInt
+  task_id        Int                     @db.UnsignedInt
+  employee_id    Int                     @db.UnsignedInt
+  assigned_at    DateTime?               @default(now()) @db.Timestamp(0)
+  work_date      DateTime?               @db.Date
+  status         TaskAssignments_status? @default(assigned)
+  notes          String?                 @db.Text
+  crane_model_id Int?                    @db.UnsignedInt
+  Employees      Employees               @relation(fields: [employee_id], references: [employee_id], onDelete: NoAction, onUpdate: NoAction)
+  Tasks          Tasks                   @relation(fields: [task_id], references: [task_id], onDelete: NoAction, onUpdate: NoAction)
+  CraneModel     CraneModel?             @relation(fields: [crane_model_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_taskassignments_cranemodel")
 
   @@index([employee_id])
   @@index([task_id])
   @@index([crane_model_id], map: "idx_crane_model_id")
+  @@index([employee_id, assigned_at], map: "idx_task_assignments_employee_date")
+  @@index([employee_id, work_date], map: "idx_task_assignments_employee_work_date")
+  @@index([work_date, status], map: "idx_task_assignments_work_date")
 }
 
 model Tasks {
@@ -197,16 +213,23 @@ model Tasks {
   title                    String                  @db.VarChar(255)
   description              String?                 @db.Text
   deadline                 DateTime?               @db.Date
+  start_date               DateTime?               @db.Date
   created_at               DateTime?               @default(now()) @db.Timestamp(0)
   supervisor_email         String?                 @db.VarChar(255)
   supervisor_phone         String?                 @db.VarChar(50)
   supervisor_name          String?                 @db.VarChar(255)
   supervisor_id            Int?                    @db.UnsignedInt
   isActive                 Boolean                 @default(true)
+  status                   Tasks_status?           @default(planned)
+  priority                 Tasks_priority?         @default(medium)
+  estimated_hours          Decimal?                @db.Decimal(5, 2)
+  required_operators       Int?                    @default(1)
+  client_equipment_info    String?                 @db.Text
   required_crane_types     Json?
   preferred_crane_model_id Int?                    @db.UnsignedInt
   equipment_category_id    Int?                    @db.UnsignedInt
   equipment_brand_id       Int?                    @db.UnsignedInt
+  CalendarEvents           CalendarEvents[]
   conversation             Conversation?           @relation("TaskConversation")
   hiringRequests           OperatorHiringRequest[] @relation("AssignedTask")
   TaskAssignments          TaskAssignments[]
@@ -223,6 +246,8 @@ model Tasks {
   @@index([equipment_brand_id], map: "fk_tasks_equipment_brand")
   @@index([equipment_category_id], map: "fk_tasks_equipment_category")
   @@index([preferred_crane_model_id], map: "fk_tasks_preferred_crane_model")
+  @@index([start_date, deadline], map: "idx_tasks_calendar_dates")
+  @@index([status, priority], map: "idx_tasks_calendar_status")
 }
 
 model WorkEntries {
@@ -622,17 +647,22 @@ model CookiePolicy {
 }
 
 model CraneCategory {
-  id           Int         @id @default(autoincrement()) @db.UnsignedInt
-  name         String      @db.VarChar(100)
-  code         String      @unique @db.VarChar(50)
-  description  String?     @db.Text
-  iconUrl      String?     @db.VarChar(255)
-  displayOrder Int         @default(0)
-  isActive     Boolean     @default(true)
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @default(now()) @updatedAt
-  craneTypes   CraneType[]
-  Tasks        Tasks[]
+  id                    Int         @id @default(autoincrement()) @db.UnsignedInt
+  name                  String      @db.VarChar(100)
+  code                  String      @unique @db.VarChar(50)
+  description           String?     @db.Text
+  iconUrl               String?     @db.VarChar(255)
+  displayOrder          Int         @default(0)
+  isActive              Boolean     @default(true)
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @default(now()) @updatedAt
+  required_certificates Json?
+  danish_classification String?     @db.VarChar(50)
+  capacity_info         String?     @db.VarChar(100)
+  craneTypes            CraneType[]
+  Tasks                 Tasks[]
+
+  @@index([danish_classification], map: "idx_crane_category_classification")
 }
 
 model CraneType {
@@ -1363,6 +1393,8 @@ model LeaveRequests {
   @@index([employee_id], map: "idx_leave_employee_id")
   @@index([status], map: "idx_leave_status")
   @@index([type], map: "idx_leave_type")
+  @@index([start_date, end_date, status], map: "idx_leave_calendar_dates")
+  @@index([employee_id, start_date, end_date], map: "idx_leave_calendar_employee_dates")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -1380,6 +1412,139 @@ model PublicHolidays {
   @@index([date], map: "idx_holiday_date")
   @@index([is_national], map: "idx_holiday_national")
   @@index([year], map: "idx_holiday_year")
+}
+
+model CalendarConflicts {
+  conflict_id           Int                             @id @default(autoincrement()) @db.UnsignedInt
+  conflict_type         CalendarConflicts_conflict_type
+  severity              CalendarConflicts_severity
+  description           String                          @db.Text
+  resolution            String?                         @db.Text
+  source_type           CalendarConflicts_source_type
+  source_id             Int                             @db.UnsignedInt
+  target_type           CalendarConflicts_target_type
+  target_id             Int                             @db.UnsignedInt
+  affected_employee_ids Json?
+  conflict_start_date   DateTime                        @db.Date
+  conflict_end_date     DateTime                        @db.Date
+  status                CalendarConflicts_status?       @default(detected)
+  resolved_by           Int?                            @db.UnsignedInt
+  resolved_at           DateTime?                       @db.Timestamp(0)
+  created_at            DateTime?                       @default(now()) @db.Timestamp(0)
+  updated_at            DateTime?                       @default(now()) @db.Timestamp(0)
+  Employees             Employees?                      @relation(fields: [resolved_by], references: [employee_id], onUpdate: NoAction, map: "CalendarConflicts_ibfk_1")
+
+  @@index([conflict_start_date, conflict_end_date], map: "idx_calendar_conflicts_dates")
+  @@index([severity], map: "idx_calendar_conflicts_severity")
+  @@index([source_type, source_id], map: "idx_calendar_conflicts_source")
+  @@index([status], map: "idx_calendar_conflicts_status")
+  @@index([target_type, target_id], map: "idx_calendar_conflicts_target")
+  @@index([conflict_type], map: "idx_calendar_conflicts_type")
+  @@index([resolved_by], map: "resolved_by")
+}
+
+model CalendarEvents {
+  event_id                                        Int                       @id @default(autoincrement()) @db.UnsignedInt
+  title                                           String                    @db.VarChar(255)
+  description                                     String?                   @db.Text
+  event_type                                      CalendarEvents_event_type
+  category                                        CalendarEvents_category
+  start_date                                      DateTime                  @db.Date
+  end_date                                        DateTime?                 @db.Date
+  start_time                                      DateTime?                 @db.Time(0)
+  end_time                                        DateTime?                 @db.Time(0)
+  priority                                        CalendarEvents_priority?  @default(medium)
+  status                                          CalendarEvents_status?    @default(planned)
+  location                                        String?                   @db.VarChar(255)
+  project_id                                      Int?                      @db.UnsignedInt
+  task_id                                         Int?                      @db.UnsignedInt
+  employee_id                                     Int?                      @db.UnsignedInt
+  is_recurring                                    Boolean?                  @default(false)
+  recurrence_pattern                              String?                   @db.VarChar(100)
+  recurrence_end_date                             DateTime?                 @db.Date
+  created_by                                      Int                       @db.UnsignedInt
+  created_at                                      DateTime?                 @default(now()) @db.Timestamp(0)
+  updated_at                                      DateTime?                 @default(now()) @db.Timestamp(0)
+  Projects                                        Projects?                 @relation(fields: [project_id], references: [project_id], onDelete: Cascade, onUpdate: NoAction, map: "CalendarEvents_ibfk_1")
+  Tasks                                           Tasks?                    @relation(fields: [task_id], references: [task_id], onDelete: Cascade, onUpdate: NoAction, map: "CalendarEvents_ibfk_2")
+  Employees_CalendarEvents_employee_idToEmployees Employees?                @relation("CalendarEvents_employee_idToEmployees", fields: [employee_id], references: [employee_id], onDelete: Cascade, onUpdate: NoAction, map: "CalendarEvents_ibfk_3")
+  Employees_CalendarEvents_created_byToEmployees  Employees                 @relation("CalendarEvents_created_byToEmployees", fields: [created_by], references: [employee_id], onDelete: NoAction, onUpdate: NoAction, map: "CalendarEvents_ibfk_4")
+
+  @@index([created_by], map: "created_by")
+  @@index([category], map: "idx_calendar_events_category")
+  @@index([start_date, end_date], map: "idx_calendar_events_dates")
+  @@index([employee_id], map: "idx_calendar_events_employee")
+  @@index([priority], map: "idx_calendar_events_priority")
+  @@index([project_id], map: "idx_calendar_events_project")
+  @@index([is_recurring, recurrence_end_date], map: "idx_calendar_events_recurring")
+  @@index([status], map: "idx_calendar_events_status")
+  @@index([task_id], map: "idx_calendar_events_task")
+  @@index([event_type], map: "idx_calendar_events_type")
+}
+
+model CalendarSettings {
+  setting_id                Int                            @id @default(autoincrement()) @db.UnsignedInt
+  employee_id               Int                            @unique(map: "unique_employee_settings") @db.UnsignedInt
+  default_view              CalendarSettings_default_view? @default(month)
+  show_weekends             Boolean?                       @default(true)
+  show_leave_requests       Boolean?                       @default(true)
+  show_tasks                Boolean?                       @default(true)
+  show_projects             Boolean?                       @default(true)
+  show_operator_assignments Boolean?                       @default(true)
+  show_conflicts            Boolean?                       @default(true)
+  work_hours_start          DateTime?                      @default(dbgenerated("'08:00:00'")) @db.Time(0)
+  work_hours_end            DateTime?                      @default(dbgenerated("'16:00:00'")) @db.Time(0)
+  timezone                  String?                        @default("Europe/Copenhagen") @db.VarChar(50)
+  created_at                DateTime?                      @default(now()) @db.Timestamp(0)
+  updated_at                DateTime?                      @default(now()) @db.Timestamp(0)
+  Employees                 Employees                      @relation(fields: [employee_id], references: [employee_id], onDelete: Cascade, onUpdate: NoAction, map: "CalendarSettings_ibfk_1")
+}
+
+model WorkerSkills {
+  skill_id                  Int                      @id @default(autoincrement()) @db.UnsignedInt
+  employee_id               Int                      @db.UnsignedInt
+  skill_name                String                   @db.VarChar(100)
+  skill_level               WorkerSkills_skill_level
+  is_certified              Boolean?                 @default(false)
+  certification_number      String?                  @db.VarChar(100)
+  certification_expires     DateTime?                @db.Date
+  years_experience          Int?                     @default(0) @db.UnsignedInt
+  crane_type_specialization String?                  @db.VarChar(100)
+  notes                     String?                  @db.Text
+  created_at                DateTime?                @default(now()) @db.Timestamp(0)
+  updated_at                DateTime?                @default(now()) @db.Timestamp(0)
+  certificate_type_id       Int?
+  Employees                 Employees                @relation(fields: [employee_id], references: [employee_id], onDelete: Cascade, onUpdate: NoAction, map: "WorkerSkills_ibfk_1")
+  CertificateTypes          CertificateTypes?        @relation(fields: [certificate_type_id], references: [certificate_type_id], onUpdate: NoAction, map: "fk_worker_skills_certificate")
+
+  @@unique([employee_id, skill_name], map: "unique_employee_skill")
+  @@index([is_certified], map: "idx_worker_skills_certified")
+  @@index([crane_type_specialization], map: "idx_worker_skills_crane_type")
+  @@index([employee_id], map: "idx_worker_skills_employee")
+  @@index([certification_expires], map: "idx_worker_skills_expiring")
+  @@index([skill_level], map: "idx_worker_skills_level")
+  @@index([skill_name], map: "idx_worker_skills_name")
+  @@index([certificate_type_id], map: "idx_worker_skills_certificate")
+  @@index([employee_id, certificate_type_id], map: "idx_worker_skills_employee_cert")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model CertificateTypes {
+  certificate_type_id Int            @id @default(autoincrement())
+  code                String         @unique(map: "idx_certificate_code") @db.VarChar(20)
+  name_da             String         @db.VarChar(100)
+  name_en             String         @db.VarChar(100)
+  description         String?        @db.Text
+  equipment_types     String?        @db.Text
+  capacity_range      String?        @db.VarChar(50)
+  requires_medical    Boolean?       @default(true)
+  min_age             Int?           @default(18)
+  is_active           Boolean?       @default(true)
+  created_at          DateTime       @default(now()) @db.Timestamp(0)
+  updated_at          DateTime       @default(now()) @db.Timestamp(0)
+  WorkerSkills        WorkerSkills[]
+
+  @@index([is_active], map: "idx_certificate_active")
 }
 
 enum OperatorQuoteStatus {
@@ -1736,3 +1901,110 @@ enum Notifications_category {
   SYSTEM
   EMERGENCY
 }
+
+enum CalendarConflicts_conflict_type {
+  operator_unavailable
+  skills_mismatch
+  capacity_exceeded
+  deadline_conflict
+  leave_conflict
+  certification_expired
+}
+
+enum CalendarConflicts_severity {
+  low
+  medium
+  high
+  critical
+}
+
+enum CalendarSettings_default_view {
+  month
+  week
+  timeline
+}
+
+enum CalendarEvents_event_type {
+  operator_assignment
+  training
+  meeting
+  deadline
+  certification_check
+  client_visit
+  other
+}
+
+enum WorkerSkills_skill_level {
+  beginner
+  intermediate
+  advanced
+  expert
+}
+
+enum CalendarEvents_category {
+  workforce
+  project
+  training
+  business
+  compliance
+}
+
+enum CalendarConflicts_source_type {
+  task
+  project
+  leave
+  calendar_event
+  operator_assignment
+}
+
+enum TaskAssignments_status {
+  assigned
+  active
+  completed
+  cancelled
+}
+
+enum CalendarConflicts_target_type {
+  task
+  project
+  leave
+  calendar_event
+  operator_assignment
+}
+
+enum CalendarEvents_priority {
+  low
+  medium
+  high
+  critical
+}
+
+enum CalendarEvents_status {
+  planned
+  active
+  completed
+  cancelled
+}
+
+enum CalendarConflicts_status {
+  detected
+  acknowledged
+  resolved
+  ignored
+}
+
+enum Tasks_status {
+  planned
+  in_progress
+  completed
+  cancelled
+  overdue
+}
+
+enum Tasks_priority {
+  low
+  medium
+  high
+  critical
+}
+		

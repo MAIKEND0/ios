@@ -335,6 +335,45 @@ export async function PUT(request: Request) {
       }
     }
 
+    // Update worker status if leave starts today or in the past
+    if (action === 'approve') {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const leaveStartDate = new Date(leaveRequest.start_date);
+      leaveStartDate.setHours(0, 0, 0, 0);
+      
+      if (leaveStartDate <= today) {
+        try {
+          // Map leave type to worker status
+          let newStatus = 'aktiv';
+          if (leaveRequest.type === 'VACATION') {
+            newStatus = 'ferie';
+          } else if (leaveRequest.type === 'SICK' || leaveRequest.type === 'EMERGENCY') {
+            newStatus = 'sygemeldt';
+          }
+          
+          // Update worker status in employees table
+          await prisma.employees.update({
+            where: { employee_id: leaveRequest.employee_id },
+            data: { 
+              is_activated: newStatus === 'aktiv' ? true : false
+              // Note: We need a proper status column in the database
+              // For now, we just update is_activated
+            }
+          });
+          
+          console.log(`Worker ${leaveRequest.employee_id} status updated to ${newStatus} due to approved leave`);
+          
+          // TODO: When database has status column, update it like this:
+          // data: { status: newStatus }
+          
+        } catch (statusError) {
+          console.error("Error updating worker status:", statusError);
+          // Don't fail the leave approval if status update fails
+        }
+      }
+    }
+
     // Create notification for the employee about the decision
     try {
       const notificationType = action === 'approve' ? 'LEAVE_REQUEST_APPROVED' : 'LEAVE_REQUEST_REJECTED';

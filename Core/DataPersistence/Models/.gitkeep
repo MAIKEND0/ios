@@ -1,0 +1,7 @@
+# This directory will contain Core Data model extensions
+# For example:
+# - Employee+CoreDataClass.swift
+# - Employee+CoreDataProperties.swift
+# - Project+CoreDataClass.swift
+# - Project+CoreDataProperties.swift
+# etc.

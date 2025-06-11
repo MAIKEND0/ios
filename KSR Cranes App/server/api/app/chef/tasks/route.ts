@@ -161,23 +161,40 @@ export async function GET(request: Request): Promise<NextResponse> {
     const hasMore = offset + limit < totalCount;
 
     // Transform tasks to include assignment count and equipment info
-    const tasksWithStats = tasks.map(task => ({
-      ...task,
-      assignments_count: task.TaskAssignments?.length || 0,
-      project_title: task.Projects?.title || "No Project",
-      // ✅ DODANO: Equipment summary for quick reference
-      equipment_summary: {
-        required_crane_types: task.required_crane_types ? 
-          (Array.isArray(task.required_crane_types) ? task.required_crane_types : []) : [],
-        has_preferred_model: !!task.preferred_crane_model_id,
-        has_category: !!task.equipment_category_id,
-        has_brand: !!task.equipment_brand_id,
-        // Include full objects for convenience if loaded
-        preferred_crane_model: task.CraneModel || null,
-        equipment_category: task.CraneCategory || null,
-        equipment_brand: task.CraneBrand || null
+    const tasksWithStats = tasks.map(task => {
+      // Parse required certificates from crane category
+      let requiredCertificates: number[] = [];
+      if (task.CraneCategory?.required_certificates) {
+        try {
+          const requiredCerts = JSON.parse(task.CraneCategory.required_certificates as string);
+          if (Array.isArray(requiredCerts)) {
+            requiredCertificates = requiredCerts.map(id => parseInt(id)).filter(id => !isNaN(id));
+          }
+        } catch (e) {
+          console.error("[API] Error parsing required certificates for task", task.task_id, ":", e);
+        }
       }
-    }));
+
+      return {
+        ...task,
+        assignments_count: task.TaskAssignments?.length || 0,
+        project_title: task.Projects?.title || "No Project",
+        // ✅ DODANO: Equipment summary for quick reference
+        equipment_summary: {
+          required_crane_types: task.required_crane_types ? 
+            (Array.isArray(task.required_crane_types) ? task.required_crane_types : []) : [],
+          has_preferred_model: !!task.preferred_crane_model_id,
+          has_category: !!task.equipment_category_id,
+          has_brand: !!task.equipment_brand_id,
+          // Include full objects for convenience if loaded
+          preferred_crane_model: task.CraneModel || null,
+          equipment_category: task.CraneCategory || null,
+          equipment_brand: task.CraneBrand || null
+        },
+        // ✅ ADD: Include required certificates from category
+        required_certificates: requiredCertificates
+      };
+    });
 
     return NextResponse.json({
       tasks: tasksWithStats,
@@ -288,13 +305,25 @@ export async function POST(request: Request): Promise<NextResponse> {
         equipmentData.equipment_brand_id = parseInt(body.equipment_brand_id);
       }
 
-      // Utwórz zadanie z equipment requirements
+      // ✅ Management Calendar Fields - validate enums
+      const taskStatus = body.status && ['planned', 'in_progress', 'completed', 'cancelled', 'overdue'].includes(body.status) 
+        ? body.status : 'planned';
+      const taskPriority = body.priority && ['low', 'medium', 'high', 'critical'].includes(body.priority) 
+        ? body.priority : 'medium';
+
+      // Utwórz zadanie z equipment requirements i management calendar fields
       const newTask = await tx.tasks.create({
         data: {
           project_id: parseInt(body.project_id),
           title: body.title.trim(),
           description: body.description?.trim(),
           deadline: body.deadline ? new Date(body.deadline) : null,
+          start_date: body.start_date ? new Date(body.start_date) : null,
+          status: taskStatus,
+          priority: taskPriority,
+          estimated_hours: body.estimated_hours ? parseFloat(body.estimated_hours) : null,
+          required_operators: body.required_operators ? parseInt(body.required_operators) : 1,
+          client_equipment_info: body.client_equipment_info?.trim() || null,
           supervisor_id: supervisorId,
           supervisor_name: body.supervisor_name?.trim(),
           supervisor_email: body.supervisor_email?.trim(),
@@ -454,6 +483,19 @@ export async function POST(request: Request): Promise<NextResponse> {
       }
     });
 
+    // Parse required certificates from crane category
+    let requiredCertificates: number[] = [];
+    if (fullTask?.CraneCategory?.required_certificates) {
+      try {
+        const requiredCerts = JSON.parse(fullTask.CraneCategory.required_certificates as string);
+        if (Array.isArray(requiredCerts)) {
+          requiredCertificates = requiredCerts.map(id => parseInt(id)).filter(id => !isNaN(id));
+        }
+      } catch (e) {
+        console.error("[API] Error parsing required certificates:", e);
+      }
+    }
+
     // ✅ ENHANCED: Transform response to include parsed equipment info
     const enhancedTask = {
       ...fullTask,
@@ -468,7 +510,9 @@ export async function POST(request: Request): Promise<NextResponse> {
         preferred_crane_model: fullTask?.CraneModel,
         equipment_category: fullTask?.CraneCategory,
         equipment_brand: fullTask?.CraneBrand
-      }
+      },
+      // ✅ ADD: Include required certificates from category
+      required_certificates: requiredCertificates
     };
 
     console.log("[API] ✅ Returning created task with equipment:", {

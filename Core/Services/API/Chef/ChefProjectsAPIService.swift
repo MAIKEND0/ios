@@ -2,7 +2,7 @@
 //  ChefProjectsAPIService.swift
 //  KSR Cranes App
 //
-//  API Service for Chef project and task management - FIXED VERSION
+//  API Service for Chef project and task management - COMPLETE VERSION WITH PUT
 //
 
 import Foundation
@@ -167,15 +167,29 @@ final class ChefProjectsAPIService: BaseAPIService {
             .eraseToAnyPublisher()
     }
     
-    /// Create or update billing settings for a project
+    /// Create new billing settings for a project (POST)
     func upsertBillingSettings(projectId: Int, settings: BillingSettingsRequest) -> AnyPublisher<ChefBillingSettings, APIError> {
         let endpoint = "/api/app/chef/projects/\(projectId)/billing-settings"
         
         #if DEBUG
-        print("[ChefProjectsAPIService] Upserting billing settings for project: \(projectId)")
+        print("[ChefProjectsAPIService] Creating billing settings for project: \(projectId)")
         #endif
         
         return makeRequest(endpoint: endpoint, method: "POST", body: settings)
+            .decode(type: ChefBillingSettings.self, decoder: jsonDecoder())
+            .mapError { ($0 as? APIError) ?? .decodingError($0) }
+            .eraseToAnyPublisher()
+    }
+    
+    /// ✅ NEW: Update existing billing settings (PUT)
+    func updateBillingSettings(projectId: Int, settingId: Int, settings: BillingSettingsRequest) -> AnyPublisher<ChefBillingSettings, APIError> {
+        let endpoint = "/api/app/chef/projects/\(projectId)/billing-settings?setting_id=\(settingId)"
+        
+        #if DEBUG
+        print("[ChefProjectsAPIService] Updating billing settings \(settingId) for project: \(projectId)")
+        #endif
+        
+        return makeRequest(endpoint: endpoint, method: "PUT", body: settings)
             .decode(type: ChefBillingSettings.self, decoder: jsonDecoder())
             .mapError { ($0 as? APIError) ?? .decodingError($0) }
             .eraseToAnyPublisher()
@@ -281,7 +295,7 @@ final class ChefProjectsAPIService: BaseAPIService {
         print("[ChefProjectsAPIService] Updating task ID: \(id)")
         #endif
         
-        return makeRequest(endpoint: endpoint, method: "PUT", body: data)
+        return makeRequest(endpoint: endpoint, method: "PATCH", body: data)
             .decode(type: ProjectTask.self, decoder: jsonDecoder())
             .mapError { ($0 as? APIError) ?? .decodingError($0) }
             .eraseToAnyPublisher()
@@ -648,7 +662,8 @@ struct DeleteProjectResponse: Codable {
     }
 }
 
-struct ChefBillingSettings: Codable {
+// ✅ FIXED: ChefBillingSettings with custom decoder for string-to-decimal conversion
+struct ChefBillingSettings: Codable, Identifiable {
     let settingId: Int
     let projectId: Int
     let normalRate: Decimal
@@ -659,6 +674,8 @@ struct ChefBillingSettings: Codable {
     let weekendOvertimeRate2: Decimal
     let effectiveFrom: Date
     let effectiveTo: Date?
+    
+    var id: Int { settingId }
     
     private enum CodingKeys: String, CodingKey {
         case settingId = "setting_id"
@@ -671,6 +688,90 @@ struct ChefBillingSettings: Codable {
         case weekendOvertimeRate2 = "weekend_overtime_rate2"
         case effectiveFrom = "effective_from"
         case effectiveTo = "effective_to"
+    }
+    
+    // ✅ CUSTOM DECODER: Handles string rates from API
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        
+        #if DEBUG
+        print("🔄 [ChefBillingSettings] Decoding billing settings...")
+        #endif
+        
+        settingId = try container.decode(Int.self, forKey: .settingId)
+        projectId = try container.decode(Int.self, forKey: .projectId)
+        effectiveFrom = try container.decode(Date.self, forKey: .effectiveFrom)
+        effectiveTo = try container.decodeIfPresent(Date.self, forKey: .effectiveTo)
+        
+        // ✅ CONVERT STRINGS TO DECIMALS
+        normalRate = try Self.decodeRate(container, forKey: .normalRate)
+        weekendRate = try Self.decodeRate(container, forKey: .weekendRate)
+        overtimeRate1 = try Self.decodeRate(container, forKey: .overtimeRate1)
+        overtimeRate2 = try Self.decodeRate(container, forKey: .overtimeRate2)
+        weekendOvertimeRate1 = try Self.decodeRate(container, forKey: .weekendOvertimeRate1)
+        weekendOvertimeRate2 = try Self.decodeRate(container, forKey: .weekendOvertimeRate2)
+        
+        #if DEBUG
+        print("✅ [ChefBillingSettings] Successfully decoded setting \(settingId)")
+        print("   - Normal rate: \(normalRate)")
+        print("   - Weekend rate: \(weekendRate)")
+        #endif
+    }
+    
+    // ✅ HELPER: Decode rate from string or number
+    private static func decodeRate<K: CodingKey>(_ container: KeyedDecodingContainer<K>, forKey key: K) throws -> Decimal {
+        // Try string first (API sends strings)
+        if let string = try? container.decode(String.self, forKey: key) {
+            if let decimal = Decimal(string: string) {
+                #if DEBUG
+                print("   - \(key.stringValue): '\(string)' -> \(decimal)")
+                #endif
+                return decimal
+            } else if string.isEmpty {
+                #if DEBUG
+                print("   - \(key.stringValue): empty string -> 0")
+                #endif
+                return 0
+            }
+        }
+        
+        // Try number types
+        if let decimal = try? container.decode(Decimal.self, forKey: key) {
+            #if DEBUG
+            print("   - \(key.stringValue): \(decimal) (as Decimal)")
+            #endif
+            return decimal
+        }
+        
+        if let double = try? container.decode(Double.self, forKey: key) {
+            let decimal = Decimal(double)
+            #if DEBUG
+            print("   - \(key.stringValue): \(double) (as Double) -> \(decimal)")
+            #endif
+            return decimal
+        }
+        
+        // Default to 0 if all fails
+        #if DEBUG
+        print("   - \(key.stringValue): failed to decode, defaulting to 0")
+        #endif
+        return 0
+    }
+    
+    // ✅ STANDARD ENCODER: Always encode as numbers
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        
+        try container.encode(settingId, forKey: .settingId)
+        try container.encode(projectId, forKey: .projectId)
+        try container.encode(normalRate, forKey: .normalRate)
+        try container.encode(weekendRate, forKey: .weekendRate)
+        try container.encode(overtimeRate1, forKey: .overtimeRate1)
+        try container.encode(overtimeRate2, forKey: .overtimeRate2)
+        try container.encode(weekendOvertimeRate1, forKey: .weekendOvertimeRate1)
+        try container.encode(weekendOvertimeRate2, forKey: .weekendOvertimeRate2)
+        try container.encode(effectiveFrom, forKey: .effectiveFrom)
+        try container.encodeIfPresent(effectiveTo, forKey: .effectiveTo)
     }
 }
 
@@ -717,6 +818,23 @@ struct UpdateTaskRequest: Codable {
     let supervisorPhone: String?
     let isActive: Bool?
     
+    // Management Calendar Fields
+    let startDate: Date?
+    let status: String?  // Use raw value
+    let priority: String?  // Use raw value
+    let estimatedHours: Double?
+    let requiredOperators: Int?
+    let clientEquipmentInfo: String?
+    
+    // Equipment Fields
+    let requiredCraneTypes: [Int]?
+    let preferredCraneModelId: Int?
+    let equipmentCategoryId: Int?
+    let equipmentBrandId: Int?
+    
+    // Certificate Fields
+    let requiredCertificates: [Int]?
+    
     private enum CodingKeys: String, CodingKey {
         case title
         case description
@@ -726,6 +844,23 @@ struct UpdateTaskRequest: Codable {
         case supervisorEmail = "supervisor_email"
         case supervisorPhone = "supervisor_phone"
         case isActive = "is_active"
+        
+        // Management Calendar Fields
+        case startDate = "start_date"
+        case status
+        case priority
+        case estimatedHours = "estimated_hours"
+        case requiredOperators = "required_operators"
+        case clientEquipmentInfo = "client_equipment_info"
+        
+        // Equipment Fields
+        case requiredCraneTypes = "required_crane_types"
+        case preferredCraneModelId = "preferred_crane_model_id"
+        case equipmentCategoryId = "equipment_category_id"
+        case equipmentBrandId = "equipment_brand_id"
+        
+        // Certificate Fields
+        case requiredCertificates = "required_certificates"
     }
 }
 
@@ -765,6 +900,9 @@ struct AvailableWorker: Codable, Identifiable {
     let employee: Employee
     let availability: WorkerAvailability
     let craneTypes: [CraneType]
+    let certificates: [TaskWorkerCertificate]?
+    let hasRequiredCertificates: Bool?
+    let certificateValidation: CertificateValidation?
     
     var id: Int { employee.id }
     
@@ -772,6 +910,63 @@ struct AvailableWorker: Codable, Identifiable {
         case employee
         case availability
         case craneTypes = "crane_types"
+        case certificates
+        case hasRequiredCertificates = "has_required_certificates"
+        case certificateValidation = "certificate_validation"
+    }
+}
+
+struct TaskWorkerCertificate: Codable {
+    let skillId: Int
+    let certificateTypeId: Int?
+    let certificateType: CertificateTypeInfo?
+    let skillName: String?
+    let skillLevel: String?
+    let isCertified: Bool
+    let certificationExpires: Date?
+    let yearsExperience: Int?
+    let isExpired: Bool?
+    let daysUntilExpiry: Int?
+    let urgency: String?
+    
+    private enum CodingKeys: String, CodingKey {
+        case skillId = "skill_id"
+        case certificateTypeId = "certificate_type_id"
+        case certificateType = "certificate_type"
+        case skillName = "skill_name"
+        case skillLevel = "skill_level"
+        case isCertified = "is_certified"
+        case certificationExpires = "certification_expires"
+        case yearsExperience = "years_experience"
+        case isExpired = "is_expired"
+        case daysUntilExpiry = "days_until_expiry"
+        case urgency
+    }
+}
+
+struct CertificateTypeInfo: Codable {
+    let code: String
+    let nameEn: String
+    let nameDa: String
+    
+    private enum CodingKeys: String, CodingKey {
+        case code
+        case nameEn = "name_en"
+        case nameDa = "name_da"
+    }
+}
+
+struct CertificateValidation: Codable {
+    let requiredCount: Int
+    let validCount: Int
+    let missingCertificates: [Int]
+    let expiredCertificates: [Int]
+    
+    private enum CodingKeys: String, CodingKey {
+        case requiredCount = "required_count"
+        case validCount = "valid_count"
+        case missingCertificates = "missing_certificates"
+        case expiredCertificates = "expired_certificates"
     }
 }
 
@@ -810,10 +1005,20 @@ struct TaskConflict: Codable {
 struct CreateTaskAssignmentRequest: Codable {
     let employeeId: Int
     let craneModelId: Int?
+    let skipCertificateValidation: Bool?
+    let skipCraneTypeValidation: Bool?
+    let workDate: Date?
+    let status: String?
+    let notes: String?
     
     private enum CodingKeys: String, CodingKey {
         case employeeId = "employee_id"
         case craneModelId = "crane_model_id"
+        case skipCertificateValidation = "skip_certificate_validation"
+        case skipCraneTypeValidation = "skip_crane_type_validation"
+        case workDate = "work_date"
+        case status
+        case notes
     }
 }
 

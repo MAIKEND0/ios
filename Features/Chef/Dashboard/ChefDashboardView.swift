@@ -3,6 +3,7 @@
 //  KSR Cranes App
 //
 //  Created by Maksymilian Marcinowski on 30/05/2025.
+//  Updated with Payroll Integration - FIXED VERSION
 //
 
 import SwiftUI
@@ -10,6 +11,7 @@ import SwiftUI
 struct ChefDashboardView: View {
     @StateObject private var viewModel = ChefDashboardViewModel()
     @Environment(\.colorScheme) private var colorScheme
+    @State private var showNotifications = false
     
     var body: some View {
         NavigationStack {
@@ -21,11 +23,14 @@ struct ChefDashboardView: View {
                     // Executive Summary Cards
                     executiveSummarySection
                     
-                    // Quick Actions
-                    quickActionsSection
+                    // Payroll Overview Section
+                    payrollStatsSection
                     
-                    // Recent Activity
-                    recentActivitySection
+                    // Enhanced Quick Actions with Payroll
+                    enhancedQuickActionsSection
+                    
+                    // Enhanced Recent Activity with Payroll Events
+                    enhancedRecentActivitySection
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 12)
@@ -54,14 +59,15 @@ struct ChefDashboardView: View {
                         .disabled(viewModel.isLoading)
                         
                         Button {
-                            // Notifications placeholder
+                            showNotifications = true
                         } label: {
                             ZStack {
                                 Image(systemName: "bell")
                                     .foregroundColor(colorScheme == .dark ? .white : Color.ksrDarkGray)
                                 
-                                // Notification badge
-                                if viewModel.stats.pendingApprovals > 0 {
+                                // Enhanced notification badge including payroll alerts
+                                let badgeCount = viewModel.stats.pendingApprovals + (viewModel.shouldShowPayrollAlert ? 1 : 0)
+                                if badgeCount > 0 {
                                     Circle()
                                         .fill(Color.red)
                                         .frame(width: 8, height: 8)
@@ -75,6 +81,20 @@ struct ChefDashboardView: View {
             .refreshable {
                 await refreshDashboard()
             }
+            .navigationDestination(item: $viewModel.selectedNavigationDestination) { destination in
+                switch destination {
+                case .payrollDashboard:
+                    PayrollDashboardView()
+                case .pendingHours:
+                    PendingHoursView()
+                case .payrollBatches:
+                    PayrollBatchesView()
+                case .createBatch:
+                    CreateBatchView()
+                case .leaveManagement:
+                    ChefLeaveManagementView()
+                }
+            }
         }
         .onAppear {
             viewModel.loadData()
@@ -85,6 +105,9 @@ struct ChefDashboardView: View {
                 message: Text(viewModel.alertMessage),
                 dismissButton: .default(Text("OK"))
             )
+        }
+        .sheet(isPresented: $showNotifications) {
+            NotificationsView()
         }
     }
     
@@ -129,6 +152,47 @@ struct ChefDashboardView: View {
                     .fill(colorScheme == .dark ? Color(.systemGray6).opacity(0.3) : Color.white)
                     .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.3 : 0.08), radius: 8, x: 0, y: 4)
             )
+            
+            // Payroll Alert Banner
+            if viewModel.shouldShowPayrollAlert {
+                HStack(spacing: 12) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundColor(.orange)
+                    
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Payroll Attention Required")
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.primary)
+                        
+                        Text(viewModel.getPayrollAlertMessage())
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    Spacer()
+                    
+                    NavigationLink(destination: PayrollDashboardView()) {
+                        Text("Review")
+                            .font(.caption)
+                            .fontWeight(.medium)
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(Color.orange)
+                            .clipShape(Capsule())
+                    }
+                }
+                .padding(12)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.orange.opacity(0.1))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.orange.opacity(0.3), lineWidth: 1)
+                        )
+                )
+            }
         }
     }
     
@@ -190,8 +254,64 @@ struct ChefDashboardView: View {
         }
     }
     
-    // MARK: - Quick Actions
-    private var quickActionsSection: some View {
+    // MARK: - Payroll Stats Integration
+    var payrollStatsSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Text("Payroll Overview")
+                    .font(.title3)
+                    .fontWeight(.bold)
+                    .foregroundColor(colorScheme == .dark ? .white : Color.ksrDarkGray)
+                
+                Spacer()
+                
+                NavigationLink("View All", destination: PayrollDashboardView())
+                    .font(.caption)
+                    .foregroundColor(Color.ksrPrimary)
+            }
+            .padding(.horizontal, 4)
+            
+            LazyVGrid(columns: [
+                GridItem(.flexible(), spacing: 12),
+                GridItem(.flexible(), spacing: 12)
+            ], spacing: 12) {
+                ExecutiveSummaryCard(
+                    title: "Pending Hours",
+                    value: "\(viewModel.payrollStats.pendingHours)",
+                    icon: "clock.badge.exclamationmark",
+                    color: viewModel.payrollStats.pendingHours > 0 ? Color.ksrWarning : Color.ksrSuccess,
+                    trend: viewModel.payrollStats.pendingHours > 0 ? "Requires attention" : "All caught up"
+                )
+                
+                ExecutiveSummaryCard(
+                    title: "Monthly Payroll",
+                    value: viewModel.payrollStats.monthlyAmount.shortCurrencyFormatted,
+                    icon: "banknote.fill",
+                    color: Color.ksrSuccess,
+                    trend: "+8.5% vs last month"
+                )
+                
+                ExecutiveSummaryCard(
+                    title: "Active Batches",
+                    value: "\(viewModel.payrollStats.activeBatches)",
+                    icon: "tray.full.fill",
+                    color: Color.ksrInfo,
+                    trend: viewModel.payrollStats.activeBatches > 0 ? "\(viewModel.payrollStats.activeBatches) in progress" : "None active"
+                )
+                
+                ExecutiveSummaryCard(
+                    title: "Ready Employees",
+                    value: "\(viewModel.payrollStats.readyEmployees)",
+                    icon: "person.3.fill",
+                    color: Color.ksrPrimary,
+                    trend: "For next payroll"
+                )
+            }
+        }
+    }
+    
+    // MARK: - Enhanced Quick Actions with Payroll
+    var enhancedQuickActionsSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Quick Actions")
                 .font(.title3)
@@ -199,6 +319,7 @@ struct ChefDashboardView: View {
                 .foregroundColor(colorScheme == .dark ? .white : Color.ksrDarkGray)
                 .padding(.horizontal, 4)
             
+            // Top row - existing actions
             HStack(spacing: 12) {
                 ChefQuickActionCard(
                     title: "Add Customer",
@@ -232,11 +353,63 @@ struct ChefDashboardView: View {
                     viewModel.handleQuickAction(.createTask)
                 }
             }
+            
+            // Middle row - leave management
+            HStack(spacing: 12) {
+                ChefQuickActionCard(
+                    title: "Leave Management",
+                    icon: "calendar.badge.exclamationmark",
+                    color: Color.purple,
+                    badgeCount: viewModel.pendingLeaveRequests
+                ) {
+                    viewModel.handleQuickAction(.leaveManagement)
+                }
+                
+                Spacer()
+            }
+            
+            // Bottom row - payroll actions
+            HStack(spacing: 12) {
+                ChefQuickActionCard(
+                    title: "Payroll Dashboard",
+                    icon: "banknote.fill",
+                    color: Color.ksrWarning,
+                    badgeCount: viewModel.payrollStats.pendingHours > 0 ? viewModel.payrollStats.pendingHours : nil
+                ) {
+                    viewModel.handleQuickAction(.payrollDashboard)
+                }
+                
+                ChefQuickActionCard(
+                    title: "Pending Hours",
+                    icon: "clock.badge.exclamationmark",
+                    color: Color.ksrError,
+                    badgeCount: viewModel.payrollStats.pendingHours
+                ) {
+                    viewModel.handleQuickAction(.pendingHours)
+                }
+                
+                ChefQuickActionCard(
+                    title: "Payroll Batches",
+                    icon: "tray.full.fill",
+                    color: Color.ksrInfo,
+                    badgeCount: viewModel.payrollStats.activeBatches > 0 ? viewModel.payrollStats.activeBatches : nil
+                ) {
+                    viewModel.handleQuickAction(.payrollBatches)
+                }
+                
+                ChefQuickActionCard(
+                    title: "Create Batch",
+                    icon: "plus.rectangle.on.folder",
+                    color: Color.ksrSuccess
+                ) {
+                    viewModel.handleQuickAction(.createBatch)
+                }
+            }
         }
     }
     
-    // MARK: - Recent Activity
-    private var recentActivitySection: some View {
+    // MARK: - Enhanced Recent Activity with Payroll Events
+    var enhancedRecentActivitySection: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
                 Text("Recent Activity")
@@ -255,7 +428,8 @@ struct ChefDashboardView: View {
             .padding(.horizontal, 4)
             
             VStack(spacing: 0) {
-                ForEach(Array(viewModel.getRecentActivities().enumerated()), id: \.element.id) { index, activity in
+                // Combine regular activities with payroll activities
+                ForEach(Array(viewModel.getCombinedRecentActivities().prefix(5).enumerated()), id: \.element.id) { index, activity in
                     RecentActivityItem(
                         icon: activity.icon,
                         title: activity.title,
@@ -264,13 +438,13 @@ struct ChefDashboardView: View {
                         color: activity.color
                     )
                     
-                    if index < viewModel.getRecentActivities().count - 1 {
+                    if index < min(viewModel.getCombinedRecentActivities().count - 1, 4) {
                         Divider()
                             .padding(.horizontal, 16)
                     }
                 }
                 
-                if viewModel.getRecentActivities().isEmpty {
+                if viewModel.getCombinedRecentActivities().isEmpty {
                     VStack(spacing: 12) {
                         Image(systemName: "clock")
                             .font(.system(size: 32, weight: .light))
@@ -386,51 +560,76 @@ struct ExecutiveSummaryCard: View {
     }
 }
 
-// MARK: - Chef Quick Action Card
+// MARK: - Enhanced Chef Quick Action Card with Badge Support
 struct ChefQuickActionCard: View {
     let title: String
     let icon: String
     let color: Color
+    let badgeCount: Int?
     let action: () -> Void
     @Environment(\.colorScheme) private var colorScheme
     @State private var isPressed = false
     
+    init(title: String, icon: String, color: Color, badgeCount: Int? = nil, action: @escaping () -> Void) {
+        self.title = title
+        self.icon = icon
+        self.color = color
+        self.badgeCount = badgeCount
+        self.action = action
+    }
+    
     var body: some View {
-        Button(action: action) {
-            VStack(spacing: 12) {
-                ZStack {
-                    Circle()
-                        .fill(color.opacity(0.2))
-                        .frame(width: 40, height: 40)
-                    
-                    Image(systemName: icon)
-                        .font(.system(size: 20, weight: .semibold))
-                        .foregroundColor(color)
-                }
+        VStack(spacing: 12) {
+            ZStack {
+                Circle()
+                    .fill(color.opacity(0.2))
+                    .frame(width: 40, height: 40)
                 
-                Text(title)
-                    .font(.caption)
-                    .fontWeight(.medium)
-                    .foregroundColor(colorScheme == .dark ? .white : Color.ksrDarkGray)
-                    .multilineTextAlignment(.center)
-                    .lineLimit(2)
+                Image(systemName: icon)
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundColor(color)
+                
+                // Badge overlay
+                if let badgeCount = badgeCount, badgeCount > 0 {
+                    Circle()
+                        .fill(Color.red)
+                        .frame(width: 20, height: 20)
+                        .overlay(
+                            Text("\(badgeCount > 99 ? "99+" : "\(badgeCount)")")
+                                .font(.caption2)
+                                .fontWeight(.bold)
+                                .foregroundColor(.white)
+                                .minimumScaleFactor(0.7)
+                        )
+                        .offset(x: 15, y: -15)
+                }
             }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 20)
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(colorScheme == .dark ? Color(.systemGray6).opacity(0.3) : Color.white)
-                    .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.2 : 0.05), radius: isPressed ? 2 : 4, x: 0, y: isPressed ? 1 : 3)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(color.opacity(0.2), lineWidth: 1)
-            )
-            .scaleEffect(isPressed ? 0.96 : 1.0)
-            .animation(.easeInOut(duration: 0.1), value: isPressed)
+            
+            Text(title)
+                .font(.caption)
+                .fontWeight(.medium)
+                .foregroundColor(colorScheme == .dark ? .white : Color.ksrDarkGray)
+                .multilineTextAlignment(.center)
+                .lineLimit(2)
         }
-        .buttonStyle(PlainButtonStyle())
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 20)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(colorScheme == .dark ? Color(.systemGray6).opacity(0.3) : Color.white)
+                .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.2 : 0.05), radius: isPressed ? 2 : 4, x: 0, y: isPressed ? 1 : 3)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(color.opacity(0.2), lineWidth: 1)
+        )
+        .scaleEffect(isPressed ? 0.96 : 1.0)
+        .animation(.easeInOut(duration: 0.1), value: isPressed)
         .onTapGesture {
+            #if DEBUG
+            print("[ChefQuickActionCard] Tap gesture triggered for: \(title)")
+            #endif
+            
             withAnimation(.easeInOut(duration: 0.1)) {
                 isPressed = true
             }

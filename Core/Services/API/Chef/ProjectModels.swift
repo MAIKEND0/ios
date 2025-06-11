@@ -2,7 +2,7 @@
 //  ProjectModels.swift
 //  KSR Cranes App
 //
-//  Data models for project and task management
+//  Data models for project and task management - FIXED WITH ROBUST JSON DECODING
 //
 
 import Foundation
@@ -145,6 +145,89 @@ struct Project: Identifiable, Codable {
 
 // MARK: - Task Models (renamed from Task to avoid conflict with Swift's Task)
 
+// ✅ MANAGEMENT CALENDAR ENUMS: Task status and priority for workflow management
+enum ProjectTaskStatus: String, Codable, CaseIterable {
+    case planned = "planned"
+    case inProgress = "in_progress"
+    case completed = "completed"
+    case cancelled = "cancelled"
+    case overdue = "overdue"
+    
+    var displayName: String {
+        switch self {
+        case .planned: return "Planned"
+        case .inProgress: return "In Progress"
+        case .completed: return "Completed"
+        case .cancelled: return "Cancelled"
+        case .overdue: return "Overdue"
+        }
+    }
+    
+    var color: Color {
+        switch self {
+        case .planned: return .blue
+        case .inProgress: return .orange
+        case .completed: return .green
+        case .cancelled: return .gray
+        case .overdue: return .red
+        }
+    }
+    
+    var icon: String {
+        switch self {
+        case .planned: return "calendar"
+        case .inProgress: return "clock.fill"
+        case .completed: return "checkmark.circle.fill"
+        case .cancelled: return "xmark.circle.fill"
+        case .overdue: return "exclamationmark.triangle.fill"
+        }
+    }
+}
+
+enum TaskPriority: String, Codable, CaseIterable {
+    case low = "low"
+    case medium = "medium"
+    case high = "high"
+    case critical = "critical"
+    
+    var displayName: String {
+        switch self {
+        case .low: return "Low"
+        case .medium: return "Medium"
+        case .high: return "High"
+        case .critical: return "Critical"
+        }
+    }
+    
+    var color: Color {
+        switch self {
+        case .low: return .green
+        case .medium: return .blue
+        case .high: return .orange
+        case .critical: return .red
+        }
+    }
+    
+    var icon: String {
+        switch self {
+        case .low: return "arrow.down"
+        case .medium: return "minus"
+        case .high: return "arrow.up"
+        case .critical: return "exclamationmark.2"
+        }
+    }
+    
+    var sortOrder: Int {
+        switch self {
+        case .low: return 1
+        case .medium: return 2
+        case .high: return 3
+        case .critical: return 4
+        }
+    }
+}
+
+// ✅ COMPLETELY FIXED: ProjectTask model with robust JSON decoding
 struct ProjectTask: Identifiable, Codable {
     let id: Int
     let projectId: Int
@@ -158,10 +241,32 @@ struct ProjectTask: Identifiable, Codable {
     let isActive: Bool
     let createdAt: Date?
     
+    // ✅ MANAGEMENT CALENDAR FIELDS: Enhanced task scheduling and resource management
+    let startDate: Date?                    // When task begins (for calendar visualization)
+    let status: ProjectTaskStatus?          // Current task status for workflow tracking
+    let priority: TaskPriority?             // Task priority for resource allocation
+    let estimatedHours: Double?             // Expected duration for planning
+    let requiredOperators: Int?             // Number of operators needed
+    let clientEquipmentInfo: String?        // Details about client's equipment
+    
+    // ✅ FIXED: Equipment fields - handle both array and null properly
+    let requiredCraneTypes: [Int]?
+    let preferredCraneModelId: Int?
+    let equipmentCategoryId: Int?
+    let equipmentBrandId: Int?
+    
+    // ✅ CERTIFICATE FIELDS: Danish crane operator certificate requirements
+    let requiredCertificates: [Int]?       // Certificate type IDs required for this task
+    
     // Relations
     let assignmentsCount: Int?
     let project: Project?
     let conversation: ConversationInfo?
+    
+    // Equipment relations (optional since API may not always include them)
+    let craneModel: CraneModel?
+    let craneBrand: CraneBrand?
+    let craneCategory: CraneCategory?
     
     private enum CodingKeys: String, CodingKey {
         case id = "task_id"
@@ -175,20 +280,225 @@ struct ProjectTask: Identifiable, Codable {
         case supervisorPhone = "supervisor_phone"
         case isActive
         case createdAt = "created_at"
+        
+        // ✅ MANAGEMENT CALENDAR FIELDS: New field mappings
+        case startDate = "start_date"
+        case status
+        case priority
+        case estimatedHours = "estimated_hours"
+        case requiredOperators = "required_operators"
+        case clientEquipmentInfo = "client_equipment_info"
+        
+        // Equipment fields mapping
+        case requiredCraneTypes = "required_crane_types"
+        case preferredCraneModelId = "preferred_crane_model_id"
+        case equipmentCategoryId = "equipment_category_id"
+        case equipmentBrandId = "equipment_brand_id"
+        
+        // Certificate fields mapping
+        case requiredCertificates = "required_certificates"
+        
         case assignmentsCount = "assignments_count"
-        case project
+        case project = "Projects"  // ✅ FIXED: API returns "Projects" not "project"
         case conversation
+        
+        // Equipment relations
+        case craneModel = "CraneModel"
+        case craneBrand = "CraneBrand"
+        case craneCategory = "CraneCategory"
+    }
+    
+    // ✅ COMPLETELY FIXED: Robust custom decoder that handles any API response format
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        
+        #if DEBUG
+        let availableKeys = container.allKeys.map { $0.stringValue }
+        print("🔍 [ProjectTask] Available keys: \(availableKeys)")
+        #endif
+        
+        // Required fields - these must be present
+        do {
+            id = try container.decode(Int.self, forKey: .id)
+            projectId = try container.decode(Int.self, forKey: .projectId)
+            title = try container.decode(String.self, forKey: .title)
+            isActive = try container.decodeIfPresent(Bool.self, forKey: .isActive) ?? true
+            
+            #if DEBUG
+            print("✅ [ProjectTask] Core fields decoded: \(title) (ID: \(id))")
+            #endif
+        } catch {
+            #if DEBUG
+            print("❌ [ProjectTask] Failed to decode required fields: \(error)")
+            #endif
+            throw error
+        }
+        
+        // Optional basic fields - safe decoding
+        description = try container.decodeIfPresent(String.self, forKey: .description)
+        deadline = try container.decodeIfPresent(Date.self, forKey: .deadline)
+        supervisorId = try container.decodeIfPresent(Int.self, forKey: .supervisorId)
+        supervisorName = try container.decodeIfPresent(String.self, forKey: .supervisorName)
+        supervisorEmail = try container.decodeIfPresent(String.self, forKey: .supervisorEmail)
+        supervisorPhone = try container.decodeIfPresent(String.self, forKey: .supervisorPhone)
+        createdAt = try container.decodeIfPresent(Date.self, forKey: .createdAt)
+        
+        // ✅ MANAGEMENT CALENDAR FIELDS: Safe decoding of new scheduling fields
+        startDate = try container.decodeIfPresent(Date.self, forKey: .startDate)
+        status = try container.decodeIfPresent(ProjectTaskStatus.self, forKey: .status)
+        priority = try container.decodeIfPresent(TaskPriority.self, forKey: .priority)
+        estimatedHours = try container.decodeIfPresent(Double.self, forKey: .estimatedHours)
+        requiredOperators = try container.decodeIfPresent(Int.self, forKey: .requiredOperators)
+        clientEquipmentInfo = try container.decodeIfPresent(String.self, forKey: .clientEquipmentInfo)
+        
+        // ✅ ROBUST: Equipment fields with multiple fallback strategies
+        // Handle required_crane_types - can be array, string, or null
+        if let craneTypesArray = try? container.decodeIfPresent([Int].self, forKey: .requiredCraneTypes) {
+            requiredCraneTypes = craneTypesArray
+            #if DEBUG
+            print("✅ [ProjectTask] Decoded crane types as array: \(craneTypesArray)")
+            #endif
+        } else if let craneTypesString = try? container.decodeIfPresent(String.self, forKey: .requiredCraneTypes),
+                  !craneTypesString.isEmpty,
+                  craneTypesString != "null" {
+            
+            if let data = craneTypesString.data(using: .utf8),
+               let typeIds = try? JSONDecoder().decode([Int].self, from: data) {
+                requiredCraneTypes = typeIds
+                #if DEBUG
+                print("✅ [ProjectTask] Decoded crane types from JSON string: \(typeIds)")
+                #endif
+            } else {
+                requiredCraneTypes = nil
+                #if DEBUG
+                print("⚠️ [ProjectTask] Could not parse crane types string: \(craneTypesString)")
+                #endif
+            }
+        } else {
+            requiredCraneTypes = nil
+            #if DEBUG
+            if container.contains(.requiredCraneTypes) {
+                print("ℹ️ [ProjectTask] Required crane types field is null")
+            } else {
+                print("ℹ️ [ProjectTask] Required crane types field is missing")
+            }
+            #endif
+        }
+        
+        // Other equipment fields - all optional
+        preferredCraneModelId = try container.decodeIfPresent(Int.self, forKey: .preferredCraneModelId)
+        equipmentCategoryId = try container.decodeIfPresent(Int.self, forKey: .equipmentCategoryId)
+        equipmentBrandId = try container.decodeIfPresent(Int.self, forKey: .equipmentBrandId)
+        
+        // Certificate requirements - handle array or null
+        if let certificatesArray = try? container.decodeIfPresent([Int].self, forKey: .requiredCertificates) {
+            requiredCertificates = certificatesArray
+            #if DEBUG
+            print("✅ [ProjectTask] Decoded certificate requirements: \(certificatesArray)")
+            #endif
+        } else {
+            requiredCertificates = nil
+            #if DEBUG
+            print("ℹ️ [ProjectTask] No certificate requirements specified")
+            #endif
+        }
+        
+        // Relations - safe decoding with try? to prevent failures
+        assignmentsCount = try container.decodeIfPresent(Int.self, forKey: .assignmentsCount)
+        
+        // Project relation - handle both "Projects" and missing cases
+        project = try? container.decodeIfPresent(Project.self, forKey: .project)
+        
+        // Safe decoding for optional relations
+        conversation = try? container.decodeIfPresent(ConversationInfo.self, forKey: .conversation)
+        craneModel = try? container.decodeIfPresent(CraneModel.self, forKey: .craneModel)
+        craneBrand = try? container.decodeIfPresent(CraneBrand.self, forKey: .craneBrand)
+        craneCategory = try? container.decodeIfPresent(CraneCategory.self, forKey: .craneCategory)
+        
+        #if DEBUG
+        print("✅ [ProjectTask] Successfully decoded: \(title)")
+        print("   - Required crane types: \(requiredCraneTypes?.description ?? "nil")")
+        print("   - Equipment category: \(equipmentCategoryId?.description ?? "nil")")
+        print("   - Preferred model: \(preferredCraneModelId?.description ?? "nil")")
+        #endif
+    }
+    
+    // ✅ STANDARD: Simple encoder
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        
+        try container.encode(id, forKey: .id)
+        try container.encode(projectId, forKey: .projectId)
+        try container.encode(title, forKey: .title)
+        try container.encodeIfPresent(description, forKey: .description)
+        try container.encodeIfPresent(deadline, forKey: .deadline)
+        try container.encodeIfPresent(supervisorId, forKey: .supervisorId)
+        try container.encodeIfPresent(supervisorName, forKey: .supervisorName)
+        try container.encodeIfPresent(supervisorEmail, forKey: .supervisorEmail)
+        try container.encodeIfPresent(supervisorPhone, forKey: .supervisorPhone)
+        try container.encode(isActive, forKey: .isActive)
+        try container.encodeIfPresent(createdAt, forKey: .createdAt)
+        
+        // ✅ MANAGEMENT CALENDAR FIELDS: Encode new scheduling fields
+        try container.encodeIfPresent(startDate, forKey: .startDate)
+        try container.encodeIfPresent(status, forKey: .status)
+        try container.encodeIfPresent(priority, forKey: .priority)
+        try container.encodeIfPresent(estimatedHours, forKey: .estimatedHours)
+        try container.encodeIfPresent(requiredOperators, forKey: .requiredOperators)
+        try container.encodeIfPresent(clientEquipmentInfo, forKey: .clientEquipmentInfo)
+        
+        // Equipment fields
+        try container.encodeIfPresent(requiredCraneTypes, forKey: .requiredCraneTypes)
+        try container.encodeIfPresent(preferredCraneModelId, forKey: .preferredCraneModelId)
+        try container.encodeIfPresent(equipmentCategoryId, forKey: .equipmentCategoryId)
+        try container.encodeIfPresent(equipmentBrandId, forKey: .equipmentBrandId)
+        
+        // Relations
+        try container.encodeIfPresent(assignmentsCount, forKey: .assignmentsCount)
+        try container.encodeIfPresent(project, forKey: .project)
+        try container.encodeIfPresent(conversation, forKey: .conversation)
+        try container.encodeIfPresent(craneModel, forKey: .craneModel)
+        try container.encodeIfPresent(craneBrand, forKey: .craneBrand)
+        try container.encodeIfPresent(craneCategory, forKey: .craneCategory)
+    }
+}
+
+// ✅ ADD: Extension for debugging
+extension ProjectTask {
+    var debugDescription: String {
+        return """
+        ProjectTask(
+          id: \(id),
+          title: "\(title)",
+          startDate: \(startDate?.description ?? "nil"),
+          status: \(status?.rawValue ?? "nil"),
+          priority: \(priority?.rawValue ?? "nil"),
+          estimatedHours: \(estimatedHours?.description ?? "nil"),
+          requiredOperators: \(requiredOperators?.description ?? "nil"),
+          clientEquipmentInfo: \(clientEquipmentInfo ?? "nil"),
+          requiredCraneTypes: \(requiredCraneTypes?.description ?? "nil"),
+          preferredCraneModelId: \(preferredCraneModelId?.description ?? "nil"),
+          equipmentCategoryId: \(equipmentCategoryId?.description ?? "nil"),
+          equipmentBrandId: \(equipmentBrandId?.description ?? "nil")
+        )
+        """
     }
 }
 
 // MARK: - Task Assignment Models
 
+// ✅ ENHANCED: TaskAssignment with management calendar fields for operator scheduling
 struct TaskAssignment: Identifiable, Codable {
     let id: Int
     let taskId: Int
     let employeeId: Int
     let assignedAt: Date?
     let craneModelId: Int?
+    
+    // ✅ MANAGEMENT CALENDAR FIELDS: Enhanced operator assignment tracking
+    let workDate: Date?                     // Specific date operator works on this assignment
+    let status: AssignmentStatus?           // Current assignment status for tracking
+    let notes: String?                      // Additional information about the assignment
     
     // Relations
     let employee: Employee?
@@ -200,8 +510,49 @@ struct TaskAssignment: Identifiable, Codable {
         case employeeId = "employee_id"
         case assignedAt = "assigned_at"
         case craneModelId = "crane_model_id"
+        
+        // ✅ MANAGEMENT CALENDAR FIELDS: New field mappings
+        case workDate = "work_date"
+        case status
+        case notes
+        
         case employee
         case craneModel = "crane_model"
+    }
+}
+
+// ✅ MANAGEMENT CALENDAR ENUMS: Assignment status for workflow tracking
+enum AssignmentStatus: String, Codable, CaseIterable {
+    case assigned = "assigned"
+    case active = "active"
+    case completed = "completed"
+    case cancelled = "cancelled"
+    
+    var displayName: String {
+        switch self {
+        case .assigned: return "Assigned"
+        case .active: return "Active"
+        case .completed: return "Completed"
+        case .cancelled: return "Cancelled"
+        }
+    }
+    
+    var color: Color {
+        switch self {
+        case .assigned: return .blue
+        case .active: return .orange
+        case .completed: return .green
+        case .cancelled: return .gray
+        }
+    }
+    
+    var icon: String {
+        switch self {
+        case .assigned: return "person.badge.plus"
+        case .active: return "person.fill.checkmark"
+        case .completed: return "checkmark.circle.fill"
+        case .cancelled: return "xmark.circle.fill"
+        }
     }
 }
 
@@ -438,6 +789,57 @@ struct CraneModel: Identifiable, Codable {
     }
 }
 
+// ✅ DODANE: Supporting models for equipment
+struct CraneBrand: Identifiable, Codable {
+    let id: Int
+    let name: String
+    let code: String
+    let logoUrl: String?
+    let website: String?
+    let description: String?
+    let foundedYear: Int?
+    let headquarters: String?
+    let isActive: Bool
+    
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case name
+        case code
+        case logoUrl = "logoUrl"
+        case website
+        case description
+        case foundedYear = "foundedYear"
+        case headquarters
+        case isActive = "isActive"
+    }
+}
+
+struct CraneCategory: Identifiable, Codable {
+    let id: Int
+    let name: String
+    let code: String
+    let description: String?
+    let iconUrl: String?
+    let displayOrder: Int
+    let isActive: Bool
+    let requiredCertificates: [Int]? // Certificate type IDs required for this category
+    let danishClassification: String?
+    let capacityInfo: String?
+    
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case name
+        case code
+        case description
+        case iconUrl = "iconUrl"
+        case displayOrder = "displayOrder"
+        case isActive = "isActive"
+        case requiredCertificates = "required_certificates"
+        case danishClassification = "danish_classification"
+        case capacityInfo = "capacity_info"
+    }
+}
+
 // MARK: - Request Models
 
 struct CreateProjectRequest: Codable {
@@ -488,6 +890,7 @@ struct BillingSettingsRequest: Codable {
     }
 }
 
+// ✅ ENHANCED: CreateTaskRequest with management calendar fields
 struct CreateTaskRequest: Codable {
     let title: String
     let description: String?
@@ -497,6 +900,23 @@ struct CreateTaskRequest: Codable {
     let supervisorEmail: String?
     let supervisorPhone: String?
     
+    // ✅ MANAGEMENT CALENDAR FIELDS: Enhanced task scheduling and resource planning
+    let startDate: Date?                    // When task begins (for calendar visualization)
+    let status: ProjectTaskStatus?          // Initial task status
+    let priority: TaskPriority?             // Task priority for resource allocation
+    let estimatedHours: Double?             // Expected duration for planning
+    let requiredOperators: Int?             // Number of operators needed
+    let clientEquipmentInfo: String?        // Details about client's equipment
+    
+    // ✅ EQUIPMENT FIELDS: Crane and equipment requirements
+    let requiredCraneTypes: [Int]?
+    let preferredCraneModelId: Int?
+    let equipmentCategoryId: Int?
+    let equipmentBrandId: Int?
+    
+    // ✅ CERTIFICATE FIELDS: Danish crane operator certificate requirements
+    let requiredCertificates: [Int]?       // Certificate type IDs required for this task
+    
     private enum CodingKeys: String, CodingKey {
         case title
         case description
@@ -505,6 +925,23 @@ struct CreateTaskRequest: Codable {
         case supervisorName = "supervisor_name"
         case supervisorEmail = "supervisor_email"
         case supervisorPhone = "supervisor_phone"
+        
+        // ✅ MANAGEMENT CALENDAR FIELDS: API field mapping for scheduling
+        case startDate = "start_date"
+        case status
+        case priority
+        case estimatedHours = "estimated_hours"
+        case requiredOperators = "required_operators"
+        case clientEquipmentInfo = "client_equipment_info"
+        
+        // ✅ EQUIPMENT FIELDS: API field mapping for crane requirements
+        case requiredCraneTypes = "required_crane_types"
+        case preferredCraneModelId = "preferred_crane_model_id"
+        case equipmentCategoryId = "equipment_category_id"
+        case equipmentBrandId = "equipment_brand_id"
+        
+        // ✅ CERTIFICATE FIELDS: API field mapping for certificate requirements
+        case requiredCertificates = "required_certificates"
     }
 }
 

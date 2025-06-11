@@ -8,6 +8,7 @@ import SwiftUI
 
 struct WorkerDashboardView: View {
     @StateObject private var viewModel = WorkerDashboardViewModel()
+    @ObservedObject private var notificationService = NotificationService.shared
     @State private var showWorkHoursForm = false
     @State private var showFilterOptions = false
     @State private var searchText = ""
@@ -342,11 +343,19 @@ struct WorkerDashboardView: View {
             }
             .disabled(viewModel.tasksViewModel.isLoading || viewModel.hoursViewModel.isLoading)
             
-            Button {
-                // Handle notifications
-            } label: {
-                Image(systemName: "bell")
-                    .foregroundColor(Color.ksrTextPrimary)
+            NavigationLink(destination: NotificationsView()) {
+                ZStack {
+                    Image(systemName: "bell")
+                        .foregroundColor(Color.ksrTextPrimary)
+                    
+                    // Notification badge
+                    if notificationService.unreadCount > 0 {
+                        Circle()
+                            .fill(Color.red)
+                            .frame(width: 8, height: 8)
+                            .offset(x: 6, y: -6)
+                    }
+                }
             }
         }
     }

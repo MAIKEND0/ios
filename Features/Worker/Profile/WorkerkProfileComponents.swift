@@ -359,9 +359,57 @@ struct WorkerHoursTab: View {
 struct WorkerSettingsTab: View {
     @Binding var showingLogoutConfirmation: Bool
     @Environment(\.colorScheme) private var colorScheme
+    @State private var isBiometricEnabled = AuthService.shared.isBiometricEnabled
+    @State private var showBiometricError = false
+    @State private var biometricErrorMessage = ""
+    
+    private var biometricType: String {
+        return AuthService.shared.biometricType
+    }
+    
+    private var isBiometricAvailable: Bool {
+        return AuthService.shared.isBiometricAvailable
+    }
     
     var body: some View {
         LazyVStack(alignment: .leading, spacing: 20) {
+            // Biometric Authentication Section
+            if isBiometricAvailable {
+                WorkerProfileSectionCard(title: "Security", icon: biometricType == "Face ID" ? "faceid" : "touchid", color: .ksrSuccess) {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Toggle(isOn: $isBiometricEnabled) {
+                            HStack {
+                                Text("Enable \(biometricType)")
+                                    .font(.subheadline)
+                                    .fontWeight(.medium)
+                                    .foregroundColor(colorScheme == .dark ? .white : .primary)
+                                
+                                Spacer()
+                            }
+                        }
+                        .onChange(of: isBiometricEnabled) { _, newValue in
+                            toggleBiometric(enabled: newValue)
+                        }
+                        .tint(.ksrYellow)
+                        
+                        Text("Use \(biometricType) for faster and more secure sign in")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+                .onAppear {
+                    // Refresh the state when view appears
+                    isBiometricEnabled = AuthService.shared.isBiometricEnabled
+                    
+                    #if DEBUG
+                    print("[WorkerSettingsTab] Biometric available: \(isBiometricAvailable)")
+                    print("[WorkerSettingsTab] Biometric type: \(biometricType)")
+                    print("[WorkerSettingsTab] Biometric enabled: \(isBiometricEnabled)")
+                    print("[WorkerSettingsTab] Has stored credentials: \(BiometricAuthService.shared.getStoredCredentials() != nil)")
+                    #endif
+                }
+            }
+            
             WorkerProfileSectionCard(title: "App Information", icon: "info.circle", color: .ksrInfo) {
                 VStack(alignment: .leading, spacing: 12) {
                     WorkerAppInfoRow(label: "Version", value: "1.0.0")
@@ -392,6 +440,41 @@ struct WorkerSettingsTab: View {
             }
         }
         .padding(.top, 20)
+        .alert("Biometric Error", isPresented: $showBiometricError) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(biometricErrorMessage)
+        }
+    }
+    
+    private func toggleBiometric(enabled: Bool) {
+        if enabled {
+            // Check if we already have stored credentials
+            if BiometricAuthService.shared.getStoredCredentials() != nil {
+                // We already have credentials, just enable it
+                BiometricAuthService.shared.isBiometricEnabled = true
+                isBiometricEnabled = true
+                
+                #if DEBUG
+                print("[WorkerSettingsTab] Biometric re-enabled with existing credentials")
+                #endif
+            } else {
+                // To enable biometric, we need current credentials
+                // Since we're already logged in, we can't get the password
+                // Show an error message
+                biometricErrorMessage = "To enable \(biometricType), please:\n1. Log out of the app\n2. Sign in with your email and password\n3. Accept the \(biometricType) prompt after logging in"
+                showBiometricError = true
+                isBiometricEnabled = false
+            }
+        } else {
+            // Disable biometric
+            AuthService.shared.disableBiometric()
+            isBiometricEnabled = false
+            
+            #if DEBUG
+            print("[WorkerSettingsTab] Biometric disabled")
+            #endif
+        }
     }
 }
 

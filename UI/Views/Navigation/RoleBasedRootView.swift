@@ -123,11 +123,17 @@ struct EnhancedWorkerMainView: View {
                 }
                 .tag(2)
             
-            WorkerProfileView()
+            WorkerLeaveView()
                 .tabItem {
-                    Label("Profile", systemImage: selectedTab == 3 ? "person.fill" : "person")
+                    Label("Leave", systemImage: selectedTab == 3 ? "calendar.badge.clock" : "calendar")
                 }
                 .tag(3)
+            
+            WorkerProfileView()
+                .tabItem {
+                    Label("Profile", systemImage: selectedTab == 4 ? "person.fill" : "person")
+                }
+                .tag(4)
         }
         .accentColor(Color.ksrYellow)
         .onAppear {
@@ -166,11 +172,17 @@ struct EnhancedManagerMainView: View {
                 }
                 .tag(3)
             
-            ManagerProfileView()
+            ChefLeaveManagementView()
                 .tabItem {
-                    Label("Profile", systemImage: selectedTab == 4 ? "person.fill" : "person")
+                    Label("Leave", systemImage: selectedTab == 4 ? "calendar.badge.exclamationmark" : "calendar.badge.plus")
                 }
                 .tag(4)
+            
+            ManagerProfileView()
+                .tabItem {
+                    Label("Profile", systemImage: selectedTab == 5 ? "person.fill" : "person")
+                }
+                .tag(5)
         }
         .accentColor(Color.ksrYellow)
         .onAppear {
@@ -184,47 +196,50 @@ struct EnhancedBossMainView: View {
     @State private var selectedTab = 0
     
     var body: some View {
-        TabView(selection: $selectedTab) {
-            ChefDashboardView()
-                .tabItem {
-                    Label("Dashboard", systemImage: selectedTab == 0 ? "chart.bar.fill" : "chart.bar")
-                }
-                .tag(0)
-            
-            CustomersListView()
-                .tabItem {
-                    Label("Customers", systemImage: selectedTab == 1 ? "building.2.fill" : "building.2")
-                }
-                .tag(1)
-            
-            // 🔥 NAPRAWIONE: Zastąpiono ComingSoonView prawdziwym widokiem projektów
-            ChefProjectsView()
-                .tabItem {
-                    Label("Projects", systemImage: selectedTab == 2 ? "folder.fill" : "folder")
-                }
-                .tag(2)
-            
-            ComingSoonView(feature: "Workers")
-                .tabItem {
-                    Label("Workers", systemImage: selectedTab == 3 ? "person.3.fill" : "person.3")
-                }
-                .tag(3)
-            
-            ComingSoonView(feature: "Tasks")
-                .tabItem {
-                    Label("Tasks", systemImage: selectedTab == 4 ? "list.bullet.rectangle.fill" : "list.bullet.rectangle")
-                }
-                .tag(4)
-            
-            ChefProfileView()
-                .tabItem {
-                    Label("Profile", systemImage: selectedTab == 5 ? "person.fill" : "person")
-                }
-                .tag(5)
-        }
-        .accentColor(Color.ksrYellow)
-        .onAppear {
-            setupTabBarAppearance()
+        NavigationStack {
+            TabView(selection: $selectedTab) {
+                ChefDashboardView()
+                    .tabItem {
+                        Label("Dashboard", systemImage: selectedTab == 0 ? "chart.bar.fill" : "chart.bar")
+                    }
+                    .tag(0)
+                
+                CustomersListView()
+                    .tabItem {
+                        Label("Customers", systemImage: selectedTab == 1 ? "building.2.fill" : "building.2")
+                    }
+                    .tag(1)
+                
+                // 🔥 NAPRAWIONE: Zastąpiono ComingSoonView prawdziwym widokiem projektów
+                ChefProjectsView()
+                    .tabItem {
+                        Label("Projects", systemImage: selectedTab == 2 ? "folder.fill" : "folder")
+                    }
+                    .tag(2)
+                
+                ChefWorkersManagementView()
+                    .tabItem {
+                        Label("Workers", systemImage: selectedTab == 3 ? "person.3.fill" : "person.3")
+                    }
+                    .tag(3)
+                
+                ChefLeaveManagementView()
+                    .tabItem {
+                        Label("Leave", systemImage: selectedTab == 4 ? "calendar.badge.exclamationmark" : "calendar.badge.plus")
+                    }
+                    .tag(4)
+                
+                ChefProfileView()
+                    .tabItem {
+                        Label("Profile", systemImage: selectedTab == 5 ? "person.fill" : "person")
+                    }
+                    .tag(5)
+            }
+            .accentColor(Color.ksrYellow)
+            .onAppear {
+                setupTabBarAppearance()
+                print("🔍 Chef TabView loaded with 6 tabs including Leave")
+            }
         }
     }
 }

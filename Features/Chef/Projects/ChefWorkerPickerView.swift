@@ -14,6 +14,7 @@ struct ChefWorkerPickerView: View {
     let projectId: Int?
     let excludeTaskId: Int?
     let requiredCraneTypes: [Int]?
+    let requiredCertificates: [Int]?  // ✅ NEW: Certificate requirements
     
     @StateObject private var viewModel = ChefWorkerPickerViewModel()
     @Environment(\.dismiss) private var dismiss
@@ -25,12 +26,14 @@ struct ChefWorkerPickerView: View {
         selectedWorkers: Binding<[AvailableWorker]>,
         projectId: Int? = nil,
         excludeTaskId: Int? = nil,
-        requiredCraneTypes: [Int]? = nil
+        requiredCraneTypes: [Int]? = nil,
+        requiredCertificates: [Int]? = nil  // ✅ NEW: Certificate requirements
     ) {
         self._selectedWorkers = selectedWorkers
         self.projectId = projectId
         self.excludeTaskId = excludeTaskId
         self.requiredCraneTypes = requiredCraneTypes
+        self.requiredCertificates = requiredCertificates
     }
     
     var body: some View {
@@ -400,6 +403,7 @@ struct ChefWorkerPickerView: View {
             worker: worker,
             isSelected: isWorkerSelected(worker.employee.id),
             requiredCraneTypes: requiredCraneTypes,
+            requiredCertificates: requiredCertificates,  // ✅ NEW: Pass certificate requirements
             onToggle: {
                 toggleWorkerSelection(worker)
             }
@@ -557,13 +561,19 @@ struct ChefWorkerPickerView: View {
         let worker1 = AvailableWorker(
             employee: createFakeEmployee(id: 999, name: "Emergency Worker 1", email: "emergency1@test.com"),
             availability: fakeAvailability,
-            craneTypes: []
+            craneTypes: [],
+            certificates: nil,
+            hasRequiredCertificates: nil,
+            certificateValidation: nil
         )
         
         let worker2 = AvailableWorker(
             employee: createFakeEmployee(id: 998, name: "Emergency Worker 2", email: "emergency2@test.com"),
             availability: fakeAvailability,
-            craneTypes: []
+            craneTypes: [],
+            certificates: nil,
+            hasRequiredCertificates: nil,
+            certificateValidation: nil
         )
         
         // Add fake workers to existing ones
@@ -592,32 +602,6 @@ struct ChefWorkerPickerView: View {
             drivingLicenseCategory: nil,
             drivingLicenseExpiration: nil
         )
-        
-        let fakeAvailability = WorkerAvailability(
-            isAvailable: true,
-            conflictingTasks: nil,
-            workHoursThisWeek: 0,
-            workHoursThisMonth: 0,
-            maxWeeklyHours: 40,
-            nextAvailableDate: nil
-        )
-        
-        let worker1 = AvailableWorker(
-            employee: createFakeEmployee(id: 999, name: "Emergency Worker 1", email: "emergency1@test.com"),
-            availability: fakeAvailability,
-            craneTypes: []
-        )
-        
-        let worker2 = AvailableWorker(
-            employee: createFakeEmployee(id: 998, name: "Emergency Worker 2", email: "emergency2@test.com"),
-            availability: fakeAvailability,
-            craneTypes: []
-        )
-        
-        // Add fake workers to existing ones
-        viewModel.workers.append(contentsOf: [worker1, worker2])
-        
-        print("✅ [EMERGENCY] Added emergency workers. Total: \(viewModel.workers.count)")
     }
     
     private func isWorkerSelected(_ workerId: Int) -> Bool {
@@ -731,6 +715,29 @@ class ChefWorkerPickerViewModel: ObservableObject {
                 print("   - Available: \(response.totalAvailable)")
                 print("   - With conflicts: \(response.totalWithConflicts)")
                 
+                // Debug worker data
+                response.workers.forEach { worker in
+                    print("\n👷 Worker: \(worker.employee.name)")
+                    print("   - Crane types: \(worker.craneTypes.count) types")
+                    worker.craneTypes.forEach { craneType in
+                        print("     • \(craneType.name) (ID: \(craneType.id))")
+                    }
+                    print("   - Has required certificates: \(worker.hasRequiredCertificates ?? false)")
+                    if let validation = worker.certificateValidation {
+                        print("   - Certificate validation:")
+                        print("     • Required: \(validation.requiredCount)")
+                        print("     • Valid: \(validation.validCount)")
+                        print("     • Missing: \(validation.missingCertificates)")
+                        print("     • Expired: \(validation.expiredCertificates)")
+                    }
+                    if let certificates = worker.certificates {
+                        print("   - Worker certificates: \(certificates.count)")
+                        certificates.forEach { cert in
+                            print("     • \(cert.certificateType?.nameEn ?? "Unknown") (ID: \(cert.certificateTypeId ?? -1))")
+                        }
+                    }
+                }
+                
                 self?.debugWorkerData()
                 #endif
             }
@@ -832,7 +839,10 @@ class ChefWorkerPickerViewModel: ObservableObject {
                         return AvailableWorker(
                             employee: employee,
                             availability: availability,
-                            craneTypes: craneTypes
+                            craneTypes: craneTypes,
+                            certificates: nil,
+                            hasRequiredCertificates: nil,
+                            certificateValidation: nil
                         )
                     }
                     
@@ -896,6 +906,7 @@ struct ChefWorkerPickerCard: View {
     let worker: AvailableWorker
     let isSelected: Bool
     let requiredCraneTypes: [Int]?
+    let requiredCertificates: [Int]?  // ✅ NEW: Certificate requirements
     let onToggle: () -> Void
     
     @Environment(\.colorScheme) private var colorScheme
@@ -903,9 +914,45 @@ struct ChefWorkerPickerCard: View {
     // Check if worker has all required crane types
     private var hasRequiredSkills: Bool {
         guard let required = requiredCraneTypes, !required.isEmpty else { return true }
-        return required.allSatisfy { requiredType in
+        let hasSkills = required.allSatisfy { requiredType in
             worker.craneTypes.contains { $0.id == requiredType }
         }
+        
+        #if DEBUG
+        if !hasSkills {
+            print("⚠️ [ChefWorkerPickerCard] Worker \(worker.employee.name) missing crane skills")
+            print("   - Required crane types: \(required)")
+            print("   - Worker crane types: \(worker.craneTypes.map { $0.id })")
+        }
+        #endif
+        
+        return hasSkills
+    }
+    
+    // ✅ NEW: Check if worker has all required certificates
+    private var hasRequiredCertificates: Bool {
+        guard let required = requiredCertificates, !required.isEmpty else { return true }
+        
+        // Use the server-provided certificate validation
+        if let hasRequired = worker.hasRequiredCertificates {
+            return hasRequired
+        }
+        
+        // Fallback: check certificates manually
+        guard let certificates = worker.certificates else { return false }
+        
+        return required.allSatisfy { requiredCertId in
+            certificates.contains { cert in
+                cert.certificateTypeId == requiredCertId && 
+                cert.isCertified &&
+                (cert.isExpired != true)
+            }
+        }
+    }
+    
+    // Combined qualification check
+    private var isQualified: Bool {
+        return hasRequiredSkills && hasRequiredCertificates
     }
     
     var body: some View {
@@ -923,7 +970,7 @@ struct ChefWorkerPickerCard: View {
                 Spacer()
                 
                 // Skills indicator
-                if !requiredCraneTypes.isNilOrEmpty {
+                if !requiredCraneTypes.isNilOrEmpty || !requiredCertificates.isNilOrEmpty {
                     skillsIndicator
                 }
             }
@@ -1024,15 +1071,37 @@ struct ChefWorkerPickerCard: View {
     
     private var skillsIndicator: some View {
         VStack(spacing: 4) {
-            Image(systemName: hasRequiredSkills ? "checkmark.shield.fill" : "exclamationmark.shield.fill")
+            Image(systemName: isQualified ? "checkmark.shield.fill" : "exclamationmark.shield.fill")
                 .font(.title3)
-                .foregroundColor(hasRequiredSkills ? .ksrSuccess : .ksrWarning)
+                .foregroundColor(isQualified ? .ksrSuccess : .ksrWarning)
             
-            Text(hasRequiredSkills ? "Qualified" : "Missing Skills")
+            Text(getQualificationText())
                 .font(.caption2)
-                .foregroundColor(hasRequiredSkills ? .ksrSuccess : .ksrWarning)
+                .foregroundColor(isQualified ? .ksrSuccess : .ksrWarning)
                 .multilineTextAlignment(.center)
         }
+    }
+    
+    private func getQualificationText() -> String {
+        if isQualified {
+            return "Qualified"
+        }
+        
+        var missingItems: [String] = []
+        
+        if !hasRequiredSkills {
+            missingItems.append("Skills")
+        }
+        
+        if !hasRequiredCertificates {
+            if let validation = worker.certificateValidation, validation.missingCertificates.count > 0 {
+                missingItems.append("\(validation.missingCertificates.count) Cert\(validation.missingCertificates.count > 1 ? "s" : "")")
+            } else {
+                missingItems.append("Certs")
+            }
+        }
+        
+        return "Missing: \(missingItems.joined(separator: ", "))"
     }
     
     private var availabilityDetailsView: some View {

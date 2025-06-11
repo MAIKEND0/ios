@@ -29,6 +29,7 @@ final class AuthService {
 
     private let baseURL: String
     private let session: URLSession
+    private let biometricService = BiometricAuthService.shared
 
     private init() {
         self.baseURL = Configuration.API.baseURL
@@ -153,6 +154,67 @@ final class AuthService {
                 }
             })
             .eraseToAnyPublisher()
+    }
+
+    /// Login using biometric authentication
+    func loginWithBiometric() async throws -> AuthResponse {
+        #if DEBUG
+        print("[AuthService] 🔐 Starting biometric login...")
+        #endif
+        
+        // Authenticate with biometric
+        let (email, password) = try await biometricService.authenticateWithBiometric()
+        
+        #if DEBUG
+        print("[AuthService] ✅ Biometric authentication successful, proceeding with login...")
+        #endif
+        
+        // Use the retrieved credentials to login
+        return try await withCheckedThrowingContinuation { continuation in
+            var cancellable: AnyCancellable?
+            
+            cancellable = login(email: email, password: password)
+                .sink(
+                    receiveCompletion: { completion in
+                        if case let .failure(error) = completion {
+                            continuation.resume(throwing: error)
+                        }
+                        cancellable?.cancel()
+                    },
+                    receiveValue: { authResponse in
+                        continuation.resume(returning: authResponse)
+                        cancellable?.cancel()
+                    }
+                )
+        }
+    }
+
+    /// Enable biometric authentication after successful login
+    func enableBiometric(email: String, password: String) throws {
+        try biometricService.storeCredentialsForBiometric(email: email, password: password)
+    }
+
+    /// Check if biometric authentication is available and enabled
+    var isBiometricAvailable: Bool {
+        return biometricService.isBiometricAvailable()
+    }
+
+    var isBiometricEnabled: Bool {
+        return biometricService.isBiometricEnabled
+    }
+
+    var biometricType: String {
+        return biometricService.biometricType
+    }
+
+    /// Disable biometric authentication
+    func disableBiometric() {
+        biometricService.removeStoredCredentials()
+    }
+
+    /// Check if we should prompt user to enable biometric
+    func shouldPromptForBiometric(email: String, password: String) async -> Bool {
+        return await biometricService.promptToEnableBiometric(email: email, password: password)
     }
 
     // MARK: – Enhanced Persistence

@@ -726,10 +726,11 @@ extension ManagerAPIService {
         let name: String
         let email: String?
         let phone_number: String?
+        let profilePictureUrl: String?
         let assignedTasks: [Task]
         
         private enum CodingKeys: String, CodingKey {
-            case employee_id, name, email, phone_number, assignedTasks
+            case employee_id, name, email, phone_number, profilePictureUrl, assignedTasks
         }
     }
     

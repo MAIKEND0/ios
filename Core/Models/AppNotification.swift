@@ -9,11 +9,11 @@ import Foundation
 
 // ========== GŁÓWNY MODEL POWIADOMIENIA ==========
 
-struct AppNotification: Codable, Identifiable, Equatable {
+struct AppNotification: Codable, Identifiable {
     let id: Int
     let employeeId: Int
     let type: NotificationType
-    let title: String
+    let title: String?  // FIXED: Made optional to handle null values from API
     let message: String
     let isRead: Bool
     let createdAt: Date
@@ -37,7 +37,7 @@ struct AppNotification: Codable, Identifiable, Equatable {
     let senderId: Int?
     let targetEmployeeId: Int?
     let targetRole: String?
-    let metadata: [String: String]?
+    let metadata: String?
     
     private enum CodingKeys: String, CodingKey {
         case id = "notification_id"
@@ -64,7 +64,96 @@ struct AppNotification: Codable, Identifiable, Equatable {
         case metadata
     }
     
+    // Manual memberwise initializer for mock data
+    init(
+        id: Int,
+        employeeId: Int,
+        type: NotificationType,
+        title: String?,
+        message: String,
+        isRead: Bool,
+        createdAt: Date,
+        updatedAt: Date,
+        workEntryId: Int?,
+        taskId: Int?,
+        projectId: Int?,
+        projectTitle: String?,
+        priority: NotificationPriority?,
+        category: NotificationCategory?,
+        actionRequired: Bool?,
+        actionUrl: String?,
+        expiresAt: Date?,
+        readAt: Date?,
+        senderId: Int?,
+        targetEmployeeId: Int?,
+        targetRole: String?,
+        metadata: String?
+    ) {
+        self.id = id
+        self.employeeId = employeeId
+        self.type = type
+        self.title = title
+        self.message = message
+        self.isRead = isRead
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+        self.workEntryId = workEntryId
+        self.taskId = taskId
+        self.projectId = projectId
+        self.projectTitle = projectTitle
+        self.priority = priority
+        self.category = category
+        self.actionRequired = actionRequired
+        self.actionUrl = actionUrl
+        self.expiresAt = expiresAt
+        self.readAt = readAt
+        self.senderId = senderId
+        self.targetEmployeeId = targetEmployeeId
+        self.targetRole = targetRole
+        self.metadata = metadata
+    }
+    
+    // Custom decoder to handle metadata as both string and dictionary
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        
+        id = try container.decode(Int.self, forKey: .id)
+        employeeId = try container.decode(Int.self, forKey: .employeeId)
+        type = try container.decode(NotificationType.self, forKey: .type)
+        title = try container.decodeIfPresent(String.self, forKey: .title)
+        message = try container.decode(String.self, forKey: .message)
+        isRead = try container.decode(Bool.self, forKey: .isRead)
+        createdAt = try container.decode(Date.self, forKey: .createdAt)
+        updatedAt = try container.decode(Date.self, forKey: .updatedAt)
+        workEntryId = try container.decodeIfPresent(Int.self, forKey: .workEntryId)
+        taskId = try container.decodeIfPresent(Int.self, forKey: .taskId)
+        projectId = try container.decodeIfPresent(Int.self, forKey: .projectId)
+        projectTitle = try container.decodeIfPresent(String.self, forKey: .projectTitle)
+        priority = try container.decodeIfPresent(NotificationPriority.self, forKey: .priority)
+        category = try container.decodeIfPresent(NotificationCategory.self, forKey: .category)
+        actionRequired = try container.decodeIfPresent(Bool.self, forKey: .actionRequired)
+        actionUrl = try container.decodeIfPresent(String.self, forKey: .actionUrl)
+        expiresAt = try container.decodeIfPresent(Date.self, forKey: .expiresAt)
+        readAt = try container.decodeIfPresent(Date.self, forKey: .readAt)
+        senderId = try container.decodeIfPresent(Int.self, forKey: .senderId)
+        targetEmployeeId = try container.decodeIfPresent(Int.self, forKey: .targetEmployeeId)
+        targetRole = try container.decodeIfPresent(String.self, forKey: .targetRole)
+        
+        // Handle metadata as string or skip if it's a dictionary
+        if let metadataString = try? container.decodeIfPresent(String.self, forKey: .metadata) {
+            metadata = metadataString
+        } else {
+            // If metadata is not a string (e.g., dictionary), set to nil for now
+            metadata = nil
+        }
+    }
+    
     // ========== COMPUTED PROPERTIES ==========
+    
+    /// Display title with fallback to type name when title is null
+    var displayTitle: String {
+        return title ?? type.displayName
+    }
     
     /// Formatowana data powiadomienia
     var formattedDate: String {
@@ -116,6 +205,18 @@ struct AppNotification: Codable, Identifiable, Equatable {
             return "doc.badge.exclamationmark"
         case .payrollProcessed, .payrollReady:
             return "banknote.fill"
+        case .leaveRequestSubmitted:
+            return "calendar.badge.plus"
+        case .leaveRequestApproved:
+            return "calendar.badge.checkmark"
+        case .leaveRequestRejected:
+            return "calendar.badge.exclamationmark"
+        case .leaveRequestCancelled:
+            return "calendar.badge.minus"
+        case .leaveBalanceUpdated:
+            return "calendar.circle.fill"
+        case .leaveStarting, .leaveEnding:
+            return "calendar"
         case .generalInfo, .generalAnnouncement:
             return "info.circle.fill"
         default:
@@ -155,6 +256,18 @@ struct AppNotification: Codable, Identifiable, Equatable {
             return "green"
         case .licenseExpiring, .licenseExpired:
             return "orange"
+        case .leaveRequestSubmitted:
+            return "blue"
+        case .leaveRequestApproved:
+            return "green"
+        case .leaveRequestRejected:
+            return "red"
+        case .leaveRequestCancelled:
+            return "gray"
+        case .leaveBalanceUpdated:
+            return "purple"
+        case .leaveStarting, .leaveEnding:
+            return "orange"
         default:
             return "blue"
         }
@@ -176,6 +289,10 @@ struct AppNotification: Codable, Identifiable, Equatable {
             return true
         case .licenseExpiring:
             return true
+        case .leaveRequestSubmitted:
+            return true
+        case .leaveRequestRejected:
+            return true
         default:
             return false
         }
@@ -192,6 +309,10 @@ struct AppNotification: Codable, Identifiable, Equatable {
             return "View task"
         case .licenseExpiring:
             return "Renew license"
+        case .leaveRequestSubmitted:
+            return "Review & approve"
+        case .leaveRequestRejected:
+            return "Check reason"
         default:
             return nil
         }
@@ -214,6 +335,31 @@ struct AppNotification: Codable, Identifiable, Equatable {
     /// Czy powiadomienie jest pilne
     var isUrgent: Bool {
         return priority == .urgent || type == .emergencyAlert
+    }
+    
+    /// Parse metadata as JSON dictionary if possible
+    var metadataDict: [String: Any]? {
+        guard let metadata = metadata,
+              let data = metadata.data(using: .utf8),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            return nil
+        }
+        return json
+    }
+}
+
+// ========== EQUATABLE IMPLEMENTATION ==========
+
+extension AppNotification: Equatable {
+    static func == (lhs: AppNotification, rhs: AppNotification) -> Bool {
+        return lhs.id == rhs.id &&
+               lhs.employeeId == rhs.employeeId &&
+               lhs.type == rhs.type &&
+               lhs.title == rhs.title &&
+               lhs.message == rhs.message &&
+               lhs.isRead == rhs.isRead &&
+               lhs.createdAt == rhs.createdAt &&
+               lhs.updatedAt == rhs.updatedAt
     }
 }
 
@@ -242,6 +388,7 @@ enum NotificationCategory: String, Codable, CaseIterable {
     case project = "PROJECT"
     case task = "TASK"
     case workplan = "WORKPLAN"
+    case leave = "LEAVE"
     case payroll = "PAYROLL"
     case system = "SYSTEM"
     case emergency = "EMERGENCY"
@@ -252,6 +399,7 @@ enum NotificationCategory: String, Codable, CaseIterable {
         case .project: return "Project"
         case .task: return "Task"
         case .workplan: return "Work Plan"
+        case .leave: return "Leave"
         case .payroll: return "Payroll"
         case .system: return "System"
         case .emergency: return "Emergency"
@@ -297,6 +445,16 @@ enum NotificationType: String, Codable, CaseIterable {
     case workplanUpdated = "WORKPLAN_UPDATED"
     case workplanAssigned = "WORKPLAN_ASSIGNED"
     case workplanCancelled = "WORKPLAN_CANCELLED"
+    
+    // 🏖️ Leave Management
+    case leaveRequestSubmitted = "LEAVE_REQUEST_SUBMITTED"
+    case leaveRequestApproved = "LEAVE_REQUEST_APPROVED"
+    case leaveRequestRejected = "LEAVE_REQUEST_REJECTED"
+    case leaveRequestCancelled = "LEAVE_REQUEST_CANCELLED"
+    case leaveBalanceUpdated = "LEAVE_BALANCE_UPDATED"
+    case leaveRequestReminder = "LEAVE_REQUEST_REMINDER"
+    case leaveStarting = "LEAVE_STARTING"
+    case leaveEnding = "LEAVE_ENDING"
     
     // 👤 Employee Management
     case employeeActivated = "EMPLOYEE_ACTIVATED"
@@ -381,6 +539,24 @@ enum NotificationType: String, Codable, CaseIterable {
         case .workplanCancelled:
             return "Work Plan Cancelled"
             
+        // Leave Flow
+        case .leaveRequestSubmitted:
+            return "Leave Request Submitted"
+        case .leaveRequestApproved:
+            return "Leave Request Approved"
+        case .leaveRequestRejected:
+            return "Leave Request Rejected"
+        case .leaveRequestCancelled:
+            return "Leave Request Cancelled"
+        case .leaveBalanceUpdated:
+            return "Leave Balance Updated"
+        case .leaveRequestReminder:
+            return "Leave Request Reminder"
+        case .leaveStarting:
+            return "Leave Starting"
+        case .leaveEnding:
+            return "Leave Ending"
+            
         // Employee Flow
         case .employeeActivated:
             return "Employee Activated"
@@ -448,7 +624,7 @@ extension AppNotification {
         id: 2,
         employeeId: 123,
         type: .hoursConfirmed,
-        title: "Hours Entry Confirmed",
+        title: nil,  // FIXED: Example of null title from API
         message: "Your entry for May 24, 2025 has been confirmed and processed for payroll.",
         isRead: true,
         createdAt: Date().addingTimeInterval(-86400), // 1 day ago

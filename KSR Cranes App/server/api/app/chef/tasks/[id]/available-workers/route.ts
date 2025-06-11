@@ -135,13 +135,29 @@ export async function GET(
     const craneTypes = searchParams.get('crane_types');
     const includeAvailability = searchParams.get('include_availability') === 'true';
     
-    // Sprawdź czy zadanie istnieje
+    // Sprawdź czy zadanie istnieje i pobierz wymagane certyfikaty
     const task = await prisma.tasks.findUnique({
-      where: { task_id: taskId }
+      where: { task_id: taskId },
+      include: {
+        CraneCategory: true
+      }
     });
 
     if (!task) {
       return NextResponse.json({ error: "Task not found" }, { status: 404 });
+    }
+
+    // Parse required certificates from crane category
+    let requiredCertificateIds: number[] = [];
+    if (task.CraneCategory?.required_certificates) {
+      try {
+        const requiredCerts = JSON.parse(task.CraneCategory.required_certificates as string);
+        if (Array.isArray(requiredCerts)) {
+          requiredCertificateIds = requiredCerts.map(id => parseInt(id)).filter(id => !isNaN(id));
+        }
+      } catch (e) {
+        console.error("[API] Error parsing required certificates:", e);
+      }
     }
 
     // Build where clause for workers
@@ -150,7 +166,7 @@ export async function GET(
       is_activated: true
     };
     
-    // Get workers with their crane types
+    // Get workers with their crane types and certificates
     const workers = await prisma.employees.findMany({
       where,
       select: {
@@ -173,6 +189,19 @@ export async function GET(
               }
             }
           }
+        },
+        // Include worker certificates
+        WorkerSkills: {
+          where: {
+            is_certified: true,
+            OR: [
+              { certification_expires: null },
+              { certification_expires: { gte: new Date() } }
+            ]
+          },
+          include: {
+            CertificateTypes: true
+          }
         }
       },
       orderBy: { name: 'asc' }
@@ -189,6 +218,18 @@ export async function GET(
       );
     }
 
+    // Filter by required certificates if task has them
+    if (requiredCertificateIds.length > 0) {
+      filteredWorkers = filteredWorkers.filter(worker => {
+        const workerCertIds = worker.WorkerSkills
+          .filter(skill => skill.is_certified && skill.certificate_type_id)
+          .map(skill => skill.certificate_type_id!);
+        
+        // Check if worker has ALL required certificates
+        return requiredCertificateIds.every(certId => workerCertIds.includes(certId));
+      });
+    }
+
     // Add availability information if requested
     const workersWithAvailability = includeAvailability 
       ? await Promise.all(filteredWorkers.map(async (worker) => {
@@ -200,7 +241,55 @@ export async function GET(
           return {
             employee: worker,
             availability,
-            crane_types: worker.EmployeeCraneTypes.map(ect => ect.CraneTypes)
+            crane_types: worker.EmployeeCraneTypes.map(ect => ect.CraneTypes),
+            certificates: worker.WorkerSkills.map(skill => {
+              const isExpired = skill.certification_expires && skill.certification_expires < new Date();
+              const daysUntilExpiry = skill.certification_expires ? 
+                Math.ceil((skill.certification_expires.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : null;
+              
+              return {
+                skill_id: skill.skill_id,
+                certificate_type_id: skill.certificate_type_id,
+                certificate_type: skill.CertificateTypes ? {
+                  code: skill.CertificateTypes.code,
+                  name_en: skill.CertificateTypes.name_en,
+                  name_da: skill.CertificateTypes.name_da
+                } : null,
+                skill_name: skill.skill_name,
+                skill_level: skill.skill_level,
+                is_certified: skill.is_certified,
+                certification_expires: skill.certification_expires,
+                years_experience: skill.years_experience,
+                is_expired: isExpired,
+                days_until_expiry: daysUntilExpiry,
+                urgency: isExpired ? 'expired' :
+                        daysUntilExpiry && daysUntilExpiry <= 7 ? 'critical' :
+                        daysUntilExpiry && daysUntilExpiry <= 30 ? 'warning' : 'ok'
+              };
+            }),
+            has_required_certificates: requiredCertificateIds.length === 0 || 
+              requiredCertificateIds.every(certId => 
+                worker.WorkerSkills.some(skill => 
+                  skill.is_certified && skill.certificate_type_id === certId &&
+                  (!skill.certification_expires || skill.certification_expires >= new Date())
+                )
+              ),
+            certificate_validation: {
+              required_count: requiredCertificateIds.length,
+              valid_count: requiredCertificateIds.filter(certId => 
+                worker.WorkerSkills.some(skill => 
+                  skill.is_certified && skill.certificate_type_id === certId &&
+                  (!skill.certification_expires || skill.certification_expires >= new Date())
+                )
+              ).length,
+              missing_certificates: requiredCertificateIds.filter(certId => 
+                !worker.WorkerSkills.some(skill => skill.is_certified && skill.certificate_type_id === certId)
+              ),
+              expired_certificates: worker.WorkerSkills.filter(skill => 
+                skill.is_certified && requiredCertificateIds.includes(skill.certificate_type_id!) &&
+                skill.certification_expires && skill.certification_expires < new Date()
+              ).map(skill => skill.certificate_type_id!)
+            }
           };
         }))
       : filteredWorkers.map(worker => ({

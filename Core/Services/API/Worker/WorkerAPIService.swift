@@ -337,21 +337,299 @@ final class WorkerAPIService: BaseAPIService {
 // MARK: – Modele dla iOS‐owych endpointów
 
 extension WorkerAPIService {
+    // MARK: - Updated Task Model with all new crane-related fields and flexible decoding
     struct Task: Codable, Identifiable {
         let id = UUID()
         let task_id: Int
         let title: String
         let description: String?
         let deadline: Date?
+        let created_at: Date?
+        
+        // Supervisor information
+        let supervisor_id: Int?
+        let supervisor_email: String?
+        let supervisor_phone: String?
+        let supervisor_name: String?
+        
+        // Crane requirements - new fields
+        let required_crane_types: AnyCodable?
+        let preferred_crane_model_id: Int?
+        let equipment_category_id: Int?
+        let equipment_brand_id: Int?
+        
+        // Crane details - relations
+        let crane_category: CraneCategory?
+        let crane_brand: CraneBrand?
+        let preferred_crane_model: CraneModel?
+        
+        // Project information
         let project: Project?
+        
+        // Task assignments (for workers)
+        let assignments: [TaskAssignment]?
 
         struct Project: Codable {
             let project_id: Int
             let title: String
+            let description: String?
+            let start_date: Date?
+            let end_date: Date?
+            let street: String?
+            let city: String?
+            let zip: String?
+            let status: String?
+            let customer: Customer?
+            
+            struct Customer: Codable {
+                let customer_id: Int
+                let name: String
+            }
+        }
+        
+        struct CraneCategory: Codable {
+            let id: Int
+            let name: String
+            let code: String
+            let description: String?
+            let iconUrl: String?
+        }
+        
+        struct CraneBrand: Codable {
+            let id: Int
+            let name: String
+            let code: String
+            let logoUrl: String?
+            let website: String?
+        }
+        
+        struct CraneModel: Codable {
+            let id: Int
+            let name: String
+            let code: String
+            let description: String?
+            let maxLoadCapacity: Double?
+            let maxHeight: Double?
+            let maxRadius: Double?
+            let enginePower: Int?
+            let specifications: AnyCodable?
+            let imageUrl: String?
+            let brochureUrl: String?
+            let videoUrl: String?
+            
+            private enum CodingKeys: String, CodingKey {
+                case id, name, code, description
+                case maxLoadCapacity, maxHeight, maxRadius, enginePower
+                case specifications, imageUrl, brochureUrl, videoUrl
+            }
+            
+            init(from decoder: Decoder) throws {
+                let container = try decoder.container(keyedBy: CodingKeys.self)
+                
+                id = try container.decode(Int.self, forKey: .id)
+                name = try container.decode(String.self, forKey: .name)
+                code = try container.decode(String.self, forKey: .code)
+                description = try container.decodeIfPresent(String.self, forKey: .description)
+                
+                // Flexible decoding for numeric values that might come as strings
+                maxLoadCapacity = Self.decodeFlexibleDouble(from: container, forKey: .maxLoadCapacity)
+                maxHeight = Self.decodeFlexibleDouble(from: container, forKey: .maxHeight)
+                maxRadius = Self.decodeFlexibleDouble(from: container, forKey: .maxRadius)
+                enginePower = Self.decodeFlexibleInt(from: container, forKey: .enginePower)
+                
+                specifications = try container.decodeIfPresent(AnyCodable.self, forKey: .specifications)
+                imageUrl = try container.decodeIfPresent(String.self, forKey: .imageUrl)
+                brochureUrl = try container.decodeIfPresent(String.self, forKey: .brochureUrl)
+                videoUrl = try container.decodeIfPresent(String.self, forKey: .videoUrl)
+            }
+            
+            // Helper methods for flexible numeric decoding
+            private static func decodeFlexibleDouble<K: CodingKey>(
+                from container: KeyedDecodingContainer<K>,
+                forKey key: K
+            ) -> Double? {
+                // Try Double first
+                if let doubleValue = try? container.decodeIfPresent(Double.self, forKey: key) {
+                    return doubleValue
+                }
+                
+                // Try String and convert to Double
+                if let stringValue = try? container.decodeIfPresent(String.self, forKey: key),
+                   !stringValue.isEmpty {
+                    return Double(stringValue)
+                }
+                
+                // Try Int and convert to Double
+                if let intValue = try? container.decodeIfPresent(Int.self, forKey: key) {
+                    return Double(intValue)
+                }
+                
+                return nil
+            }
+            
+            private static func decodeFlexibleInt<K: CodingKey>(
+                from container: KeyedDecodingContainer<K>,
+                forKey key: K
+            ) -> Int? {
+                // Try Int first
+                if let intValue = try? container.decodeIfPresent(Int.self, forKey: key) {
+                    return intValue
+                }
+                
+                // Try String and convert to Int
+                if let stringValue = try? container.decodeIfPresent(String.self, forKey: key),
+                   !stringValue.isEmpty {
+                    return Int(stringValue)
+                }
+                
+                // Try Double and convert to Int
+                if let doubleValue = try? container.decodeIfPresent(Double.self, forKey: key) {
+                    return Int(doubleValue)
+                }
+                
+                return nil
+            }
+        }
+        
+        struct TaskAssignment: Codable {
+            let assignment_id: Int
+            let assigned_at: Date?
+            let crane_model_id: Int?
+            let assigned_crane_model: CraneModel?
         }
 
         private enum CodingKeys: String, CodingKey {
-            case task_id, title, description, deadline, project = "Projects"
+            case task_id, title, description, deadline, created_at
+            case supervisor_id, supervisor_email, supervisor_phone, supervisor_name
+            case required_crane_types, preferred_crane_model_id, equipment_category_id, equipment_brand_id
+            case crane_category, crane_brand, preferred_crane_model
+            case project, assignments
+        }
+        
+        init(from decoder: Decoder) throws {
+            let container = try decoder.container(keyedBy: CodingKeys.self)
+            
+            task_id = try container.decode(Int.self, forKey: .task_id)
+            title = try container.decode(String.self, forKey: .title)
+            description = try container.decodeIfPresent(String.self, forKey: .description)
+            deadline = try container.decodeIfPresent(Date.self, forKey: .deadline)
+            created_at = try container.decodeIfPresent(Date.self, forKey: .created_at)
+            
+            // Supervisor information
+            supervisor_id = try container.decodeIfPresent(Int.self, forKey: .supervisor_id)
+            supervisor_email = try container.decodeIfPresent(String.self, forKey: .supervisor_email)
+            supervisor_phone = try container.decodeIfPresent(String.self, forKey: .supervisor_phone)
+            supervisor_name = try container.decodeIfPresent(String.self, forKey: .supervisor_name)
+            
+            // Crane requirements
+            required_crane_types = try container.decodeIfPresent(AnyCodable.self, forKey: .required_crane_types)
+            preferred_crane_model_id = try container.decodeIfPresent(Int.self, forKey: .preferred_crane_model_id)
+            equipment_category_id = try container.decodeIfPresent(Int.self, forKey: .equipment_category_id)
+            equipment_brand_id = try container.decodeIfPresent(Int.self, forKey: .equipment_brand_id)
+            
+            // Crane details - with better error handling
+            do {
+                crane_category = try container.decodeIfPresent(CraneCategory.self, forKey: .crane_category)
+            } catch {
+                #if DEBUG
+                print("⚠️ [Task] Failed to decode crane_category: \(error)")
+                #endif
+                crane_category = nil
+            }
+            
+            do {
+                crane_brand = try container.decodeIfPresent(CraneBrand.self, forKey: .crane_brand)
+            } catch {
+                #if DEBUG
+                print("⚠️ [Task] Failed to decode crane_brand: \(error)")
+                #endif
+                crane_brand = nil
+            }
+            
+            // Handle preferred_crane_model with extra error handling
+            do {
+                preferred_crane_model = try container.decodeIfPresent(CraneModel.self, forKey: .preferred_crane_model)
+            } catch {
+                #if DEBUG
+                print("⚠️ [Task] Failed to decode preferred_crane_model: \(error)")
+                #endif
+                preferred_crane_model = nil
+            }
+            
+            // Project information
+            do {
+                project = try container.decodeIfPresent(Project.self, forKey: .project)
+            } catch {
+                #if DEBUG
+                print("⚠️ [Task] Failed to decode project: \(error)")
+                #endif
+                project = nil
+            }
+            
+            // Task assignments - with error handling
+            do {
+                assignments = try container.decodeIfPresent([TaskAssignment].self, forKey: .assignments)
+            } catch {
+                #if DEBUG
+                print("⚠️ [Task] Failed to decode assignments: \(error)")
+                #endif
+                assignments = nil
+            }
+        }
+    }
+
+    // Helper for decoding arbitrary JSON values
+    struct AnyCodable: Codable {
+        let value: Any
+        
+        init<T>(_ value: T?) {
+            self.value = value ?? ()
+        }
+        
+        init(from decoder: Decoder) throws {
+            let container = try decoder.singleValueContainer()
+            
+            if container.decodeNil() {
+                value = ()
+            } else if let bool = try? container.decode(Bool.self) {
+                value = bool
+            } else if let int = try? container.decode(Int.self) {
+                value = int
+            } else if let double = try? container.decode(Double.self) {
+                value = double
+            } else if let string = try? container.decode(String.self) {
+                value = string
+            } else if let array = try? container.decode([AnyCodable].self) {
+                value = array.map { $0.value }
+            } else if let dictionary = try? container.decode([String: AnyCodable].self) {
+                value = dictionary.mapValues { $0.value }
+            } else {
+                throw DecodingError.dataCorruptedError(in: container, debugDescription: "AnyCodable value cannot be decoded")
+            }
+        }
+        
+        func encode(to encoder: Encoder) throws {
+            var container = encoder.singleValueContainer()
+            
+            switch value {
+            case is Void:
+                try container.encodeNil()
+            case let bool as Bool:
+                try container.encode(bool)
+            case let int as Int:
+                try container.encode(int)
+            case let double as Double:
+                try container.encode(double)
+            case let string as String:
+                try container.encode(string)
+            case let array as [Any]:
+                try container.encode(array.map(AnyCodable.init))
+            case let dictionary as [String: Any]:
+                try container.encode(dictionary.mapValues(AnyCodable.init))
+            default:
+                let context = EncodingError.Context(codingPath: container.codingPath, debugDescription: "AnyCodable value cannot be encoded")
+                throw EncodingError.invalidValue(value, context)
+            }
         }
     }
 
@@ -472,7 +750,7 @@ extension WorkerAPIService {
     }
 
     struct Announcement: Codable, Identifiable {
-        let id: Int
+        let id: String  // ✅ FIXED: Changed from Int to String to match server response
         let title: String
         let content: String
         let priority: AnnouncementPriority

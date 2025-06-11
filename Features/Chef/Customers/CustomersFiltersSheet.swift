@@ -92,7 +92,7 @@ struct CustomersFiltersSheet: View {
     
     // MARK: - View Mode Section
     private var viewModeSection: some View {
-        FilterSection(title: "Display Mode", icon: "square.grid.2x2.fill") {
+        CustomersFilterSection(title: "Display Mode", icon: "square.grid.2x2.fill") {
             VStack(spacing: 12) {
                 ViewModeOption(
                     title: "List View",
@@ -121,7 +121,7 @@ struct CustomersFiltersSheet: View {
     
     // MARK: - Sort Options Section
     private var sortOptionsSection: some View {
-        FilterSection(title: "Sort By", icon: "arrow.up.arrow.down") {
+        CustomersFilterSection(title: "Sort By", icon: "arrow.up.arrow.down") {
             VStack(spacing: 8) {
                 ForEach(CustomersListView.CustomerSortOption.allCases, id: \.self) { option in
                     SortOption(
@@ -141,7 +141,7 @@ struct CustomersFiltersSheet: View {
     
     // MARK: - Filter Options Section
     private var filterOptionsSection: some View {
-        FilterSection(title: "Filter By", icon: "line.3.horizontal.decrease") {
+        CustomersFilterSection(title: "Filter By", icon: "line.3.horizontal.decrease") {
             VStack(spacing: 8) {
                 ForEach(CustomersListView.CustomerFilterOption.allCases, id: \.self) { option in
                     FilterOption(
@@ -256,7 +256,7 @@ struct CustomersFiltersSheet: View {
 
 // MARK: - Supporting Components
 
-struct FilterSection<Content: View>: View {
+struct CustomersFilterSection<Content: View>: View {
     let title: String
     let icon: String
     let content: Content

@@ -13,7 +13,7 @@ struct Configuration {
         #if DEBUG
         static let baseURL = "https://ksrcranes.dk"
         #else
-        static let baseURL = "https://api.ksrcranes.dk"
+        static let baseURL = "https://ksrcranes.dk"  // ✅ Same endpoint for Release
         #endif
     }
     

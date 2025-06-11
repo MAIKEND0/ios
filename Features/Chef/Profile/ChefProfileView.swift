@@ -130,7 +130,7 @@ struct ChefProfileView: View {
                 }
                 
                 // Email if available
-                if let email = AuthService.shared.getEmployeeName() {
+                if AuthService.shared.getEmployeeName() != nil {
                     HStack {
                         Image(systemName: "envelope.fill")
                             .foregroundColor(Color.ksrSecondary)
@@ -217,7 +217,7 @@ struct ChefProfileView: View {
             }
             
             ProfileOptionRow(
-                icon: "person.3.badge.gearshape",
+                icon: "person.3.fill",
                 title: "Employee Management",
                 subtitle: "Manage workers and supervisors",
                 color: .ksrPrimary
@@ -235,6 +235,9 @@ struct ChefProfileView: View {
                 // TODO: Navigate to system settings
                 print("Settings tapped")
             }
+            
+            // Always show biometric settings - the component itself will handle availability
+            BiometricSettingRow()
         }
         .padding(16)
         .background(
@@ -432,6 +435,123 @@ struct ProfileOptionRow: View {
             .padding(.vertical, 8)
         }
         .buttonStyle(PlainButtonStyle())
+    }
+}
+
+struct BiometricSettingRow: View {
+    @State private var isBiometricEnabled = AuthService.shared.isBiometricEnabled
+    @State private var showBiometricError = false
+    @State private var biometricErrorMessage = ""
+    @Environment(\.colorScheme) private var colorScheme
+    
+    private var biometricType: String {
+        return AuthService.shared.biometricType
+    }
+    
+    private var isBiometricAvailable: Bool {
+        return AuthService.shared.isBiometricAvailable
+    }
+    
+    var body: some View {
+        Group {
+            if isBiometricAvailable {
+                HStack(spacing: 16) {
+                    Image(systemName: biometricType == "Face ID" ? "faceid" : "touchid")
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundColor(.ksrSuccess)
+                        .frame(width: 24, height: 24)
+                    
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("\(biometricType) Login")
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                            .foregroundColor(.primary)
+                        
+                        Text("Use \(biometricType) for secure sign in")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    Spacer()
+                    
+                    Toggle("", isOn: $isBiometricEnabled)
+                        .labelsHidden()
+                        .onChange(of: isBiometricEnabled) { _, newValue in
+                            toggleBiometric(enabled: newValue)
+                        }
+                        .tint(.ksrYellow)
+                }
+                .padding(.vertical, 8)
+                .onAppear {
+                    // Refresh the state when view appears
+                    isBiometricEnabled = AuthService.shared.isBiometricEnabled
+                    
+                    #if DEBUG
+                    print("[BiometricSettingRow] Biometric available: \(isBiometricAvailable)")
+                    print("[BiometricSettingRow] Biometric type: \(biometricType)")
+                    print("[BiometricSettingRow] Biometric enabled: \(isBiometricEnabled)")
+                    print("[BiometricSettingRow] Has stored credentials: \(BiometricAuthService.shared.getStoredCredentials() != nil)")
+                    #endif
+                }
+            } else {
+                // Show a disabled state when biometric is not available
+                HStack(spacing: 16) {
+                    Image(systemName: "faceid")
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundColor(.gray)
+                        .frame(width: 24, height: 24)
+                    
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Biometric Login")
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                            .foregroundColor(.gray)
+                        
+                        Text("Not available on this device")
+                            .font(.caption)
+                            .foregroundColor(.gray)
+                    }
+                    
+                    Spacer()
+                }
+                .padding(.vertical, 8)
+            }
+        }
+        .alert("Biometric Settings", isPresented: $showBiometricError) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(biometricErrorMessage)
+        }
+    }
+    
+    private func toggleBiometric(enabled: Bool) {
+        if enabled {
+            // Check if we already have stored credentials
+            if BiometricAuthService.shared.getStoredCredentials() != nil {
+                // We already have credentials, just enable it
+                BiometricAuthService.shared.isBiometricEnabled = true
+                isBiometricEnabled = true
+                
+                #if DEBUG
+                print("[BiometricSettingRow] Biometric re-enabled with existing credentials")
+                #endif
+            } else {
+                // To enable biometric, we need current credentials
+                // Since we're already logged in, we can't get the password
+                // Show an error message
+                biometricErrorMessage = "To enable \(biometricType), please:\n1. Log out of the app\n2. Sign in with your email and password\n3. Accept the \(biometricType) prompt after logging in"
+                showBiometricError = true
+                isBiometricEnabled = false
+            }
+        } else {
+            // Disable biometric
+            AuthService.shared.disableBiometric()
+            isBiometricEnabled = false
+            
+            #if DEBUG
+            print("[BiometricSettingRow] Biometric disabled")
+            #endif
+        }
     }
 }
 

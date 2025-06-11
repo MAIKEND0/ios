@@ -26,4 +26,14 @@ extension DateFormatter {
     df.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSXXXXX"
     return df
   }()
+
+  /// User-friendly date format: e.g., "December 25, 2024"
+  static let userFriendly: DateFormatter = {
+    let df = DateFormatter()
+    df.dateStyle = .long
+    df.timeStyle = .none
+    df.locale = Locale(identifier: "en_US")
+    return df
+  }()
+
 }

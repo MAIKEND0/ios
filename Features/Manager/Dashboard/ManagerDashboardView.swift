@@ -3,6 +3,7 @@ import PDFKit
 
 struct ManagerDashboardView: View {
     @StateObject private var viewModel = ManagerDashboardViewModel()
+    @ObservedObject private var notificationService = NotificationService.shared
     @State private var showFilterOptions = false
     @State private var searchText = ""
     @State private var hasAppeared = false
@@ -116,11 +117,19 @@ struct ManagerDashboardView: View {
             }
             .disabled(viewModel.isLoading)
             
-            Button {
-                // Obsługa powiadomień (do rozbudowy)
-            } label: {
-                Image(systemName: "bell")
-                    .foregroundColor(Color.ksrTextPrimary)
+            NavigationLink(destination: NotificationsView()) {
+                ZStack {
+                    Image(systemName: "bell")
+                        .foregroundColor(Color.ksrTextPrimary)
+                    
+                    // Notification badge
+                    if notificationService.unreadCount > 0 {
+                        Circle()
+                            .fill(Color.red)
+                            .frame(width: 8, height: 8)
+                            .offset(x: 6, y: -6)
+                    }
+                }
             }
         }
     }

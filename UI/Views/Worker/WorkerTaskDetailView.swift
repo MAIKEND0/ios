@@ -1,0 +1,1 @@
+../../../Features/Worker/Tasks/WorkerTaskDetailView.swift

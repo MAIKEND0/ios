@@ -1,6 +1,6 @@
 // /api/app/supervisor/workers/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "../../../../lib/prisma";
+import { prisma } from "../../../../../lib/prisma";
 import jwt from "jsonwebtoken";
 
 const SECRET = process.env.NEXTAUTH_SECRET || process.env.JWT_SECRET!;
@@ -78,6 +78,7 @@ export async function GET(req: NextRequest) {
       name: worker.name,
       email: worker.email,
       phone_number: worker.phone_number,
+      profilePictureUrl: worker.profilePictureUrl,
       assignedTasks: worker.TaskAssignments.map(assignment => {
         const task = assignment.Tasks;
         

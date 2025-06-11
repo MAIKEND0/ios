@@ -31,7 +31,7 @@
 		1B5362FF2DEA32CD0092B268 /* CustomersListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B5362FE2DEA32CB0092B268 /* CustomersListView.swift */; };
 		1B5363032DEA336C0092B268 /* CustomersViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B5363022DEA336B0092B268 /* CustomersViewModel.swift */; };
 		1B5363052DEA33850092B268 /* CreateCustomerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B5363042DEA33840092B268 /* CreateCustomerView.swift */; };
-		1B5363072DEA33F90092B268 /* CustomersFiltersSheet.swift in Resources */ = {isa = PBXBuildFile; fileRef = 1B5363062DEA33F80092B268 /* CustomersFiltersSheet.swift */; };
+		1B5363072DEA33F90092B268 /* CustomersFiltersSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B5363062DEA33F80092B268 /* CustomersFiltersSheet.swift */; };
 		1B5363092DEA39870092B268 /* CustomerDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B5363082DEA39850092B268 /* CustomerDetailView.swift */; };
 		1B53630B2DEA3A090092B268 /* CustomerDetailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B53630A2DEA3A080092B268 /* CustomerDetailViewModel.swift */; };
 		1B53630D2DEA3B540092B268 /* EditCustomerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B53630C2DEA3B520092B268 /* EditCustomerView.swift */; };
@@ -109,6 +109,44 @@
 		1B779BF92DE60B4500947C94 /* WorkerProfileApiService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B779BF82DE60B3F00947C94 /* WorkerProfileApiService.swift */; };
 		1B779BFE2DE614C400947C94 /* WorkerDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B779BFD2DE614C000947C94 /* WorkerDashboardView.swift */; };
 		1B7A27782DD6032F004FFF06 /* Notifications.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B7A27772DD6032B004FFF06 /* Notifications.swift */; };
+		1B7CAF502DF9C46000899D00 /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = 1B7CAF4F2DF9C46000899D00 /* FirebaseMessaging */; };
+		1B7CAF542DF9C68D00899D00 /* TimePeriodNavigation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B7CAF532DF9C68D00899D00 /* TimePeriodNavigation.swift */; };
+		1B7CAF562DF9CD6300899D00 /* EquipmentAPIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B7CAF552DF9CD6300899D00 /* EquipmentAPIService.swift */; };
+		1B7CAF602DF9D91600899D00 /* EditableWorkEntry.swift  in Resources */ = {isa = PBXBuildFile; fileRef = 1B7CAF582DF9D91600899D00 /* EditableWorkEntry.swift  */; };
+		1B7CAF612DF9D91600899D00 /* CreateLeaveRequestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B7CAF5A2DF9D91600899D00 /* CreateLeaveRequestView.swift */; };
+		1B7CAF622DF9D91600899D00 /* WorkerLeaveCalendarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B7CAF5D2DF9D91600899D00 /* WorkerLeaveCalendarView.swift */; };
+		1B7CAF632DF9D91600899D00 /* LeaveRequestFiltersView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B7CAF5C2DF9D91600899D00 /* LeaveRequestFiltersView.swift */; };
+		1B7CAF642DF9D91600899D00 /* WorkerLeaveView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B7CAF5E2DF9D91600899D00 /* WorkerLeaveView.swift */; };
+		1B7CAF652DF9D91600899D00 /* EditLeaveRequestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B7CAF5B2DF9D91600899D00 /* EditLeaveRequestView.swift */; };
+		1B7CAF672DF9DA9D00899D00 /* WorkerLeaveViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B7CAF662DF9DA9D00899D00 /* WorkerLeaveViewModel.swift */; };
+		1B7CAF882DF9DADF00899D00 /* PendingHoursViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B7CAF842DF9DADF00899D00 /* PendingHoursViewModel.swift */; };
+		1B7CAF892DF9DADF00899D00 /* CreateBatchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B7CAF7B2DF9DADF00899D00 /* CreateBatchView.swift */; };
+		1B7CAF8A2DF9DADF00899D00 /* CreateBatchViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B7CAF7C2DF9DADF00899D00 /* CreateBatchViewModel.swift */; };
+		1B7CAF8B2DF9DADF00899D00 /* CalendarCSVGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B7CAF6D2DF9DADF00899D00 /* CalendarCSVGenerator.swift */; };
+		1B7CAF8C2DF9DADF00899D00 /* MobileTeamView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B7CAF742DF9DADF00899D00 /* MobileTeamView.swift */; };
+		1B7CAF8D2DF9DADF00899D00 /* PayrollActivityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B7CAF7D2DF9DADF00899D00 /* PayrollActivityView.swift */; };
+		1B7CAF8E2DF9DADF00899D00 /* PayrollDashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B7CAF802DF9DADF00899D00 /* PayrollDashboardView.swift */; };
+		1B7CAF8F2DF9DADF00899D00 /* MobileManagementCalendarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B7CAF722DF9DADF00899D00 /* MobileManagementCalendarView.swift */; };
+		1B7CAF902DF9DADF00899D00 /* PayrollBatchesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B7CAF7E2DF9DADF00899D00 /* PayrollBatchesView.swift */; };
+		1B7CAF912DF9DADF00899D00 /* MobileEventDetailSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B7CAF712DF9DADF00899D00 /* MobileEventDetailSheet.swift */; };
+		1B7CAF922DF9DADF00899D00 /* ChefLeaveManagementViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B7CAF862DF9DADF00899D00 /* ChefLeaveManagementViewModel.swift */; };
+		1B7CAF932DF9DADF00899D00 /* PayrollReportsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B7CAF822DF9DADF00899D00 /* PayrollReportsView.swift */; };
+		1B7CAF942DF9DADF00899D00 /* ChefBusinessTimelineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B7CAF692DF9DADF00899D00 /* ChefBusinessTimelineView.swift */; };
+		1B7CAF952DF9DADF00899D00 /* MobileMonthView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B7CAF732DF9DADF00899D00 /* MobileMonthView.swift */; };
+		1B7CAF962DF9DADF00899D00 /* MobileWeekView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B7CAF752DF9DADF00899D00 /* MobileWeekView.swift */; };
+		1B7CAF972DF9DADF00899D00 /* ChefLeaveManagementView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B7CAF6B2DF9DADF00899D00 /* ChefLeaveManagementView.swift */; };
+		1B7CAF982DF9DADF00899D00 /* ChefManagementCalendarViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B7CAF702DF9DADF00899D00 /* ChefManagementCalendarViewModel.swift */; };
+		1B7CAF992DF9DADF00899D00 /* BusinessInsightsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B7CAF682DF9DADF00899D00 /* BusinessInsightsView.swift */; };
+		1B7CAF9A2DF9DADF00899D00 /* ChefManagementCalendarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B7CAF6F2DF9DADF00899D00 /* ChefManagementCalendarView.swift */; };
+		1B7CAF9B2DF9DADF00899D00 /* PayrollBatchesViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B7CAF7F2DF9DADF00899D00 /* PayrollBatchesViewModel.swift */; };
+		1B7CAF9C2DF9DADF00899D00 /* PayrollDashboardViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B7CAF812DF9DADF00899D00 /* PayrollDashboardViewModel.swift */; };
+		1B7CAF9D2DF9DADF00899D00 /* BatchDetailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B7CAF7A2DF9DADF00899D00 /* BatchDetailViewModel.swift */; };
+		1B7CAF9E2DF9DADF00899D00 /* BatchDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B7CAF792DF9DADF00899D00 /* BatchDetailView.swift */; };
+		1B7CAF9F2DF9DADF00899D00 /* CalendarExcelGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B7CAF6E2DF9DADF00899D00 /* CalendarExcelGenerator.swift */; };
+		1B7CAFA02DF9DADF00899D00 /* PendingHoursView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B7CAF832DF9DADF00899D00 /* PendingHoursView.swift */; };
+		1B7CAFA12DF9DADF00899D00 /* SimplePDFGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B7CAF772DF9DADF00899D00 /* SimplePDFGenerator.swift */; };
+		1B7CAFA22DF9DADF00899D00 /* PDFPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B7CAF762DF9DADF00899D00 /* PDFPreviewView.swift */; };
+		1B7CAFA32DF9EFDC00899D00 /* BiometricLockView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B7CAF512DF9C61E00899D00 /* BiometricLockView.swift */; };
 		1B7D9B2E2DE45F9A00D39069 /* AppNotification.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B7D9B2D2DE45F9300D39069 /* AppNotification.swift */; };
 		1B7D9B322DE4600300D39069 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B7D9B312DE4600100D39069 /* NotificationService.swift */; };
 		1B7D9B332DE46CDE00D39069 /* NotificationResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B7D9B302DE45FC500D39069 /* NotificationResponse.swift */; };
@@ -128,6 +166,72 @@
 		1BD0F80B2DE9A5DE002DEDFA /* ProfileImageCache.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BD0F80A2DE9A5DC002DEDFA /* ProfileImageCache.swift */; };
 		1BD0F80E2DE9AE09002DEDFA /* CachedProfileImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BD0F80D2DE9AE08002DEDFA /* CachedProfileImageView.swift */; };
 		1BD0F8112DE9B81C002DEDFA /* AppStateManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BD0F8102DE9B81A002DEDFA /* AppStateManager.swift */; };
+		1BDB00002DF9C2410046C3B5 /* ChefWorkersView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BDBFFED2DF9C2410046C3B5 /* ChefWorkersView.swift */; };
+		1BDB00012DF9C2410046C3B5 /* EditWorkerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BDBFFF22DF9C2410046C3B5 /* EditWorkerView.swift */; };
+		1BDB00022DF9C2410046C3B5 /* WorkerDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BDBFFF42DF9C2410046C3B5 /* WorkerDetailView.swift */; };
+		1BDB00032DF9C2410046C3B5 /* WorkerDocumentViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BDBFFF62DF9C2410046C3B5 /* WorkerDocumentViewModel.swift */; };
+		1BDB00042DF9C2410046C3B5 /* WorkersFiltersSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BDBFFF72DF9C2410046C3B5 /* WorkersFiltersSheet.swift */; };
+		1BDB00052DF9C2410046C3B5 /* DocumentUploadSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BDBFFF02DF9C2410046C3B5 /* DocumentUploadSheet.swift */; };
+		1BDB00062DF9C2410046C3B5 /* DocumentBulkActionsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BDBFFEF2DF9C2410046C3B5 /* DocumentBulkActionsSheet.swift */; };
+		1BDB000A2DF9C24A0046C3B5 /* TaskCertificateSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BDB00092DF9C24A0046C3B5 /* TaskCertificateSelectionView.swift */; };
+		1BDB000B2DF9C24A0046C3B5 /* EditTaskViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BDB00072DF9C24A0046C3B5 /* EditTaskViewModel.swift */; };
+		1BDB000C2DF9C24A0046C3B5 /* EquipmentSelectorViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BDB00082DF9C24A0046C3B5 /* EquipmentSelectorViews.swift */; };
+		1BDB00122DF9C2560046C3B5 /* ProjectBillingViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BDB00102DF9C2560046C3B5 /* ProjectBillingViewModel.swift */; };
+		1BDB00132DF9C2560046C3B5 /* ChefEditBillingRatesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BDB000D2DF9C2560046C3B5 /* ChefEditBillingRatesView.swift */; };
+		1BDB00142DF9C2560046C3B5 /* Decimal+Currency.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BDB000F2DF9C2560046C3B5 /* Decimal+Currency.swift */; };
+		1BDB00152DF9C2560046C3B5 /* ChefProjectBillingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BDB000E2DF9C2560046C3B5 /* ChefProjectBillingView.swift */; };
+		1BDB00342DF9C2980046C3B5 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = 1BDB00262DF9C2980046C3B5 /* README.md */; };
+		1BDB00352DF9C2980046C3B5 /* .gitkeep in Resources */ = {isa = PBXBuildFile; fileRef = 1BDB00162DF9C2980046C3B5 /* .gitkeep */; };
+		1BDB00362DF9C2980046C3B5 /* WorkerLeaveViewModel+Offline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BDB00302DF9C2980046C3B5 /* WorkerLeaveViewModel+Offline.swift */; };
+		1BDB00372DF9C2980046C3B5 /* EmployeeEntity+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BDB00182DF9C2980046C3B5 /* EmployeeEntity+CoreDataProperties.swift */; };
+		1BDB00382DF9C2980046C3B5 /* WorkerSyncOperation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BDB00222DF9C2980046C3B5 /* WorkerSyncOperation.swift */; };
+		1BDB00392DF9C2980046C3B5 /* SyncQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BDB002B2DF9C2980046C3B5 /* SyncQueue.swift */; };
+		1BDB003A2DF9C2980046C3B5 /* SyncEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BDB00282DF9C2980046C3B5 /* SyncEngine.swift */; };
+		1BDB003B2DF9C2980046C3B5 /* ProjectEntity+CoreDataClass.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BDB001B2DF9C2980046C3B5 /* ProjectEntity+CoreDataClass.swift */; };
+		1BDB003C2DF9C2980046C3B5 /* EmployeeEntity+CoreDataClass.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BDB00172DF9C2980046C3B5 /* EmployeeEntity+CoreDataClass.swift */; };
+		1BDB003D2DF9C2980046C3B5 /* OfflineDataProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BDB002E2DF9C2980046C3B5 /* OfflineDataProvider.swift */; };
+		1BDB003E2DF9C2980046C3B5 /* LeaveRequestEntity+CoreDataClass.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BDB00192DF9C2980046C3B5 /* LeaveRequestEntity+CoreDataClass.swift */; };
+		1BDB003F2DF9C2980046C3B5 /* ConflictResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BDB00242DF9C2980046C3B5 /* ConflictResolver.swift */; };
+		1BDB00402DF9C2980046C3B5 /* TaskEntity+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BDB001E2DF9C2980046C3B5 /* TaskEntity+CoreDataProperties.swift */; };
+		1BDB00412DF9C2980046C3B5 /* SyncOperation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BDB002A2DF9C2980046C3B5 /* SyncOperation.swift */; };
+		1BDB00422DF9C2980046C3B5 /* CoreDataStack.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BDB00322DF9C2980046C3B5 /* CoreDataStack.swift */; };
+		1BDB00432DF9C2980046C3B5 /* ProjectEntity+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BDB001C2DF9C2980046C3B5 /* ProjectEntity+CoreDataProperties.swift */; };
+		1BDB00442DF9C2980046C3B5 /* NetworkMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BDB00252DF9C2980046C3B5 /* NetworkMonitor.swift */; };
+		1BDB00452DF9C2980046C3B5 /* WorkEntryEntity+CoreDataClass.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BDB001F2DF9C2980046C3B5 /* WorkEntryEntity+CoreDataClass.swift */; };
+		1BDB00462DF9C2980046C3B5 /* SyncEngineIntegration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BDB00292DF9C2980046C3B5 /* SyncEngineIntegration.swift */; };
+		1BDB00472DF9C2980046C3B5 /* WorkerDashboardViewModel+Offline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BDB002F2DF9C2980046C3B5 /* WorkerDashboardViewModel+Offline.swift */; };
+		1BDB00482DF9C2980046C3B5 /* SyncCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BDB00272DF9C2980046C3B5 /* SyncCoordinator.swift */; };
+		1BDB00492DF9C2980046C3B5 /* LeaveRequestEntity+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BDB001A2DF9C2980046C3B5 /* LeaveRequestEntity+CoreDataProperties.swift */; };
+		1BDB004A2DF9C2980046C3B5 /* WorkEntryEntity+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BDB00202DF9C2980046C3B5 /* WorkEntryEntity+CoreDataProperties.swift */; };
+		1BDB004B2DF9C2980046C3B5 /* ChefWorkersViewModel+Offline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BDB002D2DF9C2980046C3B5 /* ChefWorkersViewModel+Offline.swift */; };
+		1BDB004C2DF9C2980046C3B5 /* TaskEntity+CoreDataClass.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BDB001D2DF9C2980046C3B5 /* TaskEntity+CoreDataClass.swift */; };
+		1BDB00522DF9C2BC0046C3B5 /* NetworkStatusBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BDB004D2DF9C2BC0046C3B5 /* NetworkStatusBar.swift */; };
+		1BDB00532DF9C2BC0046C3B5 /* SyncStatusBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BDB00512DF9C2BC0046C3B5 /* SyncStatusBadge.swift */; };
+		1BDB00542DF9C2BC0046C3B5 /* PendingChangesIndicator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BDB004F2DF9C2BC0046C3B5 /* PendingChangesIndicator.swift */; };
+		1BDB00552DF9C2BC0046C3B5 /* OfflineIndicatorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BDB004E2DF9C2BC0046C3B5 /* OfflineIndicatorView.swift */; };
+		1BDB00562DF9C2BC0046C3B5 /* SyncProgressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BDB00502DF9C2BC0046C3B5 /* SyncProgressView.swift */; };
+		1BDB005B2DF9C2E60046C3B5 /* BackgroundTaskService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BDB00582DF9C2E60046C3B5 /* BackgroundTaskService.swift */; };
+		1BDB005C2DF9C2E60046C3B5 /* BiometricAuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BDB00592DF9C2E60046C3B5 /* BiometricAuthService.swift */; };
+		1BDB005D2DF9C2E60046C3B5 /* PushNotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BDB005A2DF9C2E60046C3B5 /* PushNotificationService.swift */; };
+		1BDB005F2DF9C2F10046C3B5 /* LeaveModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BDB005E2DF9C2F10046C3B5 /* LeaveModels.swift */; };
+		1BDB00692DF9C3010046C3B5 /* ChefProjectsApiService.txt in Resources */ = {isa = PBXBuildFile; fileRef = 1BDB00622DF9C3010046C3B5 /* ChefProjectsApiService.txt */; };
+		1BDB006A2DF9C3010046C3B5 /* ChefWorkersModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BDB00642DF9C3010046C3B5 /* ChefWorkersModels.swift */; };
+		1BDB006B2DF9C3010046C3B5 /* ChefWorkersAPIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BDB00632DF9C3010046C3B5 /* ChefWorkersAPIService.swift */; };
+		1BDB006C2DF9C3010046C3B5 /* BuisnessTimelineModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BDB00602DF9C3010046C3B5 /* BuisnessTimelineModels.swift */; };
+		1BDB006D2DF9C3010046C3B5 /* WorkerDocumentAPIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BDB00672DF9C3010046C3B5 /* WorkerDocumentAPIService.swift */; };
+		1BDB006E2DF9C3010046C3B5 /* PayrollModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BDB00662DF9C3010046C3B5 /* PayrollModels.swift */; };
+		1BDB006F2DF9C3010046C3B5 /* WorkerDocumentModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BDB00682DF9C3010046C3B5 /* WorkerDocumentModels.swift */; };
+		1BDB00702DF9C3010046C3B5 /* PayrollAPIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BDB00652DF9C3010046C3B5 /* PayrollAPIService.swift */; };
+		1BDB00712DF9C3010046C3B5 /* ChefLeaveAPIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BDB00612DF9C3010046C3B5 /* ChefLeaveAPIService.swift */; };
+		1BDB00732DF9C30C0046C3B5 /* WorkerLeaveAPIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BDB00722DF9C30C0046C3B5 /* WorkerLeaveAPIService.swift */; };
+		1BDBFFF82DF9C2410046C3B5 /* EditWorkerViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BDBFFF32DF9C2410046C3B5 /* EditWorkerViewModel.swift */; };
+		1BDBFFF92DF9C2410046C3B5 /* AddWorkerViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BDBFFEA2DF9C2410046C3B5 /* AddWorkerViewModel.swift */; };
+		1BDBFFFA2DF9C2410046C3B5 /* DocumentViewerSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BDBFFF12DF9C2410046C3B5 /* DocumentViewerSheet.swift */; };
+		1BDBFFFB2DF9C2410046C3B5 /* WorkerDocumentManagerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BDBFFF52DF9C2410046C3B5 /* WorkerDocumentManagerView.swift */; };
+		1BDBFFFC2DF9C2410046C3B5 /* CertificateSelectionViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BDBFFEC2DF9C2410046C3B5 /* CertificateSelectionViewModel.swift */; };
+		1BDBFFFD2DF9C2410046C3B5 /* AddWorkerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BDBFFE92DF9C2410046C3B5 /* AddWorkerView.swift */; };
+		1BDBFFFE2DF9C2410046C3B5 /* CertificateSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BDBFFEB2DF9C2410046C3B5 /* CertificateSelectionView.swift */; };
+		1BDBFFFF2DF9C2410046C3B5 /* ChefWorkersViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BDBFFEE2DF9C2410046C3B5 /* ChefWorkersViewModel.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -253,6 +357,43 @@
 		1B779BF82DE60B3F00947C94 /* WorkerProfileApiService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkerProfileApiService.swift; sourceTree = "<group>"; };
 		1B779BFD2DE614C000947C94 /* WorkerDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkerDashboardView.swift; sourceTree = "<group>"; };
 		1B7A27772DD6032B004FFF06 /* Notifications.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Notifications.swift; sourceTree = "<group>"; };
+		1B7CAF512DF9C61E00899D00 /* BiometricLockView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BiometricLockView.swift; sourceTree = "<group>"; };
+		1B7CAF532DF9C68D00899D00 /* TimePeriodNavigation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimePeriodNavigation.swift; sourceTree = "<group>"; };
+		1B7CAF552DF9CD6300899D00 /* EquipmentAPIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EquipmentAPIService.swift; sourceTree = "<group>"; };
+		1B7CAF572DF9D91600899D00 /* en */ = {isa = PBXFileReference; lastKnownFileType = text; name = en; path = "EditableWorkEntry.swift "; sourceTree = "<group>"; };
+		1B7CAF5A2DF9D91600899D00 /* CreateLeaveRequestView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateLeaveRequestView.swift; sourceTree = "<group>"; };
+		1B7CAF5B2DF9D91600899D00 /* EditLeaveRequestView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditLeaveRequestView.swift; sourceTree = "<group>"; };
+		1B7CAF5C2DF9D91600899D00 /* LeaveRequestFiltersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LeaveRequestFiltersView.swift; sourceTree = "<group>"; };
+		1B7CAF5D2DF9D91600899D00 /* WorkerLeaveCalendarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkerLeaveCalendarView.swift; sourceTree = "<group>"; };
+		1B7CAF5E2DF9D91600899D00 /* WorkerLeaveView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkerLeaveView.swift; sourceTree = "<group>"; };
+		1B7CAF662DF9DA9D00899D00 /* WorkerLeaveViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkerLeaveViewModel.swift; sourceTree = "<group>"; };
+		1B7CAF682DF9DADF00899D00 /* BusinessInsightsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BusinessInsightsView.swift; sourceTree = "<group>"; };
+		1B7CAF692DF9DADF00899D00 /* ChefBusinessTimelineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChefBusinessTimelineView.swift; sourceTree = "<group>"; };
+		1B7CAF6B2DF9DADF00899D00 /* ChefLeaveManagementView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChefLeaveManagementView.swift; sourceTree = "<group>"; };
+		1B7CAF6D2DF9DADF00899D00 /* CalendarCSVGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarCSVGenerator.swift; sourceTree = "<group>"; };
+		1B7CAF6E2DF9DADF00899D00 /* CalendarExcelGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarExcelGenerator.swift; sourceTree = "<group>"; };
+		1B7CAF6F2DF9DADF00899D00 /* ChefManagementCalendarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChefManagementCalendarView.swift; sourceTree = "<group>"; };
+		1B7CAF702DF9DADF00899D00 /* ChefManagementCalendarViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChefManagementCalendarViewModel.swift; sourceTree = "<group>"; };
+		1B7CAF712DF9DADF00899D00 /* MobileEventDetailSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MobileEventDetailSheet.swift; sourceTree = "<group>"; };
+		1B7CAF722DF9DADF00899D00 /* MobileManagementCalendarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MobileManagementCalendarView.swift; sourceTree = "<group>"; };
+		1B7CAF732DF9DADF00899D00 /* MobileMonthView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MobileMonthView.swift; sourceTree = "<group>"; };
+		1B7CAF742DF9DADF00899D00 /* MobileTeamView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MobileTeamView.swift; sourceTree = "<group>"; };
+		1B7CAF752DF9DADF00899D00 /* MobileWeekView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MobileWeekView.swift; sourceTree = "<group>"; };
+		1B7CAF762DF9DADF00899D00 /* PDFPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PDFPreviewView.swift; sourceTree = "<group>"; };
+		1B7CAF772DF9DADF00899D00 /* SimplePDFGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimplePDFGenerator.swift; sourceTree = "<group>"; };
+		1B7CAF792DF9DADF00899D00 /* BatchDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BatchDetailView.swift; sourceTree = "<group>"; };
+		1B7CAF7A2DF9DADF00899D00 /* BatchDetailViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BatchDetailViewModel.swift; sourceTree = "<group>"; };
+		1B7CAF7B2DF9DADF00899D00 /* CreateBatchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateBatchView.swift; sourceTree = "<group>"; };
+		1B7CAF7C2DF9DADF00899D00 /* CreateBatchViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateBatchViewModel.swift; sourceTree = "<group>"; };
+		1B7CAF7D2DF9DADF00899D00 /* PayrollActivityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PayrollActivityView.swift; sourceTree = "<group>"; };
+		1B7CAF7E2DF9DADF00899D00 /* PayrollBatchesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PayrollBatchesView.swift; sourceTree = "<group>"; };
+		1B7CAF7F2DF9DADF00899D00 /* PayrollBatchesViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PayrollBatchesViewModel.swift; sourceTree = "<group>"; };
+		1B7CAF802DF9DADF00899D00 /* PayrollDashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PayrollDashboardView.swift; sourceTree = "<group>"; };
+		1B7CAF812DF9DADF00899D00 /* PayrollDashboardViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PayrollDashboardViewModel.swift; sourceTree = "<group>"; };
+		1B7CAF822DF9DADF00899D00 /* PayrollReportsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PayrollReportsView.swift; sourceTree = "<group>"; };
+		1B7CAF832DF9DADF00899D00 /* PendingHoursView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PendingHoursView.swift; sourceTree = "<group>"; };
+		1B7CAF842DF9DADF00899D00 /* PendingHoursViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PendingHoursViewModel.swift; sourceTree = "<group>"; };
+		1B7CAF862DF9DADF00899D00 /* ChefLeaveManagementViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChefLeaveManagementViewModel.swift; sourceTree = "<group>"; };
 		1B7D9B2D2DE45F9300D39069 /* AppNotification.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppNotification.swift; sourceTree = "<group>"; };
 		1B7D9B302DE45FC500D39069 /* NotificationResponse.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationResponse.swift; sourceTree = "<group>"; };
 		1B7D9B312DE4600100D39069 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
@@ -272,6 +413,72 @@
 		1BD0F80A2DE9A5DC002DEDFA /* ProfileImageCache.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileImageCache.swift; sourceTree = "<group>"; };
 		1BD0F80D2DE9AE08002DEDFA /* CachedProfileImageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CachedProfileImageView.swift; sourceTree = "<group>"; };
 		1BD0F8102DE9B81A002DEDFA /* AppStateManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStateManager.swift; sourceTree = "<group>"; };
+		1BDB00072DF9C24A0046C3B5 /* EditTaskViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditTaskViewModel.swift; sourceTree = "<group>"; };
+		1BDB00082DF9C24A0046C3B5 /* EquipmentSelectorViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EquipmentSelectorViews.swift; sourceTree = "<group>"; };
+		1BDB00092DF9C24A0046C3B5 /* TaskCertificateSelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskCertificateSelectionView.swift; sourceTree = "<group>"; };
+		1BDB000D2DF9C2560046C3B5 /* ChefEditBillingRatesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChefEditBillingRatesView.swift; sourceTree = "<group>"; };
+		1BDB000E2DF9C2560046C3B5 /* ChefProjectBillingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChefProjectBillingView.swift; sourceTree = "<group>"; };
+		1BDB000F2DF9C2560046C3B5 /* Decimal+Currency.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Decimal+Currency.swift"; sourceTree = "<group>"; };
+		1BDB00102DF9C2560046C3B5 /* ProjectBillingViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectBillingViewModel.swift; sourceTree = "<group>"; };
+		1BDB00162DF9C2980046C3B5 /* .gitkeep */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitkeep; sourceTree = "<group>"; };
+		1BDB00172DF9C2980046C3B5 /* EmployeeEntity+CoreDataClass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "EmployeeEntity+CoreDataClass.swift"; sourceTree = "<group>"; };
+		1BDB00182DF9C2980046C3B5 /* EmployeeEntity+CoreDataProperties.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "EmployeeEntity+CoreDataProperties.swift"; sourceTree = "<group>"; };
+		1BDB00192DF9C2980046C3B5 /* LeaveRequestEntity+CoreDataClass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LeaveRequestEntity+CoreDataClass.swift"; sourceTree = "<group>"; };
+		1BDB001A2DF9C2980046C3B5 /* LeaveRequestEntity+CoreDataProperties.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LeaveRequestEntity+CoreDataProperties.swift"; sourceTree = "<group>"; };
+		1BDB001B2DF9C2980046C3B5 /* ProjectEntity+CoreDataClass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ProjectEntity+CoreDataClass.swift"; sourceTree = "<group>"; };
+		1BDB001C2DF9C2980046C3B5 /* ProjectEntity+CoreDataProperties.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ProjectEntity+CoreDataProperties.swift"; sourceTree = "<group>"; };
+		1BDB001D2DF9C2980046C3B5 /* TaskEntity+CoreDataClass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TaskEntity+CoreDataClass.swift"; sourceTree = "<group>"; };
+		1BDB001E2DF9C2980046C3B5 /* TaskEntity+CoreDataProperties.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TaskEntity+CoreDataProperties.swift"; sourceTree = "<group>"; };
+		1BDB001F2DF9C2980046C3B5 /* WorkEntryEntity+CoreDataClass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "WorkEntryEntity+CoreDataClass.swift"; sourceTree = "<group>"; };
+		1BDB00202DF9C2980046C3B5 /* WorkEntryEntity+CoreDataProperties.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "WorkEntryEntity+CoreDataProperties.swift"; sourceTree = "<group>"; };
+		1BDB00222DF9C2980046C3B5 /* WorkerSyncOperation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkerSyncOperation.swift; sourceTree = "<group>"; };
+		1BDB00242DF9C2980046C3B5 /* ConflictResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConflictResolver.swift; sourceTree = "<group>"; };
+		1BDB00252DF9C2980046C3B5 /* NetworkMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkMonitor.swift; sourceTree = "<group>"; };
+		1BDB00262DF9C2980046C3B5 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		1BDB00272DF9C2980046C3B5 /* SyncCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncCoordinator.swift; sourceTree = "<group>"; };
+		1BDB00282DF9C2980046C3B5 /* SyncEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncEngine.swift; sourceTree = "<group>"; };
+		1BDB00292DF9C2980046C3B5 /* SyncEngineIntegration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncEngineIntegration.swift; sourceTree = "<group>"; };
+		1BDB002A2DF9C2980046C3B5 /* SyncOperation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncOperation.swift; sourceTree = "<group>"; };
+		1BDB002B2DF9C2980046C3B5 /* SyncQueue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncQueue.swift; sourceTree = "<group>"; };
+		1BDB002D2DF9C2980046C3B5 /* ChefWorkersViewModel+Offline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ChefWorkersViewModel+Offline.swift"; sourceTree = "<group>"; };
+		1BDB002E2DF9C2980046C3B5 /* OfflineDataProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OfflineDataProvider.swift; sourceTree = "<group>"; };
+		1BDB002F2DF9C2980046C3B5 /* WorkerDashboardViewModel+Offline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "WorkerDashboardViewModel+Offline.swift"; sourceTree = "<group>"; };
+		1BDB00302DF9C2980046C3B5 /* WorkerLeaveViewModel+Offline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "WorkerLeaveViewModel+Offline.swift"; sourceTree = "<group>"; };
+		1BDB00322DF9C2980046C3B5 /* CoreDataStack.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreDataStack.swift; sourceTree = "<group>"; };
+		1BDB004D2DF9C2BC0046C3B5 /* NetworkStatusBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkStatusBar.swift; sourceTree = "<group>"; };
+		1BDB004E2DF9C2BC0046C3B5 /* OfflineIndicatorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OfflineIndicatorView.swift; sourceTree = "<group>"; };
+		1BDB004F2DF9C2BC0046C3B5 /* PendingChangesIndicator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PendingChangesIndicator.swift; sourceTree = "<group>"; };
+		1BDB00502DF9C2BC0046C3B5 /* SyncProgressView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncProgressView.swift; sourceTree = "<group>"; };
+		1BDB00512DF9C2BC0046C3B5 /* SyncStatusBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncStatusBadge.swift; sourceTree = "<group>"; };
+		1BDB00582DF9C2E60046C3B5 /* BackgroundTaskService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundTaskService.swift; sourceTree = "<group>"; };
+		1BDB00592DF9C2E60046C3B5 /* BiometricAuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BiometricAuthService.swift; sourceTree = "<group>"; };
+		1BDB005A2DF9C2E60046C3B5 /* PushNotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PushNotificationService.swift; sourceTree = "<group>"; };
+		1BDB005E2DF9C2F10046C3B5 /* LeaveModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LeaveModels.swift; sourceTree = "<group>"; };
+		1BDB00602DF9C3010046C3B5 /* BuisnessTimelineModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuisnessTimelineModels.swift; sourceTree = "<group>"; };
+		1BDB00612DF9C3010046C3B5 /* ChefLeaveAPIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChefLeaveAPIService.swift; sourceTree = "<group>"; };
+		1BDB00622DF9C3010046C3B5 /* ChefProjectsApiService.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = ChefProjectsApiService.txt; sourceTree = "<group>"; };
+		1BDB00632DF9C3010046C3B5 /* ChefWorkersAPIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChefWorkersAPIService.swift; sourceTree = "<group>"; };
+		1BDB00642DF9C3010046C3B5 /* ChefWorkersModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChefWorkersModels.swift; sourceTree = "<group>"; };
+		1BDB00652DF9C3010046C3B5 /* PayrollAPIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PayrollAPIService.swift; sourceTree = "<group>"; };
+		1BDB00662DF9C3010046C3B5 /* PayrollModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PayrollModels.swift; sourceTree = "<group>"; };
+		1BDB00672DF9C3010046C3B5 /* WorkerDocumentAPIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkerDocumentAPIService.swift; sourceTree = "<group>"; };
+		1BDB00682DF9C3010046C3B5 /* WorkerDocumentModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkerDocumentModels.swift; sourceTree = "<group>"; };
+		1BDB00722DF9C30C0046C3B5 /* WorkerLeaveAPIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkerLeaveAPIService.swift; sourceTree = "<group>"; };
+		1BDBFFE92DF9C2410046C3B5 /* AddWorkerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddWorkerView.swift; sourceTree = "<group>"; };
+		1BDBFFEA2DF9C2410046C3B5 /* AddWorkerViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddWorkerViewModel.swift; sourceTree = "<group>"; };
+		1BDBFFEB2DF9C2410046C3B5 /* CertificateSelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CertificateSelectionView.swift; sourceTree = "<group>"; };
+		1BDBFFEC2DF9C2410046C3B5 /* CertificateSelectionViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CertificateSelectionViewModel.swift; sourceTree = "<group>"; };
+		1BDBFFED2DF9C2410046C3B5 /* ChefWorkersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChefWorkersView.swift; sourceTree = "<group>"; };
+		1BDBFFEE2DF9C2410046C3B5 /* ChefWorkersViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChefWorkersViewModel.swift; sourceTree = "<group>"; };
+		1BDBFFEF2DF9C2410046C3B5 /* DocumentBulkActionsSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentBulkActionsSheet.swift; sourceTree = "<group>"; };
+		1BDBFFF02DF9C2410046C3B5 /* DocumentUploadSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentUploadSheet.swift; sourceTree = "<group>"; };
+		1BDBFFF12DF9C2410046C3B5 /* DocumentViewerSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentViewerSheet.swift; sourceTree = "<group>"; };
+		1BDBFFF22DF9C2410046C3B5 /* EditWorkerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditWorkerView.swift; sourceTree = "<group>"; };
+		1BDBFFF32DF9C2410046C3B5 /* EditWorkerViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditWorkerViewModel.swift; sourceTree = "<group>"; };
+		1BDBFFF42DF9C2410046C3B5 /* WorkerDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkerDetailView.swift; sourceTree = "<group>"; };
+		1BDBFFF52DF9C2410046C3B5 /* WorkerDocumentManagerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkerDocumentManagerView.swift; sourceTree = "<group>"; };
+		1BDBFFF62DF9C2410046C3B5 /* WorkerDocumentViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkerDocumentViewModel.swift; sourceTree = "<group>"; };
+		1BDBFFF72DF9C2410046C3B5 /* WorkersFiltersSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkersFiltersSheet.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -297,6 +504,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				1B7CAF502DF9C46000899D00 /* FirebaseMessaging in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -333,6 +541,11 @@
 		1B5362EA2DEA2BD40092B268 /* Chef */ = {
 			isa = PBXGroup;
 			children = (
+				1B7CAF6A2DF9DADF00899D00 /* Buisness */,
+				1B7CAF6C2DF9DADF00899D00 /* Leave */,
+				1B7CAF782DF9DADF00899D00 /* ManagementCalendar */,
+				1B7CAF852DF9DADF00899D00 /* Payroll */,
+				1B7CAF872DF9DADF00899D00 /* ViewModels */,
 				1B5362F12DEA2C190092B268 /* Profile */,
 				1B5362F02DEA2C100092B268 /* Workers */,
 				1B5362EF2DEA2C090092B268 /* Tasks */,
@@ -377,6 +590,7 @@
 		1B5362EE2DEA2BF90092B268 /* Projects */ = {
 			isa = PBXGroup;
 			children = (
+				1BDB00112DF9C2560046C3B5 /* Billings */,
 				1B5363312DEC5FFE0092B268 /* ChefProjectDetailView.swift */,
 				1B53632E2DEC5FDC0092B268 /* ChefCreateProjectView.swift */,
 				1B53632C2DEC5FCB0092B268 /* ChefWorkerPickerView.swift */,
@@ -389,6 +603,9 @@
 		1B5362EF2DEA2C090092B268 /* Tasks */ = {
 			isa = PBXGroup;
 			children = (
+				1BDB00072DF9C24A0046C3B5 /* EditTaskViewModel.swift */,
+				1BDB00082DF9C24A0046C3B5 /* EquipmentSelectorViews.swift */,
+				1BDB00092DF9C24A0046C3B5 /* TaskCertificateSelectionView.swift */,
 				1B5363392DECDEA90092B268 /* ChefTaskDetailView.swift */,
 				1B5363372DECB0AF0092B268 /* CreateTaskViewModel.swift */,
 				1B5363262DEC4C500092B268 /* ChefTaskManagementViews.swift */,
@@ -399,6 +616,21 @@
 		1B5362F02DEA2C100092B268 /* Workers */ = {
 			isa = PBXGroup;
 			children = (
+				1BDBFFE92DF9C2410046C3B5 /* AddWorkerView.swift */,
+				1BDBFFEA2DF9C2410046C3B5 /* AddWorkerViewModel.swift */,
+				1BDBFFEB2DF9C2410046C3B5 /* CertificateSelectionView.swift */,
+				1BDBFFEC2DF9C2410046C3B5 /* CertificateSelectionViewModel.swift */,
+				1BDBFFED2DF9C2410046C3B5 /* ChefWorkersView.swift */,
+				1BDBFFEE2DF9C2410046C3B5 /* ChefWorkersViewModel.swift */,
+				1BDBFFEF2DF9C2410046C3B5 /* DocumentBulkActionsSheet.swift */,
+				1BDBFFF02DF9C2410046C3B5 /* DocumentUploadSheet.swift */,
+				1BDBFFF12DF9C2410046C3B5 /* DocumentViewerSheet.swift */,
+				1BDBFFF22DF9C2410046C3B5 /* EditWorkerView.swift */,
+				1BDBFFF32DF9C2410046C3B5 /* EditWorkerViewModel.swift */,
+				1BDBFFF42DF9C2410046C3B5 /* WorkerDetailView.swift */,
+				1BDBFFF52DF9C2410046C3B5 /* WorkerDocumentManagerView.swift */,
+				1BDBFFF62DF9C2410046C3B5 /* WorkerDocumentViewModel.swift */,
+				1BDBFFF72DF9C2410046C3B5 /* WorkersFiltersSheet.swift */,
 			);
 			path = Workers;
 			sourceTree = "<group>";
@@ -424,6 +656,7 @@
 		1B5362FC2DEA32410092B268 /* Worker */ = {
 			isa = PBXGroup;
 			children = (
+				1BDB00722DF9C30C0046C3B5 /* WorkerLeaveAPIService.swift */,
 				1B779BF82DE60B3F00947C94 /* WorkerProfileApiService.swift */,
 				1B71EFCC2DD3351B00731223 /* WorkerAPIService.swift */,
 			);
@@ -433,6 +666,16 @@
 		1B5362FD2DEA32480092B268 /* Chef */ = {
 			isa = PBXGroup;
 			children = (
+				1B7CAF552DF9CD6300899D00 /* EquipmentAPIService.swift */,
+				1BDB00602DF9C3010046C3B5 /* BuisnessTimelineModels.swift */,
+				1BDB00612DF9C3010046C3B5 /* ChefLeaveAPIService.swift */,
+				1BDB00622DF9C3010046C3B5 /* ChefProjectsApiService.txt */,
+				1BDB00632DF9C3010046C3B5 /* ChefWorkersAPIService.swift */,
+				1BDB00642DF9C3010046C3B5 /* ChefWorkersModels.swift */,
+				1BDB00652DF9C3010046C3B5 /* PayrollAPIService.swift */,
+				1BDB00662DF9C3010046C3B5 /* PayrollModels.swift */,
+				1BDB00672DF9C3010046C3B5 /* WorkerDocumentAPIService.swift */,
+				1BDB00682DF9C3010046C3B5 /* WorkerDocumentModels.swift */,
 				1B5363352DECAF5D0092B268 /* ChefProjectsAPIService+TaskCreation.swift */,
 				1B53632A2DEC4EFD0092B268 /* ProjectModels.swift */,
 				1B5363282DEC4D3B0092B268 /* ChefProjectsAPIService.swift */,
@@ -521,6 +764,7 @@
 		1B6FB0112DD7ADC3007B2C9E /* API */ = {
 			isa = PBXGroup;
 			children = (
+				1BDB005E2DF9C2F10046C3B5 /* LeaveModels.swift */,
 				1B5362FD2DEA32480092B268 /* Chef */,
 				1B5362FC2DEA32410092B268 /* Worker */,
 				1B5362FB2DEA323A0092B268 /* Manager */,
@@ -558,6 +802,7 @@
 		1B71EF792DD3112300731223 /* Core */ = {
 			isa = PBXGroup;
 			children = (
+				1BDB00332DF9C2980046C3B5 /* DataPersistence */,
 				1BD0F80F2DE9B813002DEDFA /* Managers */,
 				1BD0F80C2DE9AB97002DEDFA /* Components */,
 				1BD0F8092DE9A5CE002DEDFA /* Cache */,
@@ -609,6 +854,9 @@
 		1B71EF942DD3126E00731223 /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				1BDB00582DF9C2E60046C3B5 /* BackgroundTaskService.swift */,
+				1BDB00592DF9C2E60046C3B5 /* BiometricAuthService.swift */,
+				1BDB005A2DF9C2E60046C3B5 /* PushNotificationService.swift */,
 				1B7D9B312DE4600100D39069 /* NotificationService.swift */,
 				1B6FB0112DD7ADC3007B2C9E /* API */,
 				1B71F0472DD4C43D00731223 /* AuthenticationHandler.swift */,
@@ -644,6 +892,8 @@
 		1B71EFA02DD3128600731223 /* Worker */ = {
 			isa = PBXGroup;
 			children = (
+				1B7CAF592DF9D91600899D00 /* en.lproj */,
+				1B7CAF5F2DF9D91600899D00 /* Leave */,
 				1BD0F8012DE8FBF0002DEDFA /* Timesheet */,
 				1BD0F7FA2DE8E219002DEDFA /* EntryStatus+Extensions.swift */,
 				1B779BE02DE604D000947C94 /* Profile */,
@@ -670,6 +920,7 @@
 		1B71EFBF2DD3286C00731223 /* Navigation */ = {
 			isa = PBXGroup;
 			children = (
+				1B7CAF512DF9C61E00899D00 /* BiometricLockView.swift */,
 				1B45148D2DDC5AF40020443F /* ManagerMainTabView.swift */,
 				1B71EFEE2DD363F600731223 /* RoleBasedRootView.swift */,
 				1B71EFBD2DD325A700731223 /* MainTabView.swift */,
@@ -715,6 +966,7 @@
 		1B71F0302DD4A4A600731223 /* ViewModels */ = {
 			isa = PBXGroup;
 			children = (
+				1B7CAF662DF9DA9D00899D00 /* WorkerLeaveViewModel.swift */,
 				1BD0F7FE2DE8FBAF002DEDFA /* WorkerTimesheetReportsViewModel.swift */,
 				1B71EFC32DD3307300731223 /* WeeklyWorkEntryViewModel.swift */,
 				1B71F0202DD4972000731223 /* WorkerWorkHoursViewModel.swift */,
@@ -758,6 +1010,7 @@
 		1B779BDF2DE6037900947C94 /* Dashboard */ = {
 			isa = PBXGroup;
 			children = (
+				1B7CAF532DF9C68D00899D00 /* TimePeriodNavigation.swift */,
 				1BD0F7F82DE8E02F002DEDFA /* WorkerDashboardSections.swift */,
 				1B779BFD2DE614C000947C94 /* WorkerDashboardView.swift */,
 				1B779BD62DE5926F00947C94 /* WorkerDashboardComponents.swift */,
@@ -773,6 +1026,88 @@
 				1B779BE12DE604D600947C94 /* WorkerProfileView.swift */,
 			);
 			path = Profile;
+			sourceTree = "<group>";
+		};
+		1B7CAF592DF9D91600899D00 /* en.lproj */ = {
+			isa = PBXGroup;
+			children = (
+				1B7CAF582DF9D91600899D00 /* EditableWorkEntry.swift  */,
+			);
+			path = en.lproj;
+			sourceTree = "<group>";
+		};
+		1B7CAF5F2DF9D91600899D00 /* Leave */ = {
+			isa = PBXGroup;
+			children = (
+				1B7CAF5A2DF9D91600899D00 /* CreateLeaveRequestView.swift */,
+				1B7CAF5B2DF9D91600899D00 /* EditLeaveRequestView.swift */,
+				1B7CAF5C2DF9D91600899D00 /* LeaveRequestFiltersView.swift */,
+				1B7CAF5D2DF9D91600899D00 /* WorkerLeaveCalendarView.swift */,
+				1B7CAF5E2DF9D91600899D00 /* WorkerLeaveView.swift */,
+			);
+			path = Leave;
+			sourceTree = "<group>";
+		};
+		1B7CAF6A2DF9DADF00899D00 /* Buisness */ = {
+			isa = PBXGroup;
+			children = (
+				1B7CAF682DF9DADF00899D00 /* BusinessInsightsView.swift */,
+				1B7CAF692DF9DADF00899D00 /* ChefBusinessTimelineView.swift */,
+			);
+			path = Buisness;
+			sourceTree = "<group>";
+		};
+		1B7CAF6C2DF9DADF00899D00 /* Leave */ = {
+			isa = PBXGroup;
+			children = (
+				1B7CAF6B2DF9DADF00899D00 /* ChefLeaveManagementView.swift */,
+			);
+			path = Leave;
+			sourceTree = "<group>";
+		};
+		1B7CAF782DF9DADF00899D00 /* ManagementCalendar */ = {
+			isa = PBXGroup;
+			children = (
+				1B7CAF6D2DF9DADF00899D00 /* CalendarCSVGenerator.swift */,
+				1B7CAF6E2DF9DADF00899D00 /* CalendarExcelGenerator.swift */,
+				1B7CAF6F2DF9DADF00899D00 /* ChefManagementCalendarView.swift */,
+				1B7CAF702DF9DADF00899D00 /* ChefManagementCalendarViewModel.swift */,
+				1B7CAF712DF9DADF00899D00 /* MobileEventDetailSheet.swift */,
+				1B7CAF722DF9DADF00899D00 /* MobileManagementCalendarView.swift */,
+				1B7CAF732DF9DADF00899D00 /* MobileMonthView.swift */,
+				1B7CAF742DF9DADF00899D00 /* MobileTeamView.swift */,
+				1B7CAF752DF9DADF00899D00 /* MobileWeekView.swift */,
+				1B7CAF762DF9DADF00899D00 /* PDFPreviewView.swift */,
+				1B7CAF772DF9DADF00899D00 /* SimplePDFGenerator.swift */,
+			);
+			path = ManagementCalendar;
+			sourceTree = "<group>";
+		};
+		1B7CAF852DF9DADF00899D00 /* Payroll */ = {
+			isa = PBXGroup;
+			children = (
+				1B7CAF792DF9DADF00899D00 /* BatchDetailView.swift */,
+				1B7CAF7A2DF9DADF00899D00 /* BatchDetailViewModel.swift */,
+				1B7CAF7B2DF9DADF00899D00 /* CreateBatchView.swift */,
+				1B7CAF7C2DF9DADF00899D00 /* CreateBatchViewModel.swift */,
+				1B7CAF7D2DF9DADF00899D00 /* PayrollActivityView.swift */,
+				1B7CAF7E2DF9DADF00899D00 /* PayrollBatchesView.swift */,
+				1B7CAF7F2DF9DADF00899D00 /* PayrollBatchesViewModel.swift */,
+				1B7CAF802DF9DADF00899D00 /* PayrollDashboardView.swift */,
+				1B7CAF812DF9DADF00899D00 /* PayrollDashboardViewModel.swift */,
+				1B7CAF822DF9DADF00899D00 /* PayrollReportsView.swift */,
+				1B7CAF832DF9DADF00899D00 /* PendingHoursView.swift */,
+				1B7CAF842DF9DADF00899D00 /* PendingHoursViewModel.swift */,
+			);
+			path = Payroll;
+			sourceTree = "<group>";
+		};
+		1B7CAF872DF9DADF00899D00 /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				1B7CAF862DF9DADF00899D00 /* ChefLeaveManagementViewModel.swift */,
+			);
+			path = ViewModels;
 			sourceTree = "<group>";
 		};
 		1BA25FF22DE227CA00501208 /* Profile */ = {
@@ -805,6 +1140,11 @@
 		1BD0F80C2DE9AB97002DEDFA /* Components */ = {
 			isa = PBXGroup;
 			children = (
+				1BDB004D2DF9C2BC0046C3B5 /* NetworkStatusBar.swift */,
+				1BDB004E2DF9C2BC0046C3B5 /* OfflineIndicatorView.swift */,
+				1BDB004F2DF9C2BC0046C3B5 /* PendingChangesIndicator.swift */,
+				1BDB00502DF9C2BC0046C3B5 /* SyncProgressView.swift */,
+				1BDB00512DF9C2BC0046C3B5 /* SyncStatusBadge.swift */,
 				1BD0F80D2DE9AE08002DEDFA /* CachedProfileImageView.swift */,
 			);
 			path = Components;
@@ -816,6 +1156,81 @@
 				1BD0F8102DE9B81A002DEDFA /* AppStateManager.swift */,
 			);
 			path = Managers;
+			sourceTree = "<group>";
+		};
+		1BDB00112DF9C2560046C3B5 /* Billings */ = {
+			isa = PBXGroup;
+			children = (
+				1BDB000D2DF9C2560046C3B5 /* ChefEditBillingRatesView.swift */,
+				1BDB000E2DF9C2560046C3B5 /* ChefProjectBillingView.swift */,
+				1BDB000F2DF9C2560046C3B5 /* Decimal+Currency.swift */,
+				1BDB00102DF9C2560046C3B5 /* ProjectBillingViewModel.swift */,
+			);
+			path = Billings;
+			sourceTree = "<group>";
+		};
+		1BDB00212DF9C2980046C3B5 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				1BDB00162DF9C2980046C3B5 /* .gitkeep */,
+				1BDB00172DF9C2980046C3B5 /* EmployeeEntity+CoreDataClass.swift */,
+				1BDB00182DF9C2980046C3B5 /* EmployeeEntity+CoreDataProperties.swift */,
+				1BDB00192DF9C2980046C3B5 /* LeaveRequestEntity+CoreDataClass.swift */,
+				1BDB001A2DF9C2980046C3B5 /* LeaveRequestEntity+CoreDataProperties.swift */,
+				1BDB001B2DF9C2980046C3B5 /* ProjectEntity+CoreDataClass.swift */,
+				1BDB001C2DF9C2980046C3B5 /* ProjectEntity+CoreDataProperties.swift */,
+				1BDB001D2DF9C2980046C3B5 /* TaskEntity+CoreDataClass.swift */,
+				1BDB001E2DF9C2980046C3B5 /* TaskEntity+CoreDataProperties.swift */,
+				1BDB001F2DF9C2980046C3B5 /* WorkEntryEntity+CoreDataClass.swift */,
+				1BDB00202DF9C2980046C3B5 /* WorkEntryEntity+CoreDataProperties.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		1BDB00232DF9C2980046C3B5 /* EntitySyncOperations */ = {
+			isa = PBXGroup;
+			children = (
+				1BDB00222DF9C2980046C3B5 /* WorkerSyncOperation.swift */,
+			);
+			path = EntitySyncOperations;
+			sourceTree = "<group>";
+		};
+		1BDB002C2DF9C2980046C3B5 /* Sync */ = {
+			isa = PBXGroup;
+			children = (
+				1BDB00232DF9C2980046C3B5 /* EntitySyncOperations */,
+				1BDB00242DF9C2980046C3B5 /* ConflictResolver.swift */,
+				1BDB00252DF9C2980046C3B5 /* NetworkMonitor.swift */,
+				1BDB00262DF9C2980046C3B5 /* README.md */,
+				1BDB00272DF9C2980046C3B5 /* SyncCoordinator.swift */,
+				1BDB00282DF9C2980046C3B5 /* SyncEngine.swift */,
+				1BDB00292DF9C2980046C3B5 /* SyncEngineIntegration.swift */,
+				1BDB002A2DF9C2980046C3B5 /* SyncOperation.swift */,
+				1BDB002B2DF9C2980046C3B5 /* SyncQueue.swift */,
+			);
+			path = Sync;
+			sourceTree = "<group>";
+		};
+		1BDB00312DF9C2980046C3B5 /* ViewModelExtensions */ = {
+			isa = PBXGroup;
+			children = (
+				1BDB002D2DF9C2980046C3B5 /* ChefWorkersViewModel+Offline.swift */,
+				1BDB002E2DF9C2980046C3B5 /* OfflineDataProvider.swift */,
+				1BDB002F2DF9C2980046C3B5 /* WorkerDashboardViewModel+Offline.swift */,
+				1BDB00302DF9C2980046C3B5 /* WorkerLeaveViewModel+Offline.swift */,
+			);
+			path = ViewModelExtensions;
+			sourceTree = "<group>";
+		};
+		1BDB00332DF9C2980046C3B5 /* DataPersistence */ = {
+			isa = PBXGroup;
+			children = (
+				1BDB00212DF9C2980046C3B5 /* Models */,
+				1BDB002C2DF9C2980046C3B5 /* Sync */,
+				1BDB00312DF9C2980046C3B5 /* ViewModelExtensions */,
+				1BDB00322DF9C2980046C3B5 /* CoreDataStack.swift */,
+			);
+			path = DataPersistence;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -890,6 +1305,9 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
+				KnownAssetTags = (
+					New,
+				);
 				LastSwiftUpdateCheck = 1630;
 				LastUpgradeCheck = 1630;
 				TargetAttributes = {
@@ -915,6 +1333,9 @@
 			);
 			mainGroup = 1B71EF452DD3102000731223;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				1BDBFFE82DF9C1B50046C3B5 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 1B71EF4F2DD3102000731223 /* Products */;
 			projectDirPath = "";
@@ -932,7 +1353,10 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				1B5363072DEA33F90092B268 /* CustomersFiltersSheet.swift in Resources */,
+				1B7CAF602DF9D91600899D00 /* EditableWorkEntry.swift  in Resources */,
+				1BDB00692DF9C3010046C3B5 /* ChefProjectsApiService.txt in Resources */,
+				1BDB00342DF9C2980046C3B5 /* README.md in Resources */,
+				1BDB00352DF9C2980046C3B5 /* .gitkeep in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -960,6 +1384,7 @@
 				1B4514992DDDA5880020443F /* WorkPlanPreviewView.swift in Sources */,
 				1B779BE42DE604F600947C94 /* WorkerProfileViewModel.swift in Sources */,
 				1B5362FF2DEA32CD0092B268 /* CustomersListView.swift in Sources */,
+				1B5363072DEA33F90092B268 /* CustomersFiltersSheet.swift in Sources */,
 				1B71EFC92DD3318F00731223 /* Announcement.swift in Sources */,
 				1B71EFBE2DD325AB00731223 /* MainTabView.swift in Sources */,
 				1B71EFB32DD3182200731223 /* WorkerWorkHoursView.swift in Sources */,
@@ -977,6 +1402,10 @@
 				1B71EFCD2DD3351E00731223 /* WorkerAPIService.swift in Sources */,
 				1B6FB00B2DD79DF9007B2C9E /* ManagerDashboardViewModel.swift in Sources */,
 				1B5362F82DEA30430092B268 /* ChefProfileView.swift in Sources */,
+				1BDB00122DF9C2560046C3B5 /* ProjectBillingViewModel.swift in Sources */,
+				1BDB00132DF9C2560046C3B5 /* ChefEditBillingRatesView.swift in Sources */,
+				1BDB00142DF9C2560046C3B5 /* Decimal+Currency.swift in Sources */,
+				1BDB00152DF9C2560046C3B5 /* ChefProjectBillingView.swift in Sources */,
 				1BA25FFE2DE272F700501208 /* TabButton.swift in Sources */,
 				1B71F0402DD4BBFB00731223 /* WorkHourEntry+Extensions.swift in Sources */,
 				1B3600DA2DDA56E700943E5B /* TimesheetReportsViewModel.swift in Sources */,
@@ -991,17 +1420,95 @@
 				1B71F0422DD4BE9200731223 /* AuthInterceptor.swift in Sources */,
 				1B53630D2DEA3B540092B268 /* EditCustomerView.swift in Sources */,
 				1B63CC742DD91D20005F598D /* WeekDetailView.swift in Sources */,
+				1BDBFFF82DF9C2410046C3B5 /* EditWorkerViewModel.swift in Sources */,
+				1BDBFFF92DF9C2410046C3B5 /* AddWorkerViewModel.swift in Sources */,
+				1BDBFFFA2DF9C2410046C3B5 /* DocumentViewerSheet.swift in Sources */,
+				1BDBFFFB2DF9C2410046C3B5 /* WorkerDocumentManagerView.swift in Sources */,
+				1BDBFFFC2DF9C2410046C3B5 /* CertificateSelectionViewModel.swift in Sources */,
+				1BDBFFFD2DF9C2410046C3B5 /* AddWorkerView.swift in Sources */,
+				1BDBFFFE2DF9C2410046C3B5 /* CertificateSelectionView.swift in Sources */,
+				1BDBFFFF2DF9C2410046C3B5 /* ChefWorkersViewModel.swift in Sources */,
+				1B7CAF562DF9CD6300899D00 /* EquipmentAPIService.swift in Sources */,
+				1BDB00002DF9C2410046C3B5 /* ChefWorkersView.swift in Sources */,
+				1BDB00012DF9C2410046C3B5 /* EditWorkerView.swift in Sources */,
+				1BDB00022DF9C2410046C3B5 /* WorkerDetailView.swift in Sources */,
+				1BDB00032DF9C2410046C3B5 /* WorkerDocumentViewModel.swift in Sources */,
+				1B7CAF882DF9DADF00899D00 /* PendingHoursViewModel.swift in Sources */,
+				1B7CAF892DF9DADF00899D00 /* CreateBatchView.swift in Sources */,
+				1B7CAF8A2DF9DADF00899D00 /* CreateBatchViewModel.swift in Sources */,
+				1B7CAF8B2DF9DADF00899D00 /* CalendarCSVGenerator.swift in Sources */,
+				1B7CAF8C2DF9DADF00899D00 /* MobileTeamView.swift in Sources */,
+				1B7CAF8D2DF9DADF00899D00 /* PayrollActivityView.swift in Sources */,
+				1B7CAF8E2DF9DADF00899D00 /* PayrollDashboardView.swift in Sources */,
+				1B7CAF8F2DF9DADF00899D00 /* MobileManagementCalendarView.swift in Sources */,
+				1B7CAF902DF9DADF00899D00 /* PayrollBatchesView.swift in Sources */,
+				1B7CAF912DF9DADF00899D00 /* MobileEventDetailSheet.swift in Sources */,
+				1B7CAF922DF9DADF00899D00 /* ChefLeaveManagementViewModel.swift in Sources */,
+				1B7CAF932DF9DADF00899D00 /* PayrollReportsView.swift in Sources */,
+				1B7CAF942DF9DADF00899D00 /* ChefBusinessTimelineView.swift in Sources */,
+				1B7CAF952DF9DADF00899D00 /* MobileMonthView.swift in Sources */,
+				1B7CAF962DF9DADF00899D00 /* MobileWeekView.swift in Sources */,
+				1B7CAF972DF9DADF00899D00 /* ChefLeaveManagementView.swift in Sources */,
+				1B7CAF982DF9DADF00899D00 /* ChefManagementCalendarViewModel.swift in Sources */,
+				1B7CAF992DF9DADF00899D00 /* BusinessInsightsView.swift in Sources */,
+				1B7CAF9A2DF9DADF00899D00 /* ChefManagementCalendarView.swift in Sources */,
+				1B7CAF9B2DF9DADF00899D00 /* PayrollBatchesViewModel.swift in Sources */,
+				1B7CAF9C2DF9DADF00899D00 /* PayrollDashboardViewModel.swift in Sources */,
+				1B7CAF9D2DF9DADF00899D00 /* BatchDetailViewModel.swift in Sources */,
+				1B7CAF9E2DF9DADF00899D00 /* BatchDetailView.swift in Sources */,
+				1B7CAF9F2DF9DADF00899D00 /* CalendarExcelGenerator.swift in Sources */,
+				1B7CAFA02DF9DADF00899D00 /* PendingHoursView.swift in Sources */,
+				1B7CAFA12DF9DADF00899D00 /* SimplePDFGenerator.swift in Sources */,
+				1B7CAFA22DF9DADF00899D00 /* PDFPreviewView.swift in Sources */,
+				1BDB00042DF9C2410046C3B5 /* WorkersFiltersSheet.swift in Sources */,
+				1BDB00052DF9C2410046C3B5 /* DocumentUploadSheet.swift in Sources */,
+				1BDB00062DF9C2410046C3B5 /* DocumentBulkActionsSheet.swift in Sources */,
 				1B3600D22DDA3A8000943E5B /* AppDelegate.swift in Sources */,
 				1B63CC562DD86240005F598D /* ManagerProjectsViewModel.swift in Sources */,
 				1B4514972DDC8E410020443F /* WorkPlanCreatorView.swift in Sources */,
+				1BDB00362DF9C2980046C3B5 /* WorkerLeaveViewModel+Offline.swift in Sources */,
+				1BDB00372DF9C2980046C3B5 /* EmployeeEntity+CoreDataProperties.swift in Sources */,
+				1BDB00382DF9C2980046C3B5 /* WorkerSyncOperation.swift in Sources */,
+				1BDB00392DF9C2980046C3B5 /* SyncQueue.swift in Sources */,
+				1BDB003A2DF9C2980046C3B5 /* SyncEngine.swift in Sources */,
+				1BDB003B2DF9C2980046C3B5 /* ProjectEntity+CoreDataClass.swift in Sources */,
+				1BDB003C2DF9C2980046C3B5 /* EmployeeEntity+CoreDataClass.swift in Sources */,
+				1BDB003D2DF9C2980046C3B5 /* OfflineDataProvider.swift in Sources */,
+				1B7CAF672DF9DA9D00899D00 /* WorkerLeaveViewModel.swift in Sources */,
+				1BDB003E2DF9C2980046C3B5 /* LeaveRequestEntity+CoreDataClass.swift in Sources */,
+				1BDB003F2DF9C2980046C3B5 /* ConflictResolver.swift in Sources */,
+				1BDB00402DF9C2980046C3B5 /* TaskEntity+CoreDataProperties.swift in Sources */,
+				1BDB00412DF9C2980046C3B5 /* SyncOperation.swift in Sources */,
+				1BDB00422DF9C2980046C3B5 /* CoreDataStack.swift in Sources */,
+				1BDB00432DF9C2980046C3B5 /* ProjectEntity+CoreDataProperties.swift in Sources */,
+				1BDB00442DF9C2980046C3B5 /* NetworkMonitor.swift in Sources */,
+				1BDB00452DF9C2980046C3B5 /* WorkEntryEntity+CoreDataClass.swift in Sources */,
+				1BDB00462DF9C2980046C3B5 /* SyncEngineIntegration.swift in Sources */,
+				1BDB00472DF9C2980046C3B5 /* WorkerDashboardViewModel+Offline.swift in Sources */,
+				1BDB00482DF9C2980046C3B5 /* SyncCoordinator.swift in Sources */,
+				1BDB00492DF9C2980046C3B5 /* LeaveRequestEntity+CoreDataProperties.swift in Sources */,
+				1BDB004A2DF9C2980046C3B5 /* WorkEntryEntity+CoreDataProperties.swift in Sources */,
+				1BDB004B2DF9C2980046C3B5 /* ChefWorkersViewModel+Offline.swift in Sources */,
+				1BDB004C2DF9C2980046C3B5 /* TaskEntity+CoreDataClass.swift in Sources */,
 				1B779BF92DE60B4500947C94 /* WorkerProfileApiService.swift in Sources */,
 				1B53631E2DEA56CC0092B268 /* CustomerLogoErrorHandler.swift in Sources */,
 				1B71F03C2DD4BA2F00731223 /* WeeklyWorkEntryForm.swift in Sources */,
 				1B63CC542DD8620D005F598D /* ManagerProjectsView.swift in Sources */,
 				1B5363112DEA3DAB0092B268 /* SharedUIComponents.swift in Sources */,
 				1B3600D42DDA3AF900943E5B /* SignatureModalViewController.swift in Sources */,
+				1BDB006A2DF9C3010046C3B5 /* ChefWorkersModels.swift in Sources */,
+				1BDB006B2DF9C3010046C3B5 /* ChefWorkersAPIService.swift in Sources */,
+				1B7CAF542DF9C68D00899D00 /* TimePeriodNavigation.swift in Sources */,
+				1BDB006C2DF9C3010046C3B5 /* BuisnessTimelineModels.swift in Sources */,
+				1BDB006D2DF9C3010046C3B5 /* WorkerDocumentAPIService.swift in Sources */,
+				1BDB006E2DF9C3010046C3B5 /* PayrollModels.swift in Sources */,
+				1BDB006F2DF9C3010046C3B5 /* WorkerDocumentModels.swift in Sources */,
+				1BDB00702DF9C3010046C3B5 /* PayrollAPIService.swift in Sources */,
+				1BDB00712DF9C3010046C3B5 /* ChefLeaveAPIService.swift in Sources */,
+				1BDB005F2DF9C2F10046C3B5 /* LeaveModels.swift in Sources */,
 				1B53633A2DECDEB50092B268 /* ChefTaskDetailView.swift in Sources */,
 				1B63CC4D2DD85FFB005F598D /* ManagerWorkersView.swift in Sources */,
+				1BDB00732DF9C30C0046C3B5 /* WorkerLeaveAPIService.swift in Sources */,
 				1B71EFEF2DD363F700731223 /* RoleBasedRootView.swift in Sources */,
 				1B5363382DECB0B10092B268 /* CreateTaskViewModel.swift in Sources */,
 				1B7A27782DD6032F004FFF06 /* Notifications.swift in Sources */,
@@ -1011,10 +1518,14 @@
 				1B71EFEB2DD3624500731223 /* ProfileView.swift in Sources */,
 				1B53632D2DEC5FCD0092B268 /* ChefWorkerPickerView.swift in Sources */,
 				1BD0F8112DE9B81C002DEDFA /* AppStateManager.swift in Sources */,
+				1B7CAFA32DF9EFDC00899D00 /* BiometricLockView.swift in Sources */,
 				1B71F0172DD4952100731223 /* WorkerTaskDetailView.swift in Sources */,
 				1B71F0212DD4972200731223 /* WorkerWorkHoursViewModel.swift in Sources */,
 				1B5363272DEC4C510092B268 /* ChefTaskManagementViews.swift in Sources */,
 				1BD0F7FD2DE8EFD0002DEDFA /* WorkHoursUtilities.swift in Sources */,
+				1BDB000A2DF9C24A0046C3B5 /* TaskCertificateSelectionView.swift in Sources */,
+				1BDB000B2DF9C24A0046C3B5 /* EditTaskViewModel.swift in Sources */,
+				1BDB000C2DF9C24A0046C3B5 /* EquipmentSelectorViews.swift in Sources */,
 				1B4514862DDC5A0D0020443F /* ManagerWorkPlansView.swift in Sources */,
 				1B5363322DEC60000092B268 /* ChefProjectDetailView.swift in Sources */,
 				1BD0F80B2DE9A5DE002DEDFA /* ProfileImageCache.swift in Sources */,
@@ -1023,6 +1534,14 @@
 				1B7D9B322DE4600300D39069 /* NotificationService.swift in Sources */,
 				1B71F02F2DD4A49100731223 /* WorkHourEntry.swift in Sources */,
 				1B5363052DEA33850092B268 /* CreateCustomerView.swift in Sources */,
+				1BDB00522DF9C2BC0046C3B5 /* NetworkStatusBar.swift in Sources */,
+				1BDB005B2DF9C2E60046C3B5 /* BackgroundTaskService.swift in Sources */,
+				1BDB005C2DF9C2E60046C3B5 /* BiometricAuthService.swift in Sources */,
+				1BDB005D2DF9C2E60046C3B5 /* PushNotificationService.swift in Sources */,
+				1BDB00532DF9C2BC0046C3B5 /* SyncStatusBadge.swift in Sources */,
+				1BDB00542DF9C2BC0046C3B5 /* PendingChangesIndicator.swift in Sources */,
+				1BDB00552DF9C2BC0046C3B5 /* OfflineIndicatorView.swift in Sources */,
+				1BDB00562DF9C2BC0046C3B5 /* SyncProgressView.swift in Sources */,
 				1B71F0352DD4AA0C00731223 /* DateFormatter+ISO.swift in Sources */,
 				1B779BD92DE5D25400947C94 /* WeekDetailsModal.swift in Sources */,
 				1B71EFC22DD32A6500731223 /* SplashScreenView.swift in Sources */,
@@ -1062,6 +1581,11 @@
 				1BD0F7FB2DE8E21F002DEDFA /* EntryStatus+Extensions.swift in Sources */,
 				1B7D9B332DE46CDE00D39069 /* NotificationResponse.swift in Sources */,
 				1B7D9B2E2DE45F9A00D39069 /* AppNotification.swift in Sources */,
+				1B7CAF612DF9D91600899D00 /* CreateLeaveRequestView.swift in Sources */,
+				1B7CAF622DF9D91600899D00 /* WorkerLeaveCalendarView.swift in Sources */,
+				1B7CAF632DF9D91600899D00 /* LeaveRequestFiltersView.swift in Sources */,
+				1B7CAF642DF9D91600899D00 /* WorkerLeaveView.swift in Sources */,
+				1B7CAF652DF9D91600899D00 /* EditLeaveRequestView.swift in Sources */,
 				1B53630B2DEA3A090092B268 /* CustomerDetailViewModel.swift in Sources */,
 				1B5363292DEC4D3C0092B268 /* ChefProjectsAPIService.swift in Sources */,
 				1B7D9B372DE49BDC00D39069 /* NotificationsView.swift in Sources */,
@@ -1108,6 +1632,17 @@
 			targetProxy = 1B71EF662DD3102300731223 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
+
+/* Begin PBXVariantGroup section */
+		1B7CAF582DF9D91600899D00 /* EditableWorkEntry.swift  */ = {
+			isa = PBXVariantGroup;
+			children = (
+				1B7CAF572DF9D91600899D00 /* en */,
+			);
+			name = "EditableWorkEntry.swift ";
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
 		1B71EF6D2DD3102300731223 /* Debug */ = {
@@ -1405,6 +1940,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		1BDBFFE82DF9C1B50046C3B5 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 11.14.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		1B7CAF4F2DF9C46000899D00 /* FirebaseMessaging */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 1BDBFFE82DF9C1B50046C3B5 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseMessaging;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 1B71EF462DD3102000731223 /* Project object */;
 }

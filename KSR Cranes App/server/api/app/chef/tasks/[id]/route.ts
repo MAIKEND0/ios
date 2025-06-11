@@ -191,6 +191,19 @@ export async function GET(
     // Oblicz statystyki zadania
     const statistics = await getTaskStatistics(taskId);
 
+    // Parse required certificates from crane category
+    let requiredCertificates: number[] = [];
+    if (task.CraneCategory?.required_certificates) {
+      try {
+        const requiredCerts = JSON.parse(task.CraneCategory.required_certificates as string);
+        if (Array.isArray(requiredCerts)) {
+          requiredCertificates = requiredCerts.map(id => parseInt(id)).filter(id => !isNaN(id));
+        }
+      } catch (e) {
+        console.error("[API] Error parsing required certificates:", e);
+      }
+    }
+
     // ✅ DODANO: Enhanced task response with equipment information
     const enhancedTask = {
       ...task,
@@ -212,7 +225,9 @@ export async function GET(
           task.equipment_category_id || 
           task.equipment_brand_id
         )
-      }
+      },
+      // ✅ ADD: Include required certificates from category
+      required_certificates: requiredCertificates
     };
 
     return NextResponse.json(enhancedTask, { status: 200 });
@@ -296,6 +311,39 @@ export async function PATCH(
       updateData.equipment_brand_id = body.equipment_brand_id 
         ? parseInt(body.equipment_brand_id) 
         : null;
+    }
+
+    // ✅ MANAGEMENT CALENDAR FIELDS: Add management calendar field updates
+    if (body.start_date !== undefined) {
+      updateData.start_date = body.start_date ? new Date(body.start_date) : null;
+    }
+    
+    if (body.status !== undefined) {
+      if (!body.status || ['planned', 'in_progress', 'completed', 'cancelled', 'overdue'].includes(body.status)) {
+        updateData.status = body.status;
+      }
+    }
+    
+    if (body.priority !== undefined) {
+      if (!body.priority || ['low', 'medium', 'high', 'critical'].includes(body.priority)) {
+        updateData.priority = body.priority;
+      }
+    }
+    
+    if (body.estimated_hours !== undefined) {
+      updateData.estimated_hours = body.estimated_hours && !isNaN(parseFloat(body.estimated_hours)) 
+        ? parseFloat(body.estimated_hours) 
+        : null;
+    }
+    
+    if (body.required_operators !== undefined) {
+      updateData.required_operators = body.required_operators && !isNaN(parseInt(body.required_operators)) 
+        ? parseInt(body.required_operators) 
+        : null;
+    }
+    
+    if (body.client_equipment_info !== undefined) {
+      updateData.client_equipment_info = body.client_equipment_info?.trim() || null;
     }
 
     // Walidacja supervisor_id jeśli się zmienia
@@ -436,6 +484,19 @@ export async function PATCH(
       equipment_brand_id: updatedTask.equipment_brand_id
     });
 
+    // Parse required certificates from crane category
+    let requiredCertificates: number[] = [];
+    if (updatedTask.CraneCategory?.required_certificates) {
+      try {
+        const requiredCerts = JSON.parse(updatedTask.CraneCategory.required_certificates as string);
+        if (Array.isArray(requiredCerts)) {
+          requiredCertificates = requiredCerts.map(id => parseInt(id)).filter(id => !isNaN(id));
+        }
+      } catch (e) {
+        console.error("[API] Error parsing required certificates:", e);
+      }
+    }
+
     // ✅ Enhanced response with equipment information and proper type checking
     const enhancedTask = {
       ...updatedTask,
@@ -447,7 +508,9 @@ export async function PATCH(
         preferred_crane_model: updatedTask.CraneModel,
         equipment_category: updatedTask.CraneCategory,
         equipment_brand: updatedTask.CraneBrand
-      }
+      },
+      // ✅ ADD: Include required certificates from category
+      required_certificates: requiredCertificates
     };
 
     return NextResponse.json(enhancedTask, { status: 200 });

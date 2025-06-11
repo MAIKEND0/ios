@@ -110,7 +110,40 @@ export async function POST(
         equipmentData.equipment_brand_id = parseInt(body.equipment_brand_id);
       }
 
-      // Utwórz zadanie z equipment requirements
+      // ✅ MANAGEMENT CALENDAR FIELDS: Przygotuj calendar data
+      const calendarData: any = {};
+      
+      // Start date
+      if (body.start_date) {
+        calendarData.start_date = new Date(body.start_date);
+      }
+      
+      // Status validation and assignment
+      if (body.status && ['planned', 'in_progress', 'completed', 'cancelled', 'overdue'].includes(body.status)) {
+        calendarData.status = body.status;
+      }
+      
+      // Priority validation and assignment
+      if (body.priority && ['low', 'medium', 'high', 'critical'].includes(body.priority)) {
+        calendarData.priority = body.priority;
+      }
+      
+      // Estimated hours
+      if (body.estimated_hours && !isNaN(parseFloat(body.estimated_hours))) {
+        calendarData.estimated_hours = parseFloat(body.estimated_hours);
+      }
+      
+      // Required operators
+      if (body.required_operators && !isNaN(parseInt(body.required_operators))) {
+        calendarData.required_operators = parseInt(body.required_operators);
+      }
+      
+      // Client equipment info
+      if (body.client_equipment_info) {
+        calendarData.client_equipment_info = body.client_equipment_info.trim();
+      }
+
+      // Utwórz zadanie z equipment requirements i management calendar fields
       const newTask = await tx.tasks.create({
         data: {
           project_id: projectId,
@@ -122,16 +155,23 @@ export async function POST(
           supervisor_email: body.supervisor_email?.trim(),
           supervisor_phone: body.supervisor_phone?.trim(),
           isActive: true,
-          ...equipmentData  // ✅ DODANO: Include equipment fields
+          ...equipmentData,  // ✅ Equipment fields
+          ...calendarData   // ✅ DODANO: Management calendar fields
         }
       });
 
-      console.log("[API] ✅ Task created with equipment:", {
+      console.log("[API] ✅ Task created with equipment and calendar fields:", {
         task_id: newTask.task_id,
         required_crane_types: newTask.required_crane_types,
         preferred_crane_model_id: newTask.preferred_crane_model_id,
         equipment_category_id: newTask.equipment_category_id,
-        equipment_brand_id: newTask.equipment_brand_id
+        equipment_brand_id: newTask.equipment_brand_id,
+        start_date: newTask.start_date,
+        status: newTask.status,
+        priority: newTask.priority,
+        estimated_hours: newTask.estimated_hours,
+        required_operators: newTask.required_operators,
+        client_equipment_info: newTask.client_equipment_info
       });
 
       return newTask;

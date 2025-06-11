@@ -265,7 +265,7 @@ struct WorkPlanPreviewView<VM: WorkPlanViewModel & WeekSelectorViewModel>: View 
             }
             
             if !viewModel.description.isEmpty {
-                DetailRow(
+                WorkPlanDetailRow(
                     title: "Description",
                     content: viewModel.description,
                     icon: "text.alignleft",
@@ -274,7 +274,7 @@ struct WorkPlanPreviewView<VM: WorkPlanViewModel & WeekSelectorViewModel>: View 
             }
             
             if !viewModel.additionalInfo.isEmpty {
-                DetailRow(
+                WorkPlanDetailRow(
                     title: "Additional Information",
                     content: viewModel.additionalInfo,
                     icon: "plus.circle",
@@ -573,7 +573,7 @@ struct ScheduleDayCard: View {
 }
 
 // MARK: - Detail Row
-struct DetailRow: View {
+struct WorkPlanDetailRow: View {
     let title: String
     let content: String
     let icon: String

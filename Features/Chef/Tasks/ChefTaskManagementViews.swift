@@ -22,6 +22,7 @@ struct ChefCreateTaskView: View {
     enum CreateTaskField: Hashable {
         case title, description
         case supervisorName, supervisorEmail, supervisorPhone
+        case estimatedHours, requiredOperators, clientEquipmentInfo
     }
     
     init(projectId: Int, onTaskCreated: ((ProjectTask) -> Void)? = nil) {
@@ -38,7 +39,9 @@ struct ChefCreateTaskView: View {
                     
                     // Form Sections
                     taskInfoSection
+                    managementCalendarSection      // ✅ NEW: Management calendar fields
                     equipmentRequirementsSection  // ✅ FIXED: Uses hierarchical selector
+                    certificateRequirementsSection // ✅ NEW: Certificate requirements
                     supervisorSection
                     workerAssignmentSection
                     
@@ -73,7 +76,8 @@ struct ChefCreateTaskView: View {
                     selectedWorkers: $viewModel.selectedWorkers,
                     projectId: projectId,
                     excludeTaskId: nil,
-                    requiredCraneTypes: viewModel.selectedEquipment.typeIds.isEmpty ? nil : viewModel.selectedEquipment.typeIds
+                    requiredCraneTypes: viewModel.selectedEquipment.typeIds.isEmpty ? nil : viewModel.selectedEquipment.typeIds,
+                    requiredCertificates: viewModel.selectedCertificates.isEmpty ? nil : viewModel.selectedCertificates.map { $0.id }
                 )
             }
             // ✅ FIXED: Use hierarchical equipment selector
@@ -81,6 +85,14 @@ struct ChefCreateTaskView: View {
                 HierarchicalEquipmentSelectorView(
                     selectedEquipment: $viewModel.selectedEquipment,
                     allowMultipleTypes: true
+                )
+            }
+            // ✅ NEW: Certificate selector
+            .sheet(isPresented: $viewModel.showCertificateSelector) {
+                TaskCertificateSelectionView(
+                    selectedCertificates: $viewModel.selectedCertificates,
+                    isPresented: $viewModel.showCertificateSelector,
+                    availableCertificates: viewModel.availableCertificates
                 )
             }
             .alert(isPresented: $viewModel.showAlert) {
@@ -184,6 +196,242 @@ struct ChefCreateTaskView: View {
                         )
                     }
                 }
+            }
+        }
+    }
+    
+    // ✅ NEW: Management Calendar Section for task scheduling and resource planning
+    private var managementCalendarSection: some View {
+        TaskFormSection(title: "Scheduling & Resource Planning", icon: "calendar.badge.clock") {
+            VStack(spacing: 16) {
+                // Start Date
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Text("Start Date")
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                            .foregroundColor(.primary)
+                        
+                        Spacer()
+                        
+                        Toggle("", isOn: $viewModel.hasStartDate)
+                            .labelsHidden()
+                    }
+                    
+                    if viewModel.hasStartDate {
+                        DatePicker(
+                            "",
+                            selection: $viewModel.startDate,
+                            displayedComponents: [.date]
+                        )
+                        .datePickerStyle(GraphicalDatePickerStyle())
+                        .padding(.vertical, 8)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(colorScheme == .dark ? Color(.systemGray5) : Color(.systemGray6))
+                        )
+                        
+                        if let error = viewModel.startDateError {
+                            Text(error)
+                                .font(.caption)
+                                .foregroundColor(.red)
+                                .padding(.horizontal, 4)
+                        }
+                    }
+                }
+                
+                // Task Status
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Task Status")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                        .foregroundColor(.primary)
+                    
+                    Menu {
+                        ForEach(ProjectTaskStatus.allCases, id: \.self) { status in
+                            Button {
+                                viewModel.status = status
+                            } label: {
+                                HStack {
+                                    Image(systemName: status.icon)
+                                    Text(status.displayName)
+                                    if viewModel.status == status {
+                                        Spacer()
+                                        Image(systemName: "checkmark")
+                                    }
+                                }
+                            }
+                        }
+                    } label: {
+                        HStack {
+                            Image(systemName: viewModel.status.icon)
+                                .foregroundColor(viewModel.status.color)
+                            
+                            Text(viewModel.status.displayName)
+                                .foregroundColor(.primary)
+                            
+                            Spacer()
+                            
+                            Image(systemName: "chevron.down")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        .padding()
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(colorScheme == .dark ? Color(.systemGray5) : Color(.systemGray6))
+                        )
+                    }
+                }
+                
+                // Task Priority
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Priority")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                        .foregroundColor(.primary)
+                    
+                    Menu {
+                        ForEach(TaskPriority.allCases, id: \.self) { priority in
+                            Button {
+                                viewModel.priority = priority
+                            } label: {
+                                HStack {
+                                    Image(systemName: priority.icon)
+                                        .foregroundColor(priority.color)
+                                    Text(priority.displayName)
+                                    if viewModel.priority == priority {
+                                        Spacer()
+                                        Image(systemName: "checkmark")
+                                    }
+                                }
+                            }
+                        }
+                    } label: {
+                        HStack {
+                            Image(systemName: viewModel.priority.icon)
+                                .foregroundColor(viewModel.priority.color)
+                            
+                            Text(viewModel.priority.displayName)
+                                .foregroundColor(.primary)
+                            
+                            Spacer()
+                            
+                            Image(systemName: "chevron.down")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        .padding()
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(colorScheme == .dark ? Color(.systemGray5) : Color(.systemGray6))
+                        )
+                    }
+                }
+                
+                // Estimated Hours
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Text("Estimated Hours")
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                            .foregroundColor(.primary)
+                        
+                        Spacer()
+                        
+                        Toggle("", isOn: $viewModel.hasEstimatedHours)
+                            .labelsHidden()
+                    }
+                    
+                    if viewModel.hasEstimatedHours {
+                        VStack(spacing: 8) {
+                            HStack {
+                                Stepper(
+                                    value: $viewModel.estimatedHours,
+                                    in: 0.5...1000,
+                                    step: 0.5
+                                ) {
+                                    HStack {
+                                        Text("Hours:")
+                                        Text("\(viewModel.estimatedHours, specifier: "%.1f")")
+                                            .fontWeight(.medium)
+                                            .foregroundColor(.ksrYellow)
+                                    }
+                                }
+                            }
+                            .padding()
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(colorScheme == .dark ? Color(.systemGray5) : Color(.systemGray6))
+                            )
+                            
+                            if let error = viewModel.estimatedHoursError {
+                                Text(error)
+                                    .font(.caption)
+                                    .foregroundColor(.red)
+                                    .padding(.horizontal, 4)
+                            }
+                        }
+                    }
+                }
+                
+                // Required Operators
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Text("Required Operators")
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                            .foregroundColor(.primary)
+                        
+                        Spacer()
+                        
+                        Toggle("", isOn: $viewModel.hasRequiredOperators)
+                            .labelsHidden()
+                    }
+                    
+                    if viewModel.hasRequiredOperators {
+                        VStack(spacing: 8) {
+                            HStack {
+                                Stepper(
+                                    value: $viewModel.requiredOperators,
+                                    in: 1...50,
+                                    step: 1
+                                ) {
+                                    HStack {
+                                        Text("Operators:")
+                                        Text("\(viewModel.requiredOperators)")
+                                            .fontWeight(.medium)
+                                            .foregroundColor(.ksrYellow)
+                                    }
+                                }
+                            }
+                            .padding()
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(colorScheme == .dark ? Color(.systemGray5) : Color(.systemGray6))
+                            )
+                            
+                            if let error = viewModel.requiredOperatorsError {
+                                Text(error)
+                                    .font(.caption)
+                                    .foregroundColor(.red)
+                                    .padding(.horizontal, 4)
+                            }
+                        }
+                    }
+                }
+                
+                // Client Equipment Information
+                TaskFormField(
+                    title: "Client Equipment Info",
+                    text: $viewModel.clientEquipmentInfo,
+                    placeholder: "Details about client's equipment (optional)",
+                    isRequired: false,
+                    focusedField: $focusedField,
+                    fieldType: .clientEquipmentInfo,
+                    errorMessage: viewModel.clientEquipmentInfoError,
+                    isMultiline: true
+                )
             }
         }
     }
@@ -345,6 +593,164 @@ struct ChefCreateTaskView: View {
                                     .stroke(Color.ksrLightGray.opacity(0.3), lineWidth: 1)
                             )
                     )
+                }
+            }
+        }
+    }
+    
+    // ✅ NEW: Certificate Requirements Section
+    private var certificateRequirementsSection: some View {
+        TaskFormSection(title: "Certificate Requirements", icon: "checkmark.seal.fill") {
+            VStack(spacing: 16) {
+                // Certificate selection header
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack {
+                        Text("Required Certificates")
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                            .foregroundColor(.primary)
+                        
+                        Spacer()
+                        
+                        if !viewModel.selectedCertificates.isEmpty {
+                            Text("\(viewModel.selectedCertificates.count) selected")
+                                .font(.caption)
+                                .foregroundColor(.ksrSuccess)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 6)
+                                        .fill(Color.ksrSuccess.opacity(0.1))
+                                )
+                        }
+                    }
+                    
+                    Text("Select certificates that operators must have to work on this task")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                
+                // Certificate selection button
+                Button {
+                    viewModel.showCertificateSelector = true
+                } label: {
+                    HStack {
+                        Image(systemName: "checkmark.seal")
+                            .font(.title3)
+                            .foregroundColor(.ksrInfo)
+                        
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(viewModel.getCertificateSelectionText())
+                                .font(.headline)
+                                .foregroundColor(.primary)
+                            
+                            if !viewModel.selectedCertificates.isEmpty {
+                                Text(viewModel.selectedCertificates.map { $0.code }.joined(separator: ", "))
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                    .lineLimit(2)
+                            }
+                        }
+                        
+                        Spacer()
+                        
+                        Image(systemName: "chevron.right")
+                            .font(.caption)
+                            .foregroundColor(.ksrSecondary)
+                    }
+                    .padding()
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(colorScheme == .dark ? Color(.systemGray5) : Color(.systemGray6))
+                    )
+                }
+                
+                // Selected certificates display
+                if !viewModel.selectedCertificates.isEmpty {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Selected Certificates")
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                            .foregroundColor(.primary)
+                        
+                        VStack(spacing: 8) {
+                            ForEach(viewModel.selectedCertificates) { certificate in
+                                HStack(spacing: 12) {
+                                    Image(systemName: certificate.icon)
+                                        .font(.body)
+                                        .foregroundColor(certificate.color)
+                                        .frame(width: 24, height: 24)
+                                        .background(
+                                            Circle()
+                                                .fill(certificate.color.opacity(0.1))
+                                        )
+                                    
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(certificate.nameEn)
+                                            .font(.subheadline)
+                                            .fontWeight(.medium)
+                                            .foregroundColor(.primary)
+                                        
+                                        Text(certificate.code)
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                    }
+                                    
+                                    Spacer()
+                                    
+                                    Button {
+                                        viewModel.toggleCertificate(certificate)
+                                    } label: {
+                                        Image(systemName: "xmark.circle.fill")
+                                            .font(.body)
+                                            .foregroundColor(.ksrError)
+                                    }
+                                }
+                                .padding(8)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .fill(Color.ksrLightGray.opacity(0.1))
+                                )
+                            }
+                        }
+                        
+                        // Clear all button
+                        HStack {
+                            Spacer()
+                            Button {
+                                viewModel.clearSelectedCertificates()
+                            } label: {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "xmark.circle.fill")
+                                    Text("Clear All")
+                                }
+                                .font(.caption)
+                                .foregroundColor(.ksrError)
+                            }
+                        }
+                    }
+                    .padding(12)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color.ksrLightGray.opacity(0.1))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(Color.ksrLightGray.opacity(0.3), lineWidth: 1)
+                            )
+                    )
+                }
+                
+                // Certificate loading error
+                if let error = viewModel.certificateError {
+                    HStack {
+                        Image(systemName: "exclamationmark.circle")
+                            .foregroundColor(.ksrError)
+                        
+                        Text(error)
+                            .font(.caption)
+                            .foregroundColor(.ksrError)
+                    }
+                    .padding(.horizontal, 4)
                 }
             }
         }

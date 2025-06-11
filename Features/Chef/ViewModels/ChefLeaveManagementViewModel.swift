@@ -350,7 +350,7 @@ class ChefLeaveManagementViewModel: ObservableObject {
     
     // MARK: - Data Export
     
-    func exportLeaveData(format: ExportFormat = .csv, completion: @escaping (String?) -> Void) {
+    func exportLeaveData(format: LeaveExportFormat = .csv, completion: @escaping (String?) -> Void) {
         isLoading = true
         
         apiService.exportLeaveData(

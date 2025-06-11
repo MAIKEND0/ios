@@ -193,7 +193,7 @@ struct WorkerTaskDetailView: View {
     private var statusIndicatorsRow: some View {
         HStack(spacing: 8) {
             // Deadline status
-            if let deadline = task.deadline {
+            if task.deadline != nil {
                 StatusChip(
                     text: deadlineStatusText,
                     color: deadlineStatusColor,
@@ -232,7 +232,7 @@ struct WorkerTaskDetailView: View {
                 color: taskHours > 0 ? .ksrSuccess : .ksrTextSecondary
             )
             
-            if let deadline = task.deadline {
+            if task.deadline != nil {
                 QuickStatItem(
                     icon: "calendar",
                     value: daysUntilDeadline,

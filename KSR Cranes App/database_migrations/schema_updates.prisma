@@ -1,0 +1,353 @@
+// Updated Prisma schema additions for Management Calendar
+// Add these models and fields to your existing schema.prisma
+
+// 1. Add new fields to existing Tasks model
+model Tasks {
+  // ... existing fields ...
+  start_date       DateTime?               @db.Date
+  task_name        String?                 @db.VarChar(255)
+  status           Tasks_status?           @default(planned)
+  priority         Tasks_priority?         @default(medium)
+  estimated_hours  Decimal?                @db.Decimal(5, 2)
+  // ... rest of existing fields and relations ...
+  
+  // New relations
+  CalendarEvents   CalendarEvents[]
+  EquipmentAssignments EquipmentAssignments[]
+  CalendarConflicts_source CalendarConflicts[] @relation("SourceTaskConflicts")
+  CalendarConflicts_target CalendarConflicts[] @relation("TargetTaskConflicts")
+}
+
+// 2. Add new fields to existing Projects model  
+model Projects {
+  // ... existing fields ...
+  project_name     String?                 @db.VarChar(255)
+  budget           Decimal?                @db.Decimal(12, 2)
+  // ... rest of existing fields and relations ...
+  
+  // New relations
+  CalendarEvents   CalendarEvents[]
+  EquipmentAssignments EquipmentAssignments[]
+  CalendarConflicts_source CalendarConflicts[] @relation("SourceProjectConflicts")
+  CalendarConflicts_target CalendarConflicts[] @relation("TargetProjectConflicts")
+}
+
+// 3. Add new fields to existing Employees model
+model Employees {
+  // ... existing fields and relations ...
+  
+  // New relations for Management Calendar
+  CalendarEvents_created   CalendarEvents[]      @relation("CalendarEventCreator")
+  CalendarEvents_assigned  CalendarEvents[]      @relation("CalendarEventAssignee")
+  EquipmentAssignments_assigned_by EquipmentAssignments[] @relation("EquipmentAssignedBy")
+  CalendarConflicts_resolved CalendarConflicts[] @relation("ConflictResolver")
+  CalendarSettings         CalendarSettings?
+  WorkerSkills            WorkerSkills[]
+}
+
+// 4. New Equipment table
+model Equipment {
+  equipment_id       Int                    @id @default(autoincrement()) @db.UnsignedInt
+  name               String                 @db.VarChar(255)
+  type               String                 @db.VarChar(100)
+  model              String?                @db.VarChar(100)
+  serial_number      String?                @db.VarChar(100)
+  status             Equipment_status?      @default(available)
+  location           String?                @db.VarChar(255)
+  purchase_date      DateTime?              @db.Date
+  last_maintenance   DateTime?              @db.Date
+  next_maintenance   DateTime?              @db.Date
+  hourly_rate        Decimal?               @default(0.00) @db.Decimal(10, 2)
+  notes              String?                @db.Text
+  created_at         DateTime?              @default(now()) @db.Timestamp(0)
+  updated_at         DateTime?              @default(now()) @db.Timestamp(0)
+  
+  // Relations
+  EquipmentAssignments EquipmentAssignments[]
+  CalendarEvents       CalendarEvents[]
+  
+  @@index([status], map: "idx_equipment_status")
+  @@index([type], map: "idx_equipment_type")
+  @@index([next_maintenance], map: "idx_equipment_maintenance")
+}
+
+// 5. Equipment Assignments table
+model EquipmentAssignments {
+  assignment_id      Int                    @id @default(autoincrement()) @db.UnsignedInt
+  equipment_id       Int                    @db.UnsignedInt
+  task_id            Int?                   @db.UnsignedInt
+  project_id         Int?                   @db.UnsignedInt
+  assigned_by        Int                    @db.UnsignedInt
+  assigned_at        DateTime?              @default(now()) @db.Timestamp(0)
+  start_date         DateTime               @db.Date
+  end_date           DateTime?              @db.Date
+  status             EquipmentAssignment_status? @default(assigned)
+  notes              String?                @db.Text
+  created_at         DateTime?              @default(now()) @db.Timestamp(0)
+  updated_at         DateTime?              @default(now()) @db.Timestamp(0)
+  
+  // Relations
+  Equipment          Equipment              @relation(fields: [equipment_id], references: [equipment_id], onDelete: Cascade)
+  Tasks              Tasks?                 @relation(fields: [task_id], references: [task_id], onDelete: Cascade)
+  Projects           Projects?              @relation(fields: [project_id], references: [project_id], onDelete: Cascade)
+  Employees          Employees              @relation("EquipmentAssignedBy", fields: [assigned_by], references: [employee_id], onDelete: NoAction)
+  
+  @@index([equipment_id], map: "idx_equipment_assignments_equipment")
+  @@index([task_id], map: "idx_equipment_assignments_task")
+  @@index([project_id], map: "idx_equipment_assignments_project")
+  @@index([start_date, end_date], map: "idx_equipment_assignments_dates")
+  @@index([status], map: "idx_equipment_assignments_status")
+}
+
+// 6. Calendar Events table
+model CalendarEvents {
+  event_id           Int                    @id @default(autoincrement()) @db.UnsignedInt
+  title              String                 @db.VarChar(255)
+  description        String?                @db.Text
+  event_type         CalendarEvent_type
+  category           CalendarEvent_category
+  start_date         DateTime               @db.Date
+  end_date           DateTime?              @db.Date
+  start_time         DateTime?              @db.Time(0)
+  end_time           DateTime?              @db.Time(0)
+  priority           CalendarEvent_priority? @default(medium)
+  status             CalendarEvent_status?  @default(planned)
+  location           String?                @db.VarChar(255)
+  
+  // Related entities (nullable for flexibility)
+  project_id         Int?                   @db.UnsignedInt
+  task_id            Int?                   @db.UnsignedInt
+  employee_id        Int?                   @db.UnsignedInt
+  equipment_id       Int?                   @db.UnsignedInt
+  
+  // Recurrence information
+  is_recurring       Boolean?               @default(false)
+  recurrence_pattern String?                @db.VarChar(100)
+  recurrence_end_date DateTime?             @db.Date
+  
+  // Metadata
+  created_by         Int                    @db.UnsignedInt
+  created_at         DateTime?              @default(now()) @db.Timestamp(0)
+  updated_at         DateTime?              @default(now()) @db.Timestamp(0)
+  
+  // Relations
+  Projects           Projects?              @relation(fields: [project_id], references: [project_id], onDelete: Cascade)
+  Tasks              Tasks?                 @relation(fields: [task_id], references: [task_id], onDelete: Cascade)
+  Employees_assigned Employees?             @relation("CalendarEventAssignee", fields: [employee_id], references: [employee_id], onDelete: Cascade)
+  Equipment          Equipment?             @relation(fields: [equipment_id], references: [equipment_id], onDelete: Cascade)
+  Employees_creator  Employees              @relation("CalendarEventCreator", fields: [created_by], references: [employee_id], onDelete: NoAction)
+  
+  @@index([start_date, end_date], map: "idx_calendar_events_dates")
+  @@index([event_type], map: "idx_calendar_events_type")
+  @@index([category], map: "idx_calendar_events_category")
+  @@index([priority], map: "idx_calendar_events_priority")
+  @@index([status], map: "idx_calendar_events_status")
+  @@index([project_id], map: "idx_calendar_events_project")
+  @@index([task_id], map: "idx_calendar_events_task")
+  @@index([employee_id], map: "idx_calendar_events_employee")
+  @@index([equipment_id], map: "idx_calendar_events_equipment")
+  @@index([is_recurring, recurrence_end_date], map: "idx_calendar_events_recurring")
+}
+
+// 7. Calendar Conflicts table
+model CalendarConflicts {
+  conflict_id            Int                    @id @default(autoincrement()) @db.UnsignedInt
+  conflict_type          CalendarConflict_type
+  severity               CalendarConflict_severity
+  description            String                 @db.Text
+  resolution             String?                @db.Text
+  
+  // Source events/entities causing conflict
+  source_type            CalendarConflict_source_type
+  source_id              Int                    @db.UnsignedInt
+  
+  // Target events/entities affected by conflict
+  target_type            CalendarConflict_target_type
+  target_id              Int                    @db.UnsignedInt
+  
+  // Affected resources
+  affected_employee_ids  Json?                  // Array of employee IDs
+  affected_equipment_ids Json?                  // Array of equipment IDs
+  
+  // Conflict timeframe
+  conflict_start_date    DateTime               @db.Date
+  conflict_end_date      DateTime               @db.Date
+  
+  // Resolution tracking
+  status                 CalendarConflict_status? @default(detected)
+  resolved_by            Int?                   @db.UnsignedInt
+  resolved_at            DateTime?              @db.Timestamp(0)
+  
+  created_at             DateTime?              @default(now()) @db.Timestamp(0)
+  updated_at             DateTime?              @default(now()) @db.Timestamp(0)
+  
+  // Relations
+  Employees              Employees?             @relation("ConflictResolver", fields: [resolved_by], references: [employee_id], onDelete: SetNull)
+  
+  @@index([conflict_type], map: "idx_calendar_conflicts_type")
+  @@index([severity], map: "idx_calendar_conflicts_severity")
+  @@index([conflict_start_date, conflict_end_date], map: "idx_calendar_conflicts_dates")
+  @@index([status], map: "idx_calendar_conflicts_status")
+  @@index([source_type, source_id], map: "idx_calendar_conflicts_source")
+  @@index([target_type, target_id], map: "idx_calendar_conflicts_target")
+}
+
+// 8. Worker Skills table
+model WorkerSkills {
+  skill_id               Int                    @id @default(autoincrement()) @db.UnsignedInt
+  employee_id            Int                    @db.UnsignedInt
+  skill_name             String                 @db.VarChar(100)
+  skill_level            WorkerSkill_level
+  is_certified           Boolean?               @default(false)
+  certification_number   String?                @db.VarChar(100)
+  certification_expires  DateTime?              @db.Date
+  years_experience       Int?                   @default(0) @db.UnsignedInt
+  notes                  String?                @db.Text
+  created_at             DateTime?              @default(now()) @db.Timestamp(0)
+  updated_at             DateTime?              @default(now()) @db.Timestamp(0)
+  
+  // Relations
+  Employees              Employees              @relation(fields: [employee_id], references: [employee_id], onDelete: Cascade)
+  
+  @@unique([employee_id, skill_name], map: "unique_employee_skill")
+  @@index([employee_id], map: "idx_worker_skills_employee")
+  @@index([skill_name], map: "idx_worker_skills_name")
+  @@index([skill_level], map: "idx_worker_skills_level")
+  @@index([is_certified], map: "idx_worker_skills_certified")
+  @@index([certification_expires], map: "idx_worker_skills_expiring")
+}
+
+// 9. Calendar Settings table
+model CalendarSettings {
+  setting_id             Int                    @id @default(autoincrement()) @db.UnsignedInt
+  employee_id            Int                    @unique @db.UnsignedInt
+  default_view           CalendarSettings_view? @default(month)
+  show_weekends          Boolean?               @default(true)
+  show_leave_requests    Boolean?               @default(true)
+  show_tasks             Boolean?               @default(true)
+  show_projects          Boolean?               @default(true)
+  show_equipment         Boolean?               @default(true)
+  show_conflicts         Boolean?               @default(true)
+  work_hours_start       DateTime?              @default(dbgenerated("'08:00:00'")) @db.Time(0)
+  work_hours_end         DateTime?              @default(dbgenerated("'16:00:00'")) @db.Time(0)
+  timezone               String?                @default("Europe/Copenhagen") @db.VarChar(50)
+  created_at             DateTime?              @default(now()) @db.Timestamp(0)
+  updated_at             DateTime?              @default(now()) @db.Timestamp(0)
+  
+  // Relations
+  Employees              Employees              @relation(fields: [employee_id], references: [employee_id], onDelete: Cascade)
+}
+
+// 10. New Enums for Management Calendar
+enum Tasks_status {
+  planned
+  in_progress
+  completed
+  cancelled
+  overdue
+}
+
+enum Tasks_priority {
+  low
+  medium
+  high
+  critical
+}
+
+enum Equipment_status {
+  available
+  in_use
+  maintenance
+  retired
+}
+
+enum EquipmentAssignment_status {
+  assigned
+  active
+  completed
+  cancelled
+}
+
+enum CalendarEvent_type {
+  meeting
+  deadline
+  milestone
+  maintenance
+  holiday
+  training
+  other
+}
+
+enum CalendarEvent_category {
+  workforce
+  project
+  equipment
+  business
+  compliance
+}
+
+enum CalendarEvent_priority {
+  low
+  medium
+  high
+  critical
+}
+
+enum CalendarEvent_status {
+  planned
+  active
+  completed
+  cancelled
+}
+
+enum CalendarConflict_type {
+  worker_unavailable
+  equipment_double_booked
+  skills_mismatch
+  capacity_exceeded
+  deadline_conflict
+  leave_conflict
+}
+
+enum CalendarConflict_severity {
+  low
+  medium
+  high
+  critical
+}
+
+enum CalendarConflict_source_type {
+  task
+  project
+  leave
+  calendar_event
+  equipment_assignment
+}
+
+enum CalendarConflict_target_type {
+  task
+  project
+  leave
+  calendar_event
+  equipment_assignment
+}
+
+enum CalendarConflict_status {
+  detected
+  acknowledged
+  resolved
+  ignored
+}
+
+enum WorkerSkill_level {
+  beginner
+  intermediate
+  advanced
+  expert
+}
+
+enum CalendarSettings_view {
+  month
+  week
+  timeline
+}

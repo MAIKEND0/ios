@@ -271,7 +271,23 @@ struct OperatorCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             VStack(alignment: .leading, spacing: 12) {
-                HStack {
+                HStack(spacing: 12) {
+                    // Profile image with fallback
+                    Group {
+                        if let profileUrl = craneOperator.profilePictureUrl, !profileUrl.isEmpty {
+                            WorkerCachedProfileImage(
+                                employeeId: String(craneOperator.employee_id),
+                                currentImageUrl: profileUrl,
+                                size: 50
+                            )
+                        } else {
+                            Image(systemName: "person.circle.fill")
+                                .font(.system(size: 50))
+                                .foregroundColor(.ksrYellow)
+                                .frame(width: 50, height: 50)
+                        }
+                    }
+                    
                     VStack(alignment: .leading, spacing: 4) {
                         HStack {
                             Text(craneOperator.name)

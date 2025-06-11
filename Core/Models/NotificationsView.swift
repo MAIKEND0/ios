@@ -273,18 +273,45 @@ struct NotificationsView: View {
     private func notificationCard(notification: AppNotification) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .top, spacing: 12) {
-                // Ikona
-                Image(systemName: notification.iconName)
-                    .font(.title2)
-                    .foregroundColor(Color(notification.iconColor))
-                    .frame(width: 40, height: 40)
-                    .background(Color.gray.opacity(0.1))
-                    .clipShape(Circle())
+                // Avatar użytkownika lub ikona systemowa
+                if let senderId = notification.senderId {
+                    // Próbuj określić typ użytkownika na podstawie metadanych lub użyj domyślnego
+                    let userType = getUserType(from: notification)
+                    
+                    switch userType {
+                    case .manager:
+                        ManagerCachedProfileImage(
+                            employeeId: String(senderId),
+                            currentImageUrl: nil,
+                            size: 40
+                        )
+                    case .supervisor:
+                        SupervisorCachedProfileImage(
+                            employeeId: String(senderId),
+                            currentImageUrl: nil,
+                            size: 40
+                        )
+                    default:
+                        WorkerCachedProfileImage(
+                            employeeId: String(senderId),
+                            currentImageUrl: nil,
+                            size: 40
+                        )
+                    }
+                } else {
+                    // Fallback do ikony systemowej
+                    Image(systemName: notification.iconName)
+                        .font(.title2)
+                        .foregroundColor(Color(notification.iconColor))
+                        .frame(width: 40, height: 40)
+                        .background(Color.gray.opacity(0.1))
+                        .clipShape(Circle())
+                }
                 
                 // Treść
                 VStack(alignment: .leading, spacing: 4) {
                     HStack {
-                        Text(notification.title)
+                        Text(notification.displayTitle)
                             .font(.subheadline)
                             .fontWeight(.semibold)
                             .foregroundColor(colorScheme == .dark ? .white : Color.ksrDarkGray)
@@ -300,7 +327,7 @@ struct NotificationsView: View {
                         .lineLimit(3)
                     
                     // Dodatkowe informacje o tygodniu
-                    if let metadata = notification.metadata,
+                    if let metadata = notification.metadataDict,
                        let weekNumber = metadata["weekNumber"],
                        let year = metadata["year"],
                        let entryCount = metadata["entryCount"] {
@@ -309,7 +336,7 @@ struct NotificationsView: View {
                             .foregroundColor(.secondary)
                         
                         // Wyświetlanie problematycznych dni, jeśli dostępne
-                        if let problematicDaysJson = metadata["problematicDays"],
+                        if let problematicDaysJson = metadata["problematicDays"] as? String,
                            let problematicDaysData = problematicDaysJson.data(using: .utf8),
                            let problematicDays = try? JSONDecoder().decode([String].self, from: problematicDaysData) {
                             let formattedDays = problematicDays.map { date in
@@ -411,6 +438,14 @@ struct NotificationsView: View {
             // Navigate to profile
             dismiss()
             
+        case .navigateToLeaveManagement:
+            // Navigate to leave management
+            NotificationCenter.default.post(
+                name: .openLeaveManagement,
+                object: nil
+            )
+            dismiss()
+            
         case .showEmergencyDetails(let notification):
             // Show emergency alert
             showEmergencyAlert(notification)
@@ -424,6 +459,36 @@ struct NotificationsView: View {
     
     private func showEmergencyAlert(_ notification: AppNotification) {
         // Implementation for emergency alert
+    }
+    
+    // MARK: - Helper Functions
+    
+    /// Określa typ użytkownika na podstawie powiadomienia
+    private func getUserType(from notification: AppNotification) -> UserType {
+        // Sprawdź targetRole - rola docelowa może wskazać na typ nadawcy
+        if let targetRole = notification.targetRole {
+            switch targetRole.lowercased() {
+            case "chef", "byggeleder":
+                return .manager
+            case "system":
+                return .supervisor
+            default:
+                return .worker
+            }
+        }
+        
+        // Sprawdź kategorię powiadomienia jako wskazówkę
+        if let category = notification.category {
+            switch category {
+            case .payroll, .system:
+                return .manager // Prawdopodobnie od managera/chef
+            default:
+                return .worker
+            }
+        }
+        
+        // Domyślny typ
+        return .worker
     }
 }
 

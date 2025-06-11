@@ -122,8 +122,8 @@ final class NotificationsViewModel: ObservableObject {
         switch notification.type {
         case .hoursRejected:
             // Check if it's a week rejection notification
-            if let metadata = notification.metadata,
-               let entryIdsJson = metadata["entryIds"],
+            if let metadata = notification.metadataDict,
+               let entryIdsJson = metadata["entryIds"] as? String,
                let entryIdsData = entryIdsJson.data(using: .utf8),
                let entryIds = try? JSONDecoder().decode([Int].self, from: entryIdsData),
                let firstEntryId = entryIds.first {
@@ -143,6 +143,8 @@ final class NotificationsViewModel: ObservableObject {
             return .showEmergencyDetails(notification: notification)
         case .licenseExpiring:
             return .navigateToProfile
+        case .leaveRequestSubmitted, .leaveRequestApproved, .leaveRequestRejected:
+            return .navigateToLeaveManagement
         default:
             if let actionUrl = notification.actionUrl {
                 return .openURL(url: actionUrl)
@@ -205,7 +207,7 @@ final class NotificationsViewModel: ObservableObject {
         // Filter by search text
         if !searchText.isEmpty {
             filtered = filtered.filter { notification in
-                notification.title.localizedCaseInsensitiveContains(searchText) ||
+                notification.displayTitle.localizedCaseInsensitiveContains(searchText) ||
                 notification.message.localizedCaseInsensitiveContains(searchText)
             }
         }
@@ -243,6 +245,7 @@ enum NotificationAction {
     case navigateToWorkEntry(taskId: Int?, workEntryId: Int?)
     case navigateToTask(taskId: Int?)
     case navigateToProfile
+    case navigateToLeaveManagement
     case showEmergencyDetails(notification: AppNotification)
     case openURL(url: String)
 }
@@ -255,7 +258,7 @@ extension NotificationsViewModel {
         switch notification.type {
         case .hoursRejected:
             // Check if it's a week rejection notification
-            if let metadata = notification.metadata,
+            if let metadata = notification.metadataDict,
                let _ = metadata["weekNumber"],
                let _ = metadata["entryIds"] {
                 return [
@@ -336,8 +339,8 @@ extension NotificationsViewModel {
     private func handleWeekResubmit(_ notification: AppNotification) {
         markAsRead(notification)
         // Extract entryIds from metadata
-        if let metadata = notification.metadata,
-           let entryIdsJson = metadata["entryIds"],
+        if let metadata = notification.metadataDict,
+           let entryIdsJson = metadata["entryIds"] as? String,
            let entryIdsData = entryIdsJson.data(using: .utf8),
            let entryIds = try? JSONDecoder().decode([Int].self, from: entryIdsData),
            let firstEntryId = entryIds.first {
@@ -381,4 +384,5 @@ struct QuickAction {
 extension Notification.Name {
     static let openWorkEntryForm = Notification.Name("openWorkEntryForm")
     static let openTaskDetails = Notification.Name("openTaskDetails")
+    static let openLeaveManagement = Notification.Name("openLeaveManagement")
 }

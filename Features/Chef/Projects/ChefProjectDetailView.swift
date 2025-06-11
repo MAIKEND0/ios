@@ -415,37 +415,11 @@ struct ChefProjectDetailView: View {
     }
     
     private var billingTab: some View {
-        ScrollView {
-            VStack(spacing: 20) {
-                Text("Billing Settings")
-                    .font(.title2)
-                    .fontWeight(.bold)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                
-                Text("Coming soon - billing settings management")
-                    .font(.body)
-                    .foregroundColor(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .padding()
+            ChefProjectBillingView(projectId: project.id)
         }
-    }
     
     private var timelineTab: some View {
-        ScrollView {
-            VStack(spacing: 20) {
-                Text("Project Timeline")
-                    .font(.title2)
-                    .fontWeight(.bold)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                
-                Text("Coming soon - project timeline view")
-                    .font(.body)
-                    .foregroundColor(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .padding()
-        }
+        ChefBusinessTimelineView(projectId: project.id)
     }
     
     // MARK: - Overview Components

@@ -10,6 +10,8 @@ import PhotosUI
 import FirebaseCore
 import FirebaseMessaging
 import UserNotifications
+import LocalAuthentication
+import BackgroundTasks
 
 @main
 struct KSR_Cranes_AppApp: App {
@@ -28,6 +30,9 @@ struct KSR_Cranes_AppApp: App {
                 .onAppear {
                     // Initialize auth handler for global error handling
                     AuthenticationHandler.initialize()
+                    
+                    // Register background tasks
+                    BackgroundTaskService.shared.registerBackgroundTasks()
                 }
         }
     }
@@ -41,9 +46,12 @@ struct AppContainerView: View {
     @State private var hasCheckedAuth = false
     @State private var isLoggedIn = false  // ✅ DODANE: Lokalny stan autoryzacji
     @State private var authCheckTrigger = false  // ✅ DODANE: Trigger dla sprawdzania auth
+    @State private var shouldProceedWithDataLoading = false  // ✅ DODANE: Flag for navigation after biometric
+    @State private var isBiometricLockActive = false  // ✅ SECURITY: Global flag to block all operations during biometric lock
     
     enum AppPhase {
         case splash                    // Piękny splash z animacjami
+        case biometricLock            // Ekran blokady Face ID
         case dataLoading              // Splash + data loading (bez dodatkowego ekranu)
         case readyToShow              // Gotowe do pokazania
         case showingApp               // Pokazujemy główną aplikację
@@ -59,6 +67,11 @@ struct AppContainerView: View {
                     appStateManager: appStateManager
                 )
                 .transition(.identity)
+                
+            case .biometricLock:
+                // Biometric lock screen
+                BiometricLockView()
+                    .transition(.opacity)
                 
             case .readyToShow:
                 // Krótka faza przejściowa
@@ -94,6 +107,45 @@ struct AppContainerView: View {
         // ✅ DODANE: Monitoruj zmiany stanu autoryzacji
         .onChange(of: authCheckTrigger) { _, _ in
             recheckAuthenticationState()
+        }
+        // ✅ DODANE: Monitor for biometric prompt completion
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("BiometricPromptCompleted"))) { _ in
+            #if DEBUG
+            print("[AppContainerView] 🔔 Received biometric prompt completion notification")
+            print("[AppContainerView] 🔔 Current phase: \(currentPhase)")
+            #endif
+            
+            // SECURITY FIX: Don't process this during app relaunch with biometric lock
+            guard currentPhase != .biometricLock else {
+                #if DEBUG
+                print("[AppContainerView] 🔒 SECURITY: Ignoring biometric prompt during lock screen")
+                #endif
+                return
+            }
+            
+            proceedWithDataLoadingAfterBiometric()
+        }
+        // ✅ DODANE: Monitor for biometric unlock completion
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name("BiometricUnlockCompleted"))) { _ in
+            #if DEBUG
+            print("[AppContainerView] 🔔 Received biometric unlock completion notification")
+            #endif
+            if currentPhase == .biometricLock {
+                // SECURITY FIX: Clear the lock flag and start data loading
+                isBiometricLockActive = false
+                currentPhase = .dataLoading
+                
+                #if DEBUG
+                print("[AppContainerView] 🔓 Biometric unlock successful, starting data load...")
+                print("[AppContainerView] 🔓 Cleared biometric lock flag")
+                #endif
+                
+                // Start loading data IMMEDIATELY (no delay)
+                appStateManager.initializeApp()
+                
+                // Monitor completion
+                observeDataLoadingCompletion()
+            }
         }
     }
     
@@ -208,36 +260,75 @@ struct AppContainerView: View {
         print("[AppContainerView] 🎉 Handling successful login...")
         #endif
         
-        // Aktualizuj lokalny stan
+        // Don't update isLoggedIn yet - wait for biometric prompt to be handled
+        // The LoginViewModel will trigger navigation after biometric prompt is dismissed
+        // This ensures the LoginView stays visible so the alert can show
+    }
+    
+    // ✅ NOWA FUNKCJA: Proceed with data loading after biometric prompt
+    private func proceedWithDataLoadingAfterBiometric() {
+        #if DEBUG
+        print("[AppContainerView] 🚀 Proceeding with navigation to data loading after biometric")
+        print("[AppContainerView] 🚀 Current phase: \(currentPhase), isLoggedIn: \(isLoggedIn)")
+        #endif
+        
+        // Now we can safely set isLoggedIn and proceed
         isLoggedIn = true
         
-        // Przejdź do fazy ładowania danych
-        DispatchQueue.main.async {
-            if self.currentPhase == .showingApp {
-                // Jeśli aktualnie pokazujemy LoginView, przejdź do ładowania
-                self.currentPhase = .dataLoading
-                self.startDataLoadingPhase()
-            }
+        guard currentPhase == .showingApp else {
+            #if DEBUG
+            print("[AppContainerView] ⚠️ Not in showingApp phase, current phase: \(currentPhase)")
+            #endif
+            return
         }
+        
+        currentPhase = .dataLoading
+        startDataLoadingPhase()
     }
     
     // ✅ NOWA FUNKCJA: Obsługa wylogowania
     private func handleLogout() {
         #if DEBUG
         print("[AppContainerView] 👋 Handling logout...")
+        print("[AppContainerView] 👋 Current phase: \(currentPhase)")
+        print("[AppContainerView] 👋 isBiometricLockActive: \(isBiometricLockActive)")
         #endif
+        
+        // CRITICAL: Clear ALL security flags when logging out
+        isBiometricLockActive = false
         
         // Aktualizuj lokalny stan
         isLoggedIn = false
+        
+        // CRITICAL: Ensure app state is reset
+        appStateManager.resetAppState()
         
         // Resetuj fazę do splash
         DispatchQueue.main.async {
             self.currentPhase = .splash
             self.hasCheckedAuth = false
             
+            #if DEBUG
+            print("[AppContainerView] 👋 Phase reset to splash, hasCheckedAuth = false")
+            #endif
+            
             // Po krótkiej pauzie sprawdź auth ponownie
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                self.startAppFlow()
+                // SECURITY: Double-check that user is really logged out
+                if !AuthService.shared.isLoggedIn {
+                    #if DEBUG
+                    print("[AppContainerView] ✅ Logout confirmed, showing login flow")
+                    #endif
+                    self.startAppFlow()
+                } else {
+                    #if DEBUG
+                    print("[AppContainerView] ❌ CRITICAL: User still logged in after logout!")
+                    print("[AppContainerView] ❌ Forcing another logout...")
+                    #endif
+                    // Force logout again
+                    AuthService.shared.logout()
+                    self.handleLogout() // Recursive call to ensure logout
+                }
             }
         }
     }
@@ -266,6 +357,7 @@ struct AppContainerView: View {
     }
     
     private func checkAuthenticationAndProceed() {
+        // SECURITY: First check if biometric should be shown BEFORE anything else
         let authResult = AuthService.shared.isLoggedIn
         isLoggedIn = authResult  // ✅ DODANE: Aktualizuj lokalny stan
         
@@ -278,8 +370,31 @@ struct AppContainerView: View {
         #endif
         
         if authResult {
-            // Użytkownik zalogowany - uruchom inicjalizację i pokaż splash
-            startDataLoadingPhase()
+            // Check if biometric is enabled and we have stored credentials IMMEDIATELY
+            let hasStoredCredentials = BiometricAuthService.shared.getStoredCredentials() != nil
+            let isBiometricEnabled = AuthService.shared.isBiometricEnabled
+            
+            #if DEBUG
+            print("[AppContainerView] 🔐 Biometric enabled: \(isBiometricEnabled)")
+            print("[AppContainerView] 🔐 Has stored credentials: \(hasStoredCredentials)")
+            #endif
+            
+            if isBiometricEnabled && hasStoredCredentials {
+                // CRITICAL: Set biometric lock IMMEDIATELY before any other operations
+                #if DEBUG
+                print("[AppContainerView] 🔒 Showing biometric lock screen - BLOCKING ALL OTHER OPERATIONS")
+                #endif
+                
+                // CRITICAL: Set BOTH flags to ensure complete blocking
+                isBiometricLockActive = true
+                currentPhase = .biometricLock
+                
+                // CRITICAL: DO NOT call any data loading functions!
+                return
+            } else {
+                // No biometric, proceed normally
+                startDataLoadingPhase()
+            }
         } else {
             // Użytkownik nie zalogowany - pokaż splash, potem login
             showSplashThenLogin()
@@ -289,10 +404,31 @@ struct AppContainerView: View {
     private func startDataLoadingPhase() {
         #if DEBUG
         print("[AppContainerView] 📊 Starting data loading phase for logged in user...")
+        print("[AppContainerView] 📊 Current phase: \(currentPhase)")
+        print("[AppContainerView] 📊 STACK TRACE:")
+        Thread.callStackSymbols.prefix(8).forEach { print("    \($0)") }
         #endif
+        
+        // SECURITY CHECK: Never start data loading if biometric lock is active
+        guard !isBiometricLockActive && currentPhase != .biometricLock else {
+            #if DEBUG
+            print("[AppContainerView] 🔒 SECURITY: Cannot start data loading while biometric lock is active!")
+            print("[AppContainerView] 🔒 isBiometricLockActive: \(isBiometricLockActive), currentPhase: \(currentPhase)")
+            #endif
+            return
+        }
         
         // Faza 1: Splash animations (2s)
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+            // SECURITY CHECK: Double-check biometric lock isn't active before proceeding
+            guard !self.isBiometricLockActive && self.currentPhase != .biometricLock else {
+                #if DEBUG
+                print("[AppContainerView] 🔒 SECURITY: Biometric lock became active, aborting data load!")
+                print("[AppContainerView] 🔒 After delay - isBiometricLockActive: \(self.isBiometricLockActive), currentPhase: \(self.currentPhase)")
+                #endif
+                return
+            }
+            
             currentPhase = .dataLoading
             
             // Rozpocznij ładowanie danych PODCZAS splash'a
@@ -306,10 +442,14 @@ struct AppContainerView: View {
     private func showSplashThenLogin() {
         #if DEBUG
         print("[AppContainerView] 🔑 Showing splash then login for non-logged user...")
+        print("[AppContainerView] 🔑 Was from biometric lock: \(currentPhase == .biometricLock)")
         #endif
         
-        // Pokaż splash przez 3 sekundy, potem login
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+        // If coming from biometric lock, shorter transition
+        let splashDuration = (currentPhase == .biometricLock) ? 1.0 : 3.0
+        
+        // Pokaż splash przez określony czas, potem login
+        DispatchQueue.main.asyncAfter(deadline: .now() + splashDuration) {
             currentPhase = .readyToShow
             
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
@@ -335,7 +475,18 @@ struct AppContainerView: View {
             print("[AppContainerView] 🔍 - isAppInitialized: \(appStateManager.isAppInitialized)")
             print("[AppContainerView] 🔍 - isLoadingInitialData: \(appStateManager.isLoadingInitialData)")
             print("[AppContainerView] 🔍 - initializationError: \(appStateManager.initializationError != nil)")
+            print("[AppContainerView] 🔍 - currentPhase: \(currentPhase)")
             #endif
+            
+            // SECURITY CHECK: Don't bypass biometric lock!
+            guard !isBiometricLockActive && currentPhase != .biometricLock else {
+                #if DEBUG
+                print("[AppContainerView] 🔒 SECURITY: Biometric lock is active, stopping data check...")
+                print("[AppContainerView] 🔒 Check blocked - isBiometricLockActive: \(isBiometricLockActive), currentPhase: \(currentPhase)")
+                #endif
+                // CRITICAL: Don't continue checking if biometric lock is active
+                return
+            }
             
             if appStateManager.isAppInitialized || appStateManager.initializationError != nil {
                 // Dane gotowe lub błąd - pokaż aplikację
@@ -683,17 +834,29 @@ struct BossMainViewFixed: View {
                 }
                 .tag(3)
             
+            Group {
+                if UIDevice.current.userInterfaceIdiom == .phone {
+                    MobileManagementCalendarView()
+                } else {
+                    ChefManagementCalendarView()
+                }
+            }
+            .tabItem {
+                Label("Calendar", systemImage: selectedTab == 4 ? "calendar.circle.fill" : "calendar.circle")
+            }
+            .tag(4)
+            
             ChefTasksView() // ✅ DODANE: Dedykowany widok dla chef'a
                 .tabItem {
-                    Label("Tasks", systemImage: selectedTab == 4 ? "list.bullet.rectangle.fill" : "list.bullet.rectangle")
+                    Label("Tasks", systemImage: selectedTab == 5 ? "list.bullet.rectangle.fill" : "list.bullet.rectangle")
                 }
-                .tag(4)
+                .tag(5)
             
             ChefProfileView()
                 .tabItem {
-                    Label("Profile", systemImage: selectedTab == 5 ? "person.fill" : "person")
+                    Label("Profile", systemImage: selectedTab == 6 ? "person.fill" : "person")
                 }
-                .tag(5)
+                .tag(6)
         }
         .accentColor(Color.ksrYellow)
         .onAppear {
@@ -1567,6 +1730,7 @@ struct ManagerProfileContentView: View {
     }
 }
 
+
 // MARK: - Firebase AppDelegate
 
 class FirebaseAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate, MessagingDelegate {
@@ -1593,8 +1757,12 @@ class FirebaseAppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCe
         // Register for remote notifications
         application.registerForRemoteNotifications()
         
+        // Configure background tasks
+        BackgroundTaskService.shared.configureBackgroundTasks()
+        
         #if DEBUG
         print("[FirebaseAppDelegate] Firebase configured and push notifications initialized")
+        print("[FirebaseAppDelegate] Background tasks configured")
         #endif
         
         return true

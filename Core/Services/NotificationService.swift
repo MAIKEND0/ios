@@ -106,7 +106,7 @@ class NotificationService: ObservableObject {
                 },
                 receiveValue: { [weak self] response in
                     self?.decrementUnreadCount()
-                    print("[NotificationService] Successfully marked notification \(notification.id) as read")
+                    print("[NotificationService] ✅ Successfully marked notification \(notification.id) as read. New unread count: \(self?.unreadCount ?? -1)")
                 }
             )
             .store(in: &cancellables)
@@ -195,6 +195,7 @@ class NotificationService: ObservableObject {
     
     private func updateNotificationReadStatus(_ notificationId: Int, isRead: Bool) {
         if let index = notifications.firstIndex(where: { $0.id == notificationId }) {
+            print("[NotificationService] 🔄 Updating notification \(notificationId) read status to: \(isRead)")
             let notification = notifications[index]
             notifications[index] = AppNotification(
                 id: notification.id,
@@ -238,7 +239,10 @@ class NotificationService: ObservableObject {
     
     private func decrementUnreadCount() {
         if unreadCount > 0 {
+            print("[NotificationService] 📉 Decrementing unread count from \(unreadCount) to \(unreadCount - 1)")
             updateUnreadCount(unreadCount - 1)
+        } else {
+            print("[NotificationService] ⚠️ Attempted to decrement unread count but it's already 0")
         }
     }
     

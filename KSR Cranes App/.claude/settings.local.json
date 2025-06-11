@@ -17,7 +17,12 @@
       "Bash(swift:*)",
       "Bash(rm:*)",
       "Bash(xcrun:*)",
-      "Bash(mv:*)"
+      "Bash(mv:*)",
+      "Bash(ls:*)",
+      "Bash(cp:*)",
+      "Bash(mkdir:*)",
+      "Bash(awk:*)",
+      "Bash(sed:*)"
     ],
     "deny": []
   }

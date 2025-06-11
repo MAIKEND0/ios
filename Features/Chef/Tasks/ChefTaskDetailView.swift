@@ -20,6 +20,11 @@ struct ChefFullTaskDetailView: View {
     @State private var showEditTask = false
     @State private var showDeleteConfirmation = false
     
+    // Computed property for current task (updated or original)
+    private var currentTask: ProjectTask {
+        viewModel.taskDetail?.task ?? task
+    }
+    
     enum TaskDetailTab: String, CaseIterable {
         case overview = "Overview"
         case equipment = "Equipment"  // ✅ ADDED: Equipment tab
@@ -55,7 +60,7 @@ struct ChefFullTaskDetailView: View {
                 .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
             }
             .background(backgroundGradient)
-            .navigationTitle(task.title)
+            .navigationTitle(currentTask.title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -86,7 +91,7 @@ struct ChefFullTaskDetailView: View {
                 }
             }
             .sheet(isPresented: $showEditTask) {
-                ChefEditTaskView(task: task) { updatedTask in
+                ChefEditTaskView(task: currentTask) { updatedTask in
                     viewModel.updateLocalTask(updatedTask)
                 }
             }
@@ -99,7 +104,8 @@ struct ChefFullTaskDetailView: View {
                     selectedWorkers: $viewModel.selectedWorkersToAdd,
                     projectId: task.projectId,
                     excludeTaskId: task.id,
-                    requiredCraneTypes: task.requiredCraneTypes
+                    requiredCraneTypes: nil,  // Don't use crane types - use certificates instead
+                    requiredCertificates: task.requiredCertificates  // ✅ NEW: Pass certificate requirements
                 )
             }
             .confirmationDialog(
@@ -193,7 +199,7 @@ struct ChefFullTaskDetailView: View {
             
             // Task Deadline and Supervisor
             HStack(spacing: 16) {
-                if let deadline = task.deadline {
+                if let deadline = currentTask.deadline {
                     HStack(spacing: 6) {
                         Image(systemName: "calendar")
                             .foregroundColor(.ksrWarning)
@@ -212,7 +218,7 @@ struct ChefFullTaskDetailView: View {
                 
                 Spacer()
                 
-                if let supervisorName = task.supervisorName {
+                if let supervisorName = currentTask.supervisorName {
                     HStack(spacing: 6) {
                         Image(systemName: "person.badge.shield.checkmark")
                             .foregroundColor(.ksrSuccess)
@@ -291,10 +297,10 @@ struct ChefFullTaskDetailView: View {
     }
     
     private var hasEquipmentRequirements: Bool {
-        return task.requiredCraneTypes?.isEmpty == false ||
-               task.preferredCraneModelId != nil ||
-               task.equipmentCategoryId != nil ||
-               task.equipmentBrandId != nil
+        return currentTask.requiredCraneTypes?.isEmpty == false ||
+               currentTask.preferredCraneModelId != nil ||
+               currentTask.equipmentCategoryId != nil ||
+               currentTask.equipmentBrandId != nil
     }
     
     private func getEquipmentSummaryText() -> String {
@@ -357,6 +363,8 @@ struct ChefFullTaskDetailView: View {
         ScrollView {
             VStack(spacing: 20) {
                 taskStatistics
+                managementCalendarInfo    // ✅ NEW: Management calendar information
+                certificateRequirementsInfo  // ✅ NEW: Certificate requirements
                 supervisorDetails
                 quickActions
             }
@@ -641,6 +649,188 @@ struct ChefFullTaskDetailView: View {
         )
     }
     
+    // ✅ NEW: Management Calendar Info Section
+    private var managementCalendarInfo: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Scheduling & Resource Info")
+                .font(.headline)
+                .fontWeight(.semibold)
+            
+            LazyVGrid(columns: [
+                GridItem(.flexible()),
+                GridItem(.flexible())
+            ], spacing: 16) {
+                // Task Status
+                if let status = currentTask.status {
+                    TaskStatCard(
+                        title: "Status",
+                        value: status.displayName,
+                        icon: status.icon,
+                        color: status.color
+                    )
+                }
+                
+                // Task Priority
+                if let priority = currentTask.priority {
+                    TaskStatCard(
+                        title: "Priority",
+                        value: priority.displayName,
+                        icon: priority.icon,
+                        color: priority.color
+                    )
+                }
+                
+                // Start Date
+                if let startDate = currentTask.startDate {
+                    TaskStatCard(
+                        title: "Start Date",
+                        value: {
+                            let dateFormatter = DateFormatter()
+                            dateFormatter.dateStyle = .short
+                            return dateFormatter.string(from: startDate)
+                        }(),
+                        icon: "calendar.badge.plus",
+                        color: .ksrInfo
+                    )
+                }
+                
+                // Estimated Hours
+                if let estimatedHours = currentTask.estimatedHours {
+                    TaskStatCard(
+                        title: "Est. Hours",
+                        value: String(format: "%.1f h", estimatedHours),
+                        icon: "clock.fill",
+                        color: .ksrWarning
+                    )
+                }
+                
+                // Required Operators
+                if let requiredOperators = currentTask.requiredOperators {
+                    TaskStatCard(
+                        title: "Operators Needed",
+                        value: "\(requiredOperators)",
+                        icon: "person.3.fill",
+                        color: .ksrSuccess
+                    )
+                }
+            }
+            
+            // Client Equipment Info
+            if let clientEquipmentInfo = currentTask.clientEquipmentInfo, !clientEquipmentInfo.isEmpty {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Client Equipment Information")
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.primary)
+                    
+                    Text(clientEquipmentInfo)
+                        .font(.body)
+                        .foregroundColor(.secondary)
+                        .padding()
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(colorScheme == .dark ? Color(.systemGray5) : Color(.systemGray6))
+                        )
+                }
+            }
+        }
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(colorScheme == .dark ? Color(.systemGray6).opacity(0.3) : Color.white)
+                .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 4)
+        )
+    }
+    
+    // ✅ NEW: Certificate Requirements Info
+    private var certificateRequirementsInfo: some View {
+        Group {
+            if let requiredCertificates = task.requiredCertificates, !requiredCertificates.isEmpty {
+                VStack(alignment: .leading, spacing: 16) {
+                    HStack {
+                        Image(systemName: "checkmark.seal.fill")
+                            .font(.title2)
+                            .foregroundColor(.ksrInfo)
+                            .frame(width: 40, height: 40)
+                            .background(
+                                Circle()
+                                    .fill(Color.ksrInfo.opacity(0.1))
+                            )
+                        
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Certificate Requirements")
+                                .font(.headline)
+                                .fontWeight(.semibold)
+                            
+                            Text("\(requiredCertificates.count) certificate(s) required")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                        }
+                        
+                        Spacer()
+                    }
+                    
+                    // Certificate list
+                    VStack(spacing: 8) {
+                        ForEach(requiredCertificates, id: \.self) { certificateId in
+                            HStack(spacing: 12) {
+                                Image(systemName: "checkmark.seal")
+                                    .font(.body)
+                                    .foregroundColor(.ksrInfo)
+                                    .frame(width: 24, height: 24)
+                                    .background(
+                                        Circle()
+                                            .fill(Color.ksrInfo.opacity(0.1))
+                                    )
+                                
+                                VStack(alignment: .leading, spacing: 2) {
+                                    // In a real implementation, we would fetch certificate details
+                                    Text("Certificate ID: \(certificateId)")
+                                        .font(.subheadline)
+                                        .fontWeight(.medium)
+                                        .foregroundColor(.primary)
+                                    
+                                    Text("Required for this task")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                                
+                                Spacer()
+                            }
+                            .padding(8)
+                            .background(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(Color.ksrLightGray.opacity(0.1))
+                            )
+                        }
+                    }
+                    
+                    // Warning about worker assignment
+                    HStack(spacing: 8) {
+                        Image(systemName: "info.circle")
+                            .font(.caption)
+                            .foregroundColor(.ksrWarning)
+                        
+                        Text("Only workers with these certificates can be assigned to this task")
+                            .font(.caption)
+                            .foregroundColor(.ksrWarning)
+                    }
+                    .padding(8)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color.ksrWarning.opacity(0.1))
+                    )
+                }
+                .padding()
+                .background(
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(colorScheme == .dark ? Color(.systemGray6).opacity(0.3) : Color.white)
+                        .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 4)
+                )
+            }
+        }
+    }
+    
     private var supervisorDetails: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Supervisor Information")
@@ -902,14 +1092,16 @@ struct AssignedEquipmentRow: View {
                     .fontWeight(.medium)
                     .foregroundColor(.primary)
                 
-                if let crane = craneModel {
-                    Text(crane.name)
-                        .font(.caption)
-                        .foregroundColor(.ksrSuccess)
-                } else {
-                    Text("No crane assigned")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                Group {
+                    if let crane = craneModel {
+                        Text(crane.name)
+                            .font(.caption)
+                            .foregroundColor(.ksrSuccess)
+                    } else {
+                        Text("No crane assigned")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
                 }
             }
             
@@ -1233,6 +1425,9 @@ class ChefTaskDetailViewModel: ObservableObject {
                                 employeeId: rawAssignment.employee_id,
                                 assignedAt: rawAssignment.assigned_at,
                                 craneModelId: rawAssignment.crane_model_id,
+                                workDate: rawAssignment.work_date,
+                                status: rawAssignment.status,
+                                notes: rawAssignment.notes,
                                 employee: rawAssignment.Employees,
                                 craneModel: rawAssignment.CraneModel
                             ),
@@ -1306,16 +1501,56 @@ class ChefTaskDetailViewModel: ObservableObject {
         
         #if DEBUG
         print("[ChefTaskDetailViewModel] 👥 Assigning \(selectedWorkersToAdd.count) workers to task \(task.id)")
+        print("   Task required certificates: \(task.requiredCertificates ?? [])")
         selectedWorkersToAdd.forEach { worker in
             print("   - \(worker.employee.name) (ID: \(worker.employee.employeeId))")
+            print("     • Has required certificates: \(worker.hasRequiredCertificates ?? false)")
+            if let validation = worker.certificateValidation {
+                print("     • Required: \(validation.requiredCount), Valid: \(validation.validCount)")
+                if !validation.missingCertificates.isEmpty {
+                    print("     • Missing certificates: \(validation.missingCertificates)")
+                }
+            }
+            if let certificates = worker.certificates {
+                print("     • Worker certificates: \(certificates.map { $0.certificateTypeId ?? -1 })")
+            }
         }
         #endif
         
         let assignments = selectedWorkersToAdd.map { worker in
-            CreateTaskAssignmentRequest(
+            // Check if worker has required certificates
+            let hasRequiredCerts = worker.hasRequiredCertificates ?? true
+            
+            // If worker doesn't have required certificates but is being assigned anyway,
+            // we need to tell the server to skip validation
+            let shouldSkipCertValidation = !hasRequiredCerts
+            
+            #if DEBUG
+            if shouldSkipCertValidation {
+                print("     ⚠️ Worker \(worker.employee.name) missing certificates, will skip validation")
+            }
+            #endif
+            
+            return CreateTaskAssignmentRequest(
                 employeeId: worker.employee.employeeId,
-                craneModelId: worker.craneTypes.first?.id
+                craneModelId: worker.craneTypes.first?.id,
+                skipCertificateValidation: shouldSkipCertValidation,
+                skipCraneTypeValidation: false, // Always validate crane types
+                workDate: nil,
+                status: nil,
+                notes: nil
             )
+        }
+        
+        // Check if any workers are missing certificates
+        let workersWithMissingCerts = selectedWorkersToAdd.filter { worker in
+            worker.hasRequiredCertificates == false
+        }
+        
+        if !workersWithMissingCerts.isEmpty {
+            #if DEBUG
+            print("⚠️ [ChefTaskDetailViewModel] \(workersWithMissingCerts.count) workers missing required certificates")
+            #endif
         }
         
         ChefProjectsAPIService.shared.assignWorkersToTask(
@@ -1914,32 +2149,640 @@ struct ChefEditTaskView: View {
     let task: ProjectTask
     let onTaskUpdated: ((ProjectTask) -> Void)?
     
+    @StateObject private var viewModel: EditTaskViewModel
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var colorScheme
+    @State private var showDiscardChangesAlert = false
+    @State private var showWorkerPicker = false
+    @FocusState private var focusedField: Field?
+    
+    enum Field: Hashable {
+        case title, description, supervisorName, supervisorEmail, supervisorPhone, clientEquipmentInfo
+    }
     
     init(task: ProjectTask, onTaskUpdated: ((ProjectTask) -> Void)? = nil) {
         self.task = task
         self.onTaskUpdated = onTaskUpdated
+        self._viewModel = StateObject(wrappedValue: EditTaskViewModel(task: task))
     }
     
     var body: some View {
         NavigationStack {
-            VStack {
-                Text("Edit Task")
-                    .font(.title)
-                Text("To Be Implemented")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
+            ScrollView {
+                VStack(spacing: 24) {
+                    // Task Information Section
+                    taskInformationSection
+                    
+                    // Scheduling & Resource Planning Section
+                    schedulingSection
+                    
+                    // Equipment Requirements Section
+                    equipmentSection
+                    
+                    // Certificate Requirements Section
+                    certificateSection
+                    
+                    // Supervisor Selection Section
+                    supervisorSection
+                }
+                .padding()
             }
+            .background(backgroundGradient)
             .navigationTitle("Edit Task")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Cancel") {
+                        if viewModel.hasChanges {
+                            showDiscardChangesAlert = true
+                        } else {
+                            dismiss()
+                        }
+                    }
+                }
+                
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Save") {
+                        saveTask()
+                    }
+                    .disabled(!viewModel.isFormValid || viewModel.isSaving || !viewModel.hasChanges)
+                    .font(.headline)
+                }
+                
+                ToolbarItem(placement: .keyboard) {
+                    HStack {
+                        Spacer()
+                        Button("Done") {
+                            focusedField = nil
+                        }
+                    }
+                }
+            }
+            .alert(isPresented: $showDiscardChangesAlert) {
+                Alert(
+                    title: Text("Discard Changes?"),
+                    message: Text("You have unsaved changes. Are you sure you want to discard them?"),
+                    primaryButton: .destructive(Text("Discard")) {
                         dismiss()
+                    },
+                    secondaryButton: .cancel()
+                )
+            }
+            .alert(isPresented: $viewModel.showAlert) {
+                Alert(
+                    title: Text(viewModel.alertTitle),
+                    message: Text(viewModel.alertMessage),
+                    dismissButton: .default(Text("OK")) {
+                        if viewModel.updateSuccess {
+                            dismiss()
+                        }
+                    }
+                )
+            }
+            .sheet(isPresented: $viewModel.showHierarchicalEquipmentSelector) {
+                // TODO: Implement HierarchicalEquipmentSelector
+                Text("Equipment selector not yet implemented")
+                    .padding()
+                Button("Close") {
+                    viewModel.showHierarchicalEquipmentSelector = false
+                }
+            }
+            .sheet(isPresented: $viewModel.showCertificateSelector) {
+                TaskCertificateSelectionView(
+                    selectedCertificates: viewModel.selectedCertificatesBinding,
+                    isPresented: $viewModel.showCertificateSelector,
+                    availableCertificates: viewModel.availableCertificates
+                )
+            }
+            .overlay {
+                if viewModel.isSaving {
+                    ZStack {
+                        Color.black.opacity(0.3)
+                            .ignoresSafeArea()
+                        
+                        VStack(spacing: 16) {
+                            ProgressView()
+                                .scaleEffect(1.5)
+                                .tint(.ksrYellow)
+                            
+                            Text("Updating task...")
+                                .font(.headline)
+                                .foregroundColor(.primary)
+                        }
+                        .padding(32)
+                        .background(
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(colorScheme == .dark ? Color(.systemGray5) : Color.white)
+                                .shadow(radius: 10)
+                        )
                     }
                 }
             }
         }
+        .onAppear {
+            viewModel.onDismiss = { dismiss() }
+            viewModel.onTaskUpdated = onTaskUpdated
+        }
+    }
+    
+    // MARK: - Sections
+    
+    private var taskInformationSection: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            SectionHeader(title: "Task Information", icon: "doc.text.fill")
+            
+            // Title Field
+            VStack(alignment: .leading, spacing: 8) {
+                Label("Task Title *", systemImage: "textformat")
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                    .foregroundColor(.primary)
+                
+                TextField("Enter task title", text: $viewModel.taskTitle)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                    .focused($focusedField, equals: .title)
+                
+                if let error = viewModel.titleError {
+                    ErrorText(error)
+                }
+            }
+            
+            // Description Field
+            VStack(alignment: .leading, spacing: 8) {
+                Label("Description", systemImage: "text.alignleft")
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                    .foregroundColor(.primary)
+                
+                TextField("Enter task description", text: $viewModel.description, axis: .vertical)
+                    .lineLimit(3...6)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                    .focused($focusedField, equals: .description)
+            }
+            
+            // Deadline Toggle and Picker
+            VStack(alignment: .leading, spacing: 12) {
+                Toggle(isOn: $viewModel.hasDeadline.animation()) {
+                    Label("Set Deadline", systemImage: "calendar.badge.clock")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                }
+                .tint(.ksrYellow)
+                
+                if viewModel.hasDeadline {
+                    DatePicker(
+                        "Deadline",
+                        selection: $viewModel.deadline,
+                        in: Date()...,
+                        displayedComponents: [.date]
+                    )
+                    .datePickerStyle(GraphicalDatePickerStyle())
+                    .padding()
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color(.systemGray6))
+                    )
+                    
+                    if let error = viewModel.deadlineError {
+                        ErrorText(error)
+                    }
+                }
+            }
+        }
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(colorScheme == .dark ? Color(.systemGray6).opacity(0.3) : Color.white)
+                .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 4)
+        )
+    }
+    
+    private var schedulingSection: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            SectionHeader(title: "Scheduling & Resource Planning", icon: "calendar.badge.clock")
+            
+            // Start Date
+            Toggle("Set Start Date", isOn: $viewModel.hasStartDate.animation())
+            .tint(.ksrYellow)
+            
+            if viewModel.hasStartDate {
+                DatePicker("Start Date", selection: $viewModel.startDate, displayedComponents: .date)
+                    .datePickerStyle(CompactDatePickerStyle())
+                    .padding(.leading)
+                
+                if let error = viewModel.startDateError {
+                    ErrorText(error)
+                        .padding(.leading)
+                }
+            }
+            
+            // Task Status
+            VStack(alignment: .leading, spacing: 8) {
+                Label("Task Status", systemImage: "flag.fill")
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                
+                Picker("Status", selection: $viewModel.status) {
+                    ForEach(ProjectTaskStatus.allCases, id: \.self) { status in
+                        HStack {
+                            Image(systemName: status.icon)
+                                .foregroundColor(status.color)
+                            Text(status.displayName)
+                        }
+                        .tag(status)
+                    }
+                }
+                .pickerStyle(MenuPickerStyle())
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color(.systemGray6))
+                )
+            }
+            
+            // Task Priority
+            VStack(alignment: .leading, spacing: 8) {
+                Label("Priority", systemImage: "exclamationmark.triangle.fill")
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                
+                Picker("Priority", selection: $viewModel.priority) {
+                    ForEach(TaskPriority.allCases, id: \.self) { priority in
+                        HStack {
+                            Image(systemName: priority.icon)
+                                .foregroundColor(priority.color)
+                            Text(priority.displayName)
+                        }
+                        .tag(priority)
+                    }
+                }
+                .pickerStyle(SegmentedPickerStyle())
+            }
+            
+            // Estimated Hours
+            HStack {
+                Toggle("Set Estimated Hours", isOn: $viewModel.hasEstimatedHours.animation())
+                Image(systemName: "clock")
+                    .foregroundColor(.ksrWarning)
+            }
+            .tint(.ksrYellow)
+            
+            if viewModel.hasEstimatedHours {
+                Stepper("Estimated Hours: \(viewModel.estimatedHours, specifier: "%.1f")",
+                        value: $viewModel.estimatedHours, in: 0.5...1000, step: 0.5)
+                    .padding(.leading)
+                
+                if let error = viewModel.estimatedHoursError {
+                    ErrorText(error)
+                        .padding(.leading)
+                }
+            }
+            
+            // Required Operators
+            HStack {
+                Toggle("Set Required Operators", isOn: $viewModel.hasRequiredOperators.animation())
+                Image(systemName: "person.3.fill")
+                    .foregroundColor(.ksrSuccess)
+            }
+            .tint(.ksrYellow)
+            
+            if viewModel.hasRequiredOperators {
+                Stepper("Required Operators: \(viewModel.requiredOperators)",
+                        value: $viewModel.requiredOperators, in: 1...50)
+                    .padding(.leading)
+                
+                if let error = viewModel.requiredOperatorsError {
+                    ErrorText(error)
+                        .padding(.leading)
+                }
+            }
+            
+            // Client Equipment Info
+            VStack(alignment: .leading, spacing: 8) {
+                Label("Client Equipment Information", systemImage: "info.circle")
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                
+                TextField("Details about client's equipment...",
+                          text: $viewModel.clientEquipmentInfo, axis: .vertical)
+                    .lineLimit(3...6)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                    .focused($focusedField, equals: .clientEquipmentInfo)
+                
+                if let error = viewModel.clientEquipmentInfoError {
+                    ErrorText(error)
+                }
+            }
+        }
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(colorScheme == .dark ? Color(.systemGray6).opacity(0.3) : Color.white)
+                .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 4)
+        )
+    }
+    
+    private var equipmentSection: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            SectionHeader(title: "Equipment Requirements", icon: "wrench.and.screwdriver.fill")
+            
+            VStack(spacing: 16) {
+                // Equipment selection button
+                Button {
+                    viewModel.showHierarchicalEquipmentSelector = true
+                } label: {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Equipment Requirements *")
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                                .foregroundColor(.primary)
+                            
+                            Text(viewModel.selectedCraneTypeIds.isEmpty ? "Select equipment requirements" : "\(viewModel.selectedCraneTypeIds.count) selected")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                                .lineLimit(2)
+                        }
+                        
+                        Spacer()
+                        
+                        Image(systemName: "chevron.right")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    }
+                    .padding()
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color(.systemGray6))
+                    )
+                }
+                .buttonStyle(PlainButtonStyle())
+                
+                if let error = viewModel.equipmentError {
+                    ErrorText(error)
+                }
+                
+                // Equipment validation result
+                if let result = viewModel.equipmentValidationResult {
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack(spacing: 8) {
+                            Image(systemName: result.isCompletelyValid ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
+                                .foregroundColor(result.isCompletelyValid ? .ksrSuccess : .ksrWarning)
+                            
+                            Text(result.isCompletelyValid ? "Equipment selection is valid" : "Equipment validation warnings")
+                                .font(.caption)
+                                .fontWeight(.medium)
+                        }
+                        
+                        if !result.validationErrors.isEmpty {
+                            ForEach(result.validationErrors, id: \.self) { error in
+                                Text("• \(error)")
+                                    .font(.caption)
+                                    .foregroundColor(.ksrWarning)
+                            }
+                        }
+                    }
+                    .padding()
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill((result.isCompletelyValid ? Color.ksrSuccess : Color.ksrWarning).opacity(0.1))
+                    )
+                }
+            }
+        }
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(colorScheme == .dark ? Color(.systemGray6).opacity(0.3) : Color.white)
+                .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 4)
+        )
+    }
+    
+    private var certificateSection: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            SectionHeader(title: "Certificate Requirements", icon: "checkmark.seal.fill")
+            
+            VStack(spacing: 16) {
+                // Certificate selection button
+                Button {
+                    viewModel.showCertificateSelector = true
+                } label: {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Required Certificates")
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                                .foregroundColor(.primary)
+                            
+                            Text(viewModel.selectedCertificateIds.isEmpty ? "Select required certificates" : "\(viewModel.selectedCertificateIds.count) selected")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                                .lineLimit(2)
+                        }
+                        
+                        Spacer()
+                        
+                        Image(systemName: "chevron.right")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    }
+                    .padding()
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color(.systemGray6))
+                    )
+                }
+                .buttonStyle(PlainButtonStyle())
+                
+                if let error = viewModel.certificateError {
+                    ErrorText(error)
+                }
+                
+                // Selected certificates display
+                if !viewModel.selectedCertificateIds.isEmpty {
+                    VStack(spacing: 8) {
+                        // TODO: Need to convert certificate IDs to certificate objects for display
+                        /* TODO: Re-implement when certificate objects are available
+                        ForEach(viewModel.selectedCertificates, id: \.id) { certificate in
+                            HStack(spacing: 12) {
+                                Image(systemName: "checkmark.seal.fill")
+                                    .font(.caption)
+                                    .foregroundColor(.ksrInfo)
+                                
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(certificate.nameEn)
+                                        .font(.caption)
+                                        .fontWeight(.medium)
+                                    
+                                    Text(certificate.code)
+                                        .font(.caption2)
+                                        .foregroundColor(.secondary)
+                                }
+                                
+                                Spacer()
+                                
+                                Button {
+                                    viewModel.toggleCertificate(certificate)
+                                } label: {
+                                    Image(systemName: "xmark.circle.fill")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                            }
+                            .padding(8)
+                            .background(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(Color.ksrInfo.opacity(0.1))
+                            )
+                        }*/
+                        Text("Selected \(viewModel.selectedCertificateIds.count) certificate(s)")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+            }
+        }
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(colorScheme == .dark ? Color(.systemGray6).opacity(0.3) : Color.white)
+                .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 4)
+        )
+    }
+    
+    private var supervisorSection: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            SectionHeader(title: "Supervisor Information", icon: "person.badge.shield.checkmark")
+            
+            // Internal Supervisor Selection
+            VStack(alignment: .leading, spacing: 8) {
+                    Text("Select Supervisor *")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                    
+                    if viewModel.isLoadingSupervisors {
+                        HStack {
+                            ProgressView()
+                                .scaleEffect(0.8)
+                            Text("Loading supervisors...")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        .padding()
+                    } else {
+                        Menu {
+                            ForEach(viewModel.availableSupervisors, id: \.employeeId) { supervisor in
+                                Button {
+                                    viewModel.supervisorId = supervisor.employeeId
+                                } label: {
+                                    Label(supervisor.name, systemImage: "person.fill")
+                                }
+                            }
+                        } label: {
+                            HStack {
+                                if let supervisorId = viewModel.supervisorId,
+                                   let selectedSupervisor = viewModel.availableSupervisors.first(where: { $0.employeeId == supervisorId }) {
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(selectedSupervisor.name)
+                                            .font(.body)
+                                            .foregroundColor(.primary)
+                                        
+                                        Text(selectedSupervisor.role.capitalized)
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                    }
+                                } else {
+                                    Text("Select a supervisor")
+                                        .foregroundColor(.secondary)
+                                }
+                                
+                                Spacer()
+                                
+                                Image(systemName: "chevron.down")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                            .padding()
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(Color(.systemGray6))
+                            )
+                        }
+                    }
+                    
+                    if let error = viewModel.supervisorError {
+                        ErrorText(error)
+                    }
+                }
+            // External supervisor fields removed - not supported by the model
+        }
+        .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(colorScheme == .dark ? Color(.systemGray6).opacity(0.3) : Color.white)
+                .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 4)
+        )
+    }
+    
+    private var backgroundGradient: some View {
+        LinearGradient(
+            gradient: Gradient(colors: [
+                colorScheme == .dark ? Color.black : Color(.systemBackground),
+                colorScheme == .dark ? Color(.systemGray6).opacity(0.2) : Color(.systemGray6).opacity(0.3)
+            ]),
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+        .ignoresSafeArea()
+    }
+    
+    // MARK: - Actions
+    
+    private func saveTask() {
+        viewModel.saveTask()
+        // The onTaskUpdated callback will be called when the task is successfully updated
+    }
+}
+
+// MARK: - Supporting Views
+
+struct SectionHeader: View {
+    let title: String
+    let icon: String
+    
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.title3)
+                .foregroundColor(.ksrYellow)
+            
+            Text(title)
+                .font(.headline)
+                .fontWeight(.semibold)
+            
+            Spacer()
+        }
+    }
+}
+
+struct ErrorText: View {
+    let text: String
+    
+    init(_ text: String) {
+        self.text = text
+    }
+    
+    var body: some View {
+        HStack(spacing: 4) {
+            Image(systemName: "exclamationmark.circle.fill")
+                .font(.caption)
+            
+            Text(text)
+                .font(.caption)
+        }
+        .foregroundColor(.ksrError)
     }
 }
 
@@ -1949,6 +2792,12 @@ private struct RawTaskAssignment: Codable {
     let employee_id: Int
     let assigned_at: Date?
     let crane_model_id: Int?
+    
+    // ✅ MANAGEMENT CALENDAR FIELDS: Enhanced assignment tracking
+    let work_date: Date?
+    let status: AssignmentStatus?
+    let notes: String?
+    
     let Employees: Employee
     let CraneModel: CraneModel?
     
@@ -1958,6 +2807,9 @@ private struct RawTaskAssignment: Codable {
         case employee_id
         case assigned_at
         case crane_model_id
+        case work_date
+        case status
+        case notes
         case Employees
         case CraneModel
     }

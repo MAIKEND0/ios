@@ -40,13 +40,14 @@ export async function POST(
       );
     }
 
-    // Sprawdź czy zadanie istnieje
+    // Sprawdź czy zadanie istnieje i pobierz wymagane certyfikaty i typy dźwigów
     const task = await prisma.tasks.findUnique({
       where: { task_id: taskId },
       include: {
         Projects: {
           select: { project_id: true, title: true }
-        }
+        },
+        CraneCategory: true
       }
     });
 
@@ -55,6 +56,32 @@ export async function POST(
         { error: 'Task not found' },
         { status: 404 }
       );
+    }
+
+    // Parse required certificates from crane category
+    let requiredCertificateIds: number[] = [];
+    if (task.CraneCategory?.required_certificates) {
+      try {
+        const requiredCerts = JSON.parse(task.CraneCategory.required_certificates as string);
+        if (Array.isArray(requiredCerts)) {
+          requiredCertificateIds = requiredCerts.map(id => parseInt(id)).filter(id => !isNaN(id));
+        }
+      } catch (e) {
+        console.error("[API] Error parsing required certificates:", e);
+      }
+    }
+
+    // Parse required crane types from task
+    let requiredCraneTypeIds: number[] = [];
+    if (task.required_crane_types) {
+      try {
+        const requiredTypes = JSON.parse(task.required_crane_types as string);
+        if (Array.isArray(requiredTypes)) {
+          requiredCraneTypeIds = requiredTypes.map(id => parseInt(id)).filter(id => !isNaN(id));
+        }
+      } catch (e) {
+        console.error("[API] Error parsing required crane types:", e);
+      }
     }
 
     // Użyj transakcji dla bulk operations
@@ -66,14 +93,60 @@ export async function POST(
         try {
           const { employee_id, crane_model_id } = assignment;
 
-          // Sprawdź czy pracownik istnieje
+          // Sprawdź czy pracownik istnieje i ma wymagane certyfikaty oraz uprawnienia do obsługi dźwigów
           const employee = await tx.employees.findUnique({
-            where: { employee_id: Number(employee_id) }
+            where: { employee_id: Number(employee_id) },
+            include: {
+              WorkerSkills: {
+                where: {
+                  is_certified: true,
+                  certificate_type_id: { in: requiredCertificateIds }
+                }
+              },
+              EmployeeCraneTypes: {
+                where: {
+                  crane_type_id: { in: requiredCraneTypeIds }
+                }
+              }
+            }
           });
 
           if (!employee) {
             errors.push(`Employee ${employee_id} not found`);
             continue;
+          }
+
+          // Validate certificates if required and not skipped
+          if (requiredCertificateIds.length > 0 && !assignment.skip_certificate_validation) {
+            const workerValidCertIds = employee.WorkerSkills
+              .filter(skill => 
+                skill.is_certified && 
+                (!skill.certification_expires || skill.certification_expires >= new Date())
+              )
+              .map(skill => skill.certificate_type_id)
+              .filter(id => id !== null) as number[];
+
+            const missingCertIds = requiredCertificateIds.filter(certId => !workerValidCertIds.includes(certId));
+
+            if (missingCertIds.length > 0) {
+              errors.push(`Employee ${employee_id} missing required certificates: ${missingCertIds.join(', ')}`);
+              continue;
+            }
+          }
+
+          // Validate crane type skills if required and not skipped
+          if (requiredCraneTypeIds.length > 0 && !assignment.skip_crane_type_validation) {
+            const workerCraneTypeIds = employee.EmployeeCraneTypes
+              .map(ect => ect.crane_type_id);
+
+            const missingCraneTypeIds = requiredCraneTypeIds.filter(
+              typeId => !workerCraneTypeIds.includes(typeId)
+            );
+
+            if (missingCraneTypeIds.length > 0) {
+              errors.push(`Employee ${employee_id} missing required crane type skills: ${missingCraneTypeIds.join(', ')}`);
+              continue;
+            }
           }
 
           // Sprawdź czy przypisanie już istnieje
@@ -89,13 +162,19 @@ export async function POST(
             continue;
           }
 
-          // Utwórz przypisanie
+          // Utwórz przypisanie z management calendar fields
           const newAssignment = await tx.taskAssignments.create({
             data: {
               task_id: taskId,
               employee_id: Number(employee_id),
               crane_model_id: crane_model_id ? Number(crane_model_id) : null,
-              assigned_at: new Date()
+              assigned_at: new Date(),
+              // ✅ MANAGEMENT CALENDAR FIELDS: Add assignment scheduling fields
+              work_date: assignment.work_date ? new Date(assignment.work_date) : null,
+              status: assignment.status && ['assigned', 'active', 'completed', 'cancelled'].includes(assignment.status) 
+                ? assignment.status 
+                : 'assigned',
+              notes: assignment.notes?.trim() || null
             },
             include: {
               Employees: {

@@ -35,7 +35,13 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         emergency_contact: true,
         cpr_number: true,
         driving_license_category: true,
-        driving_license_expiration: true
+        driving_license_expiration: true,
+        // Include certificates
+        WorkerSkills: {
+          include: {
+            CertificateTypes: true
+          }
+        }
       }
     });
 
@@ -137,6 +143,26 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       hourly_rate: Number(worker.operator_normal_rate || 0)
     }));
 
+    // Map certificates
+    const certificates = worker.WorkerSkills.map(skill => ({
+      skill_id: skill.skill_id,
+      certificate_type_id: skill.certificate_type_id,
+      certificate_type: skill.CertificateTypes ? {
+        code: skill.CertificateTypes.code,
+        name_en: skill.CertificateTypes.name_en,
+        name_da: skill.CertificateTypes.name_da,
+        description: skill.CertificateTypes.description
+      } : null,
+      skill_name: skill.skill_name,
+      skill_level: skill.skill_level,
+      is_certified: skill.is_certified,
+      certification_number: skill.certification_number,
+      certification_expires: skill.certification_expires,
+      years_experience: skill.years_experience,
+      crane_type_specialization: skill.crane_type_specialization,
+      notes: skill.notes
+    }));
+
     // Mapowanie do formatu iOS
     const workerDetail = {
       employee_id: worker.employee_id,
@@ -152,6 +178,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       last_active: workEntries[0]?.created_at || null,
       hire_date: worker.birth_date, // Using birth_date as hire_date placeholder
       notes: worker.emergency_contact, // Using emergency_contact as notes placeholder
+      certificates: certificates,
       detailed_stats: {
         total_hours: hoursThisMonth * 4, // Rough estimate for total hours
         hours_this_week: hoursThisWeek,
@@ -234,6 +261,66 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       data: updateData
     });
 
+    // Handle certificate updates if provided
+    if (body.certificates !== undefined) {
+      console.log("[API] Updating certificates for worker:", workerId, body.certificates);
+      
+      // Remove all existing certificates
+      await prisma.workerSkills.deleteMany({
+        where: { employee_id: workerId }
+      });
+      
+      // Add new certificates
+      if (body.certificates && Array.isArray(body.certificates) && body.certificates.length > 0) {
+        const certificatePromises = body.certificates.map(async (cert: any) => {
+          return prisma.workerSkills.create({
+            data: {
+              employee_id: workerId,
+              certificate_type_id: cert.certificate_type_id,
+              skill_name: cert.skill_name || `Certificate ${cert.certificate_type_id}`,
+              skill_level: cert.skill_level || "certified",
+              is_certified: true,
+              certification_number: cert.certification_number || null,
+              certification_expires: cert.certification_expires ? new Date(cert.certification_expires) : null,
+              years_experience: cert.years_experience || 0,
+              crane_type_specialization: cert.crane_type_specialization || null,
+              notes: cert.notes || null
+            }
+          });
+        });
+        
+        await Promise.all(certificatePromises);
+      }
+    }
+
+    // Fetch updated worker with certificates
+    const workerWithCertificates = await prisma.employees.findUnique({
+      where: { employee_id: workerId },
+      include: {
+        WorkerSkills: {
+          include: {
+            CertificateTypes: true
+          }
+        }
+      }
+    });
+
+    // Map certificates
+    const certificates = workerWithCertificates?.WorkerSkills?.map(skill => ({
+      skill_id: skill.skill_id,
+      certificate_type_id: skill.certificate_type_id,
+      certificate_type: skill.CertificateTypes ? {
+        code: skill.CertificateTypes.code,
+        name_en: skill.CertificateTypes.name_en,
+        name_da: skill.CertificateTypes.name_da
+      } : null,
+      skill_name: skill.skill_name,
+      skill_level: skill.skill_level,
+      is_certified: skill.is_certified,
+      certification_expires: skill.certification_expires,
+      years_experience: skill.years_experience
+    })) || [];
+
     // Mapowanie do formatu iOS
     const mappedWorker = {
       employee_id: updatedWorker.employee_id,
@@ -254,7 +341,8 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         completed_tasks: 0,
         approval_rate: 1.0,
         last_timesheet_date: null
-      }
+      },
+      certificates: certificates
     };
 
     return NextResponse.json(mappedWorker);

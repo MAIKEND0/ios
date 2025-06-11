@@ -317,7 +317,7 @@ final class ChefLeaveAPIService: BaseAPIService {
     func exportLeaveData(
         startDate: Date,
         endDate: Date,
-        format: ExportFormat = .csv,
+        format: LeaveExportFormat = .csv,
         includeBalances: Bool = true
     ) -> AnyPublisher<ExportResponse, APIError> {
         let dateFormatter = DateFormatter.iso8601DateOnly
@@ -600,7 +600,7 @@ struct AdminCancelRequest: Codable {
     let reason: String
 }
 
-enum ExportFormat: String, Codable, CaseIterable {
+enum LeaveExportFormat: String, Codable, CaseIterable {
     case csv = "csv"
     case json = "json"
     case xlsx = "xlsx"

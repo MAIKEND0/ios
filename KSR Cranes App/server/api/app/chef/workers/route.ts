@@ -48,7 +48,13 @@ export async function GET(request: Request) {
         // Dodatkowe pola jeśli potrzebne
         birth_date: true,
         has_driving_license: true,
-        emergency_contact: true
+        emergency_contact: true,
+        // Include certificates if requested
+        WorkerSkills: searchParams.get("include_certificates") === "true" ? {
+          include: {
+            CertificateTypes: true
+          }
+        } : false
       },
       orderBy: { name: "asc" },
       skip: offset,
@@ -201,6 +207,25 @@ export async function GET(request: Request) {
         };
       }
       
+      // Map certificates if included
+      let certificates = undefined;
+      if (worker.WorkerSkills && Array.isArray(worker.WorkerSkills)) {
+        certificates = worker.WorkerSkills.map((skill: any) => ({
+          skill_id: skill.skill_id,
+          certificate_type_id: skill.certificate_type_id,
+          certificate_type: skill.CertificateTypes ? {
+            code: skill.CertificateTypes.code,
+            name_en: skill.CertificateTypes.name_en,
+            name_da: skill.CertificateTypes.name_da
+          } : null,
+          skill_name: skill.skill_name,
+          skill_level: skill.skill_level,
+          is_certified: skill.is_certified,
+          certification_expires: skill.certification_expires,
+          years_experience: skill.years_experience
+        }));
+      }
+
       return {
         employee_id: worker.employee_id,
         name: worker.name,
@@ -209,11 +234,12 @@ export async function GET(request: Request) {
         address: worker.address,
         hourly_rate: Number(worker.operator_normal_rate || 0),
         employment_type: mapRoleToEmploymentType(worker.role),
-        status: worker.is_activated ? "aktiv" : "inaktiv",
+        status: await getWorkerStatus(worker),
         profile_picture_url: worker.profilePictureUrl,
         created_at: worker.created_at,
         last_active: null, // TODO: implement tracking
-        stats: stats
+        stats: stats,
+        certificates: certificates
       };
     }));
 
@@ -265,6 +291,59 @@ export async function POST(request: Request) {
       }
     });
 
+    // Add certificates if provided
+    if (body.certificates && Array.isArray(body.certificates)) {
+      console.log("[API] Adding certificates for new worker:", body.certificates);
+      
+      // Create WorkerSkills entries for each certificate
+      const certificatePromises = body.certificates.map(async (cert: any) => {
+        return prisma.workerSkills.create({
+          data: {
+            employee_id: newWorker.employee_id,
+            certificate_type_id: cert.certificate_type_id,
+            skill_name: cert.skill_name || `Certificate ${cert.certificate_type_id}`,
+            skill_level: cert.skill_level || "certified",
+            is_certified: true,
+            certification_number: cert.certification_number || null,
+            certification_expires: cert.certification_expires ? new Date(cert.certification_expires) : null,
+            years_experience: cert.years_experience || 0,
+            crane_type_specialization: cert.crane_type_specialization || null,
+            notes: cert.notes || null
+          }
+        });
+      });
+
+      await Promise.all(certificatePromises);
+    }
+
+    // Fetch the created worker with certificates
+    const workerWithCertificates = await prisma.employees.findUnique({
+      where: { employee_id: newWorker.employee_id },
+      include: {
+        WorkerSkills: {
+          include: {
+            CertificateTypes: true
+          }
+        }
+      }
+    });
+
+    // Map certificates if included
+    const certificates = workerWithCertificates?.WorkerSkills?.map(skill => ({
+      skill_id: skill.skill_id,
+      certificate_type_id: skill.certificate_type_id,
+      certificate_type: skill.CertificateTypes ? {
+        code: skill.CertificateTypes.code,
+        name_en: skill.CertificateTypes.name_en,
+        name_da: skill.CertificateTypes.name_da
+      } : null,
+      skill_name: skill.skill_name,
+      skill_level: skill.skill_level,
+      is_certified: skill.is_certified,
+      certification_expires: skill.certification_expires,
+      years_experience: skill.years_experience
+    })) || [];
+
     // Mapowanie do formatu iOS (nowy pracownik ma puste statystyki)
     const mappedWorker = {
       employee_id: newWorker.employee_id,
@@ -274,7 +353,7 @@ export async function POST(request: Request) {
       address: newWorker.address,
       hourly_rate: Number(newWorker.operator_normal_rate || 0),
       employment_type: mapRoleToEmploymentType(newWorker.role),
-      status: newWorker.is_activated ? "aktiv" : "inaktiv",
+      status: await getWorkerStatus(newWorker),
       profile_picture_url: newWorker.profilePictureUrl,
       created_at: newWorker.created_at,
       last_active: null,
@@ -286,7 +365,8 @@ export async function POST(request: Request) {
         total_tasks: 0,
         approval_rate: 1.0,
         last_timesheet_date: null
-      }
+      },
+      certificates: certificates
     };
 
     return NextResponse.json(mappedWorker, { status: 201 });
@@ -294,6 +374,39 @@ export async function POST(request: Request) {
     console.error("Error creating worker:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+}
+
+// Helper function to determine worker status based on leave
+async function getWorkerStatus(worker: any): Promise<string> {
+  // First check if worker is activated
+  if (!worker.is_activated) {
+    // Check if they have active leave
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const activeLeave = await prisma.leaveRequests.findFirst({
+      where: {
+        employee_id: worker.employee_id,
+        status: 'APPROVED',
+        start_date: { lte: today },
+        end_date: { gte: today }
+      }
+    });
+    
+    if (activeLeave) {
+      if (activeLeave.type === 'VACATION') {
+        return 'ferie';
+      } else if (activeLeave.type === 'SICK' || activeLeave.type === 'EMERGENCY') {
+        return 'sygemeldt';
+      }
+    }
+    
+    // If no active leave but is_activated is false, return inaktiv
+    return 'inaktiv';
+  }
+  
+  // Worker is activated
+  return 'aktiv';
 }
 
 // Helper functions
